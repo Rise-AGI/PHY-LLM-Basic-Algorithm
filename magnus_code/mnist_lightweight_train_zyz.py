@@ -9,18 +9,30 @@ import urllib.request
 import os
 from urllib.error import HTTPError
 
-# 从环境变量读取Token，代码无明文密钥
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+# 从环境变量读取Token
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()
 
 REPO = "Rise-AGI/PHY-LLM-Basic-Algorithm"
 FILE_PATH = "magnus_code/mnist_light_model.pth"
 BRANCH = "main"
 COMMIT_MSG = "auto upload trained model"
 
+def get_github_file_sha(url, token):
+    """获取已存在文件的sha，用于覆盖上传"""
+    try:
+        req = urllib.request.Request(url)
+        req.add_header("Authorization", f"token {token}")
+        with urllib.request.urlopen(req) as f:
+            data = json.loads(f.read().decode())
+            return data.get("sha")
+    except:
+        return None
+
 def upload_file_to_github(file_path):
     if not GITHUB_TOKEN:
         print("⚠️ 未检测到GitHub Token，跳过上传")
         return
+    
     try:
         with open(file_path, "rb") as f:
             content = base64.b64encode(f.read()).decode("utf-8")
@@ -31,16 +43,26 @@ def upload_file_to_github(file_path):
             "content": content,
             "branch": BRANCH
         }
+        
+        # 获取sha（如果文件已存在）
+        sha = get_github_file_sha(url, GITHUB_TOKEN)
+        if sha:
+            data["sha"] = sha
+        
         data = json.dumps(data).encode("utf-8")
         
         req = urllib.request.Request(url, data=data, method="PUT")
         req.add_header("Authorization", f"token {GITHUB_TOKEN}")
         req.add_header("Content-Type", "application/json")
+        req.add_header("User-Agent", "Python-Script")
         
         with urllib.request.urlopen(req) as f:
             print(f"✅ 模型上传GitHub成功！")
+    except HTTPError as e:
+        print(f"❌ 上传失败: {e.code} {e.reason}")
+        print(f"错误信息: {e.read().decode()}")
     except Exception as e:
-        print(f"❌ 上传失败: {str(e)}")
+        print(f"❌ 错误: {str(e)}")
 
 # 设备配置
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -145,7 +167,6 @@ print(f"开始训练，共 {epochs} 轮...")
 for epoch in range(1, epochs + 1):
     print(f"\n===== 轮次 {epoch}/{epochs} =====")
     train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device)
-    # ✅ 修复：这里改成 test_model
     test_loss, test_acc = test_model(model, test_loader, criterion, device)
     print(f"训练 | 损失: {train_loss:.4f} | 准确率: {train_acc:.2f}%")
     print(f"测试 | 损失: {test_loss:.4f} | 准确率: {test_acc:.2f}%")
