@@ -3,26 +3,26 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-# Python 内置库，100%自带，无需安装
 import base64
 import json
 import urllib.request
+import os
 from urllib.error import HTTPError
 
-# ===================== 【唯一需要你填写的内容】 =====================
-# 替换成你的 GitHub 个人令牌（ghp_开头）
-GITHUB_TOKEN = "你的GitHub令牌"
-# ================================================================
+# ===================== 安全方案：从环境变量读取Token =====================
+# 不在代码里写任何密钥！由Magnus平台传入
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+# ======================================================================
 
-# GitHub 上传配置（固定你的仓库）
 REPO = "Rise-AGI/PHY-LLM-Basic-Algorithm"
 FILE_PATH = "magnus_code/mnist_light_model.pth"
 BRANCH = "main"
-COMMIT_MSG = "auto upload trained model via Python"
+COMMIT_MSG = "auto upload trained model"
 
-# ------------------- 模型训练代码（和之前完全一致） -------------------
 def upload_file_to_github(file_path):
-    """Python 内置函数上传文件到 GitHub，无任何外部依赖"""
+    if not GITHUB_TOKEN:
+        print("⚠️ 未检测到GitHub Token，跳过上传")
+        return
     try:
         with open(file_path, "rb") as f:
             content = base64.b64encode(f.read()).decode("utf-8")
@@ -40,14 +40,11 @@ def upload_file_to_github(file_path):
         req.add_header("Content-Type", "application/json")
         
         with urllib.request.urlopen(req) as f:
-            print(f"✅ 模型上传成功！状态码: {f.getcode()}")
-            print(f"📁 文件路径: {FILE_PATH}")
-    except HTTPError as e:
-        print(f"❌ 上传失败: {e.read().decode()}")
+            print(f"✅ 模型上传成功！")
     except Exception as e:
-        print(f"❌ 错误: {str(e)}")
+        print(f"❌ 上传失败: {str(e)}")
 
-# 1. 基础配置
+# 以下是原训练代码（完全不变）
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"使用设备: {device}")
 
@@ -58,13 +55,11 @@ num_classes = 10
 data_dir = "./data"
 model_save_path = "./mnist_light_model.pth"
 
-# 2. 数据预处理
 transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.1307,), (0.3081,))
 ])
 
-# 3. 加载数据集
 print("正在加载MNIST官方数据集...")
 train_dataset = datasets.MNIST(root=data_dir, train=True, download=True, transform=transform)
 test_dataset = datasets.MNIST(root=data_dir, train=False, download=True, transform=transform)
@@ -74,7 +69,6 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num
 
 print(f"数据集加载完成：训练集 {len(train_dataset)} 张，测试集 {len(test_dataset)} 张")
 
-# 4. 轻量CNN模型
 class LightWeightCNN(nn.Module):
     def __init__(self, num_classes=10):
         super().__init__()
@@ -101,11 +95,9 @@ class LightWeightCNN(nn.Module):
 model = LightWeightCNN(num_classes=num_classes).to(device)
 print(f"模型初始化完成，总参数量：{sum(p.numel() for p in model.parameters())}")
 
-# 5. 训练配置
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-# 6. 训练函数
 def train_epoch(model, loader, criterion, optimizer, device):
     model.train()
     total_loss = 0.0
@@ -126,7 +118,6 @@ def train_epoch(model, loader, criterion, optimizer, device):
     acc = 100.0 * correct / total
     return avg_loss, acc
 
-# 测试函数
 def test_model(model, loader, criterion, device):
     model.eval()
     total_loss = 0.0
@@ -145,7 +136,6 @@ def test_model(model, loader, criterion, device):
     acc = 100.0 * correct / total
     return avg_loss, acc
 
-# 7. 开始训练
 print(f"开始训练，共 {epochs} 轮...")
 for epoch in range(1, epochs + 1):
     print(f"\n===== 轮次 {epoch}/{epochs} =====")
@@ -154,11 +144,9 @@ for epoch in range(1, epochs + 1):
     print(f"训练 | 损失: {train_loss:.4f} | 准确率: {train_acc:.2f}%")
     print(f"测试 | 损失: {test_loss:.4f} | 准确率: {test_acc:.2f}%")
 
-# 8. 保存模型
 torch.save(model.state_dict(), model_save_path)
 print(f"\n训练完成！模型已保存至: {model_save_path}")
 print(f"最终测试集准确率: {test_acc:.2f}%")
 
-# ===================== 【核心：训练完成自动上传】 =====================
 print("\n正在上传模型到 GitHub...")
 upload_file_to_github(model_save_path)
