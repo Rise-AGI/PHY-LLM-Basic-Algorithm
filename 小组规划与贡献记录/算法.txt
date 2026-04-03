@@ -1,0 +1,18 @@
+-1.qwen源代码
+
+0. 基础：SFT
+
+1. 参数高效微调 (PEFT)
+    LoRA (Low-Rank Adaptation)
+    QLoRA (Quantized LoRA)
+    DoRA (Weight-Decomposed Low-Rank Adaptation)
+
+2. 全参数微调 (Full Fine-Tuning, FFT)
+    FFT + DeepSpeed (ZeRO-2 / ZeRO-3)
+    FSDP
+
+3. 前沿显存优化算法
+    GaLore (Gradient Low-Rank Projection)
+
+直接偏好优化 (DPO / ORPO / KTO)
+长上下文微调 (Long Context Fine-Tuning) + RingAttention
