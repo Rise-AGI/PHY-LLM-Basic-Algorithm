@@ -14,5 +14,6 @@
 3. 前沿显存优化算法
     GaLore (Gradient Low-Rank Projection)
 
-直接偏好优化 (DPO / ORPO / KTO)
+直接偏好优化(必要前置应该有PPO) (DPO / ORPO / KTO)
+ppo参考网站https://spinningup.openai.com/en/latest/algorithms/ppo.html
 长上下文微调 (Long Context Fine-Tuning) + RingAttention
