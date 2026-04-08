@@ -1,0 +1,91 @@
+# -*- coding: utf-8 -*-
+"""
+Magnus 平台 → GitHub 文件上传工具库
+✅ 纯Python内置库 | ✅ 无依赖 | ✅ 自动同路径上传 | ✅ 支持覆盖
+调用规则：
+1. 自动模式：main(令牌, 本地路径) → GitHub路径 = 本地路径
+2. 自定义模式：main(令牌, 本地路径, GitHub自定义路径)
+"""
+import base64
+import json
+import urllib.request
+import os
+from urllib.error import HTTPError
+
+# 固定团队仓库配置（无需修改）
+REPO = "Rise-AGI/PHY-LLM-Basic-Algorithm"
+BRANCH = "main"
+
+def _get_remote_sha(token: str, github_path: str):
+    """内部：获取GitHub文件SHA，用于覆盖上传"""
+    url = f"https://api.github.com/repos/{REPO}/contents/{github_path}"
+    try:
+        req = urllib.request.Request(url)
+        req.add_header("Authorization", f"token {token}")
+        with urllib.request.urlopen(req) as resp:
+            return json.load(resp).get("sha")
+    except:
+        return None
+
+def magnus_github_upload(github_token: str, local_file_path: str, github_file_path: str = None):
+    """
+    核心上传函数
+    :param github_token: GitHub PAT 令牌（ghp_/github_pat_）
+    :param local_file_path: Magnus 本地文件相对路径
+    :param github_file_path: GitHub 目标路径（默认=本地路径）
+    """
+    # ================= 自动路径逻辑 =================
+    if github_file_path is None:
+        github_file_path = local_file_path.strip()
+        print(f"[自动路径] GitHub目标路径 = {github_file_path}")
+
+    # 基础校验
+    token = github_token.strip()
+    local_path = local_file_path.strip()
+    if not token:
+        print("[错误] GitHub令牌不能为空")
+        return
+    if not os.path.isfile(local_path):
+        print(f"[错误] 本地文件不存在：{local_path}")
+        return
+
+    # 读取文件
+    try:
+        with open(local_path, "rb") as f:
+            content = base64.b64encode(f.read()).decode("utf-8")
+    except Exception as e:
+        print(f"[错误] 文件读取失败：{str(e)}")
+        return
+
+    # 构造请求
+    url = f"https://api.github.com/repos/{REPO}/contents/{github_file_path}"
+    payload = {
+        "message": f"auto upload: {os.path.basename(local_path)}",
+        "content": content,
+        "branch": BRANCH
+    }
+
+    # 覆盖已有文件
+    sha = _get_remote_sha(token, github_file_path)
+    if sha:
+        payload["sha"] = sha
+        print("[信息] 检测到同名文件，自动覆盖")
+
+    # 发送上传
+    try:
+        req = urllib.request.Request(url, data=json.dumps(payload).encode(), method="PUT")
+        req.add_header("Authorization", f"token {token}")
+        req.add_header("Content-Type", "application/json")
+        req.add_header("User-Agent", "Magnus-Upload")
+
+        with urllib.request.urlopen(req):
+            print("="*50)
+            print("✅ 上传成功！")
+            print(f"本地：{local_path}")
+            print(f"远程：{github_file_path}")
+            print("="*50)
+    except HTTPError as e:
+        print(f"❌ 上传失败 HTTP {e.code}")
+        print("403=令牌权限不足 | 404=路径错误 | 422=缺少SHA")
+    except Exception as e:
+        print(f"❌ 上传异常：{str(e)}")
