@@ -8,6 +8,10 @@ try:
     import mytools1
 except ImportError:
     mytools1 = None
+try:
+    TOKEN = os.getenv("GITHUB_TOKEN")
+except ImportError:
+    TOKEN = None
 
 # ==================== 激活函数 (CuPy GPU) ====================
 def sigmoid(z):
@@ -175,7 +179,6 @@ if __name__ == "__main__":
     generate_report(nn, X, Y, pred, loss_history, log_interval, HTML_PATH, MD_PATH)
 
     # GitHub 自动上传
-    TOKEN = os.getenv("GITHUB_TOKEN")
     if mytools1 and TOKEN:
         try:
             print("☁️ 开始上传文件到 GitHub...")
