@@ -4,6 +4,7 @@ import cupy as cp
 import plotly.graph_objects as go
 
 # 工具库兼容
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
     import mytools1
 except ImportError:
