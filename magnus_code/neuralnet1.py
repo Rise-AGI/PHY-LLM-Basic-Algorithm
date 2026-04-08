@@ -74,7 +74,7 @@ for i in range(epochs):
     A2 = sigmoid(Z2)
     
     # 计算损失 (MSE)
-    loss = np.mean((Y - A2) ** 2)/(2*m)
+    loss = np.mean((Y - A2) ** 2)
     loss_history.append(loss)
     # --- 第二步：反向传播 (Backward Pass) --- # 除以样本数 m
     # 输出层误差
