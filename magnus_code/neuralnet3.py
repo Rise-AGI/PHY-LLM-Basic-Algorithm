@@ -178,8 +178,21 @@ if __name__ == "__main__":
     TOKEN = os.getenv("GITHUB_TOKEN")
     if mytools1 and TOKEN:
         try:
-            mytools1.magnus_github_upload(github_token=TOKEN, local_file_path=MD_PATH)
-            mytools1.magnus_github_upload(github_token=TOKEN, local_file_path=HTML_PATH)
-            print("☁️ 上传 GitHub 成功！")
+            print("☁️ 开始上传文件到 GitHub...")
+            # 上传报告（指定仓库路径：magnus_code/xxx）
+            mytools1.magnus_github_upload(
+                github_token=TOKEN,
+                local_file_path=MD_PATH,
+                github_file_path="magnus_code/training_report.md"
+            )
+            # 上传曲线
+            mytools1.magnus_github_upload(
+                github_token=TOKEN,
+                local_file_path=HTML_PATH,
+                github_file_path="magnus_code/loss_curve.html"
+            )
+            print("✅ 所有文件上传 GitHub 成功！")
         except Exception as e:
-            print(f"❌ 上传失败: {e}")
+            print(f"❌ 上传失败: {str(e)}")
+    else:
+        print("[日志] 未配置 TOKEN 或未找到 mytools1，跳过上传")
