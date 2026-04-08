@@ -19,9 +19,9 @@ dL = (Y-A2) dA2 =(Y-A2) sigmoid_deriv(Z2)
 
 '''
 
-
-import matplotlib.pyplot as plt
+import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import numpy as np
 plt.rcParams['axes.unicode_minus'] = False
 # 1. 定义激活函数 ReLU
