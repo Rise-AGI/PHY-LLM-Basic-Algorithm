@@ -18,11 +18,12 @@ loss = np.mean((Y - A2) ** 2)
 dL = (Y-A2) dA2 =(Y-A2) sigmoid_deriv(Z2)
 
 '''
-
+import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
+
 plt.rcParams['axes.unicode_minus'] = False
 # 1. 定义激活函数 ReLU
 def relu(z):
@@ -110,7 +111,10 @@ plt.ylabel('Loss ')
 plt.title('XOR Neural Network Training Loss Curve')
 plt.grid(True, alpha=0.3)
 plt.legend()
-plt.savefig("magnus_code/xor_loss_curve.png", dpi=300, bbox_inches='tight')
+SAVE_PATH = "/magnus/workspace/repository/xor_loss_curve.png"
+plt.savefig(SAVE_PATH, dpi=300)
 plt.close()
 
-
+# 打印验证（日志里能看到，确认文件生成）
+print(f"[日志] 图片保存路径: {SAVE_PATH}")
+print(f"[日志] 文件是否生成: {os.path.exists(SAVE_PATH)}")
