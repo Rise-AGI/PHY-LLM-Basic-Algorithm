@@ -48,7 +48,7 @@ m = 4                         # 4个样本
 
 # 3. 初始化参数 (权重和偏置随机开始)
 input_size = 2    # 输入层 2 个神经元
-hidden_size = 400   # 隐藏层 4 个神经元
+hidden_size = int(input(hidden_size))   # 隐藏层 4 个神经元
 output_size = 1   # 输出层 1 个神经元
 
 # 随机初始化权重
@@ -58,7 +58,7 @@ W2 = np.random.randn(output_size, hidden_size)
 b2 = np.zeros((output_size, 1))
 
 learning_rate = 0.1
-epochs = 150000*1000 # 训练 k 次
+epochs = 1000*int(input('epochs(k)')) # 训练 k 次
 
 # 4. 训练循环 (前向传播 + 反向传播)
 for i in range(epochs):
