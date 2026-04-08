@@ -1,9 +1,15 @@
 import os
-import numpy as np  # 保留 numpy 用于 CPU 端数据类型转换
-import cupy as cp   # 引入 cupy
-import plotly.graph_objects as go # 替代 matplotlib
-import mytools1
+import numpy as np
+import cupy as cp
+import plotly.graph_objects as go
 from plotly.io import write_html
+
+# 导入你的工具库（保留）
+try:
+    import mytools1
+except ImportError:
+    mytools1 = None
+    print("[警告] 未找到 mytools1 库，自动上传功能将跳过")
 
 # ==========================================
 # 1. 激活函数库 (使用 Cupy)
@@ -90,7 +96,6 @@ class FlexibleNN:
 # 3. 辅助函数：生成 Markdown 文档 & Plotly 绘图
 # ==========================================
 def matrix_to_latex(mat_gpu, name):
-    """将 Cupy 矩阵转回 CPU 并转换为 LaTeX 字符串"""
     mat = cp.asnumpy(mat_gpu) 
     if mat.size > 100: 
         return f"${name} \\in \\mathbb{{R}}^{{{mat.shape[0]} \\times {mat.shape[1]}}}$ (内容过长省略)"
@@ -99,10 +104,9 @@ def matrix_to_latex(mat_gpu, name):
         formatted_row = " & ".join([f"{x:.4f}" for x in row])
         lines.append(formatted_row)
     body = " \\\\ ".join(lines)
-    return f"$$ {name} = \\begin{{bmatrix}} {body} \\end{{bmatrix}} $$"
+    return f"$$ {name} = \\begin{bmatrix} {body} \\end{bmatrix} $$"
 
 def plot_loss_curve_plotly(loss_history, save_path_html):
-    """使用 Plotly 绘制损失曲线并保存为 HTML"""
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         y=loss_history, 
@@ -123,9 +127,6 @@ def plot_loss_curve_plotly(loss_history, save_path_html):
     print(f"[日志] 交互式图表已保存: {save_path_html}")
 
 def generate_markdown_report(nn, X_gpu, Y_gpu, final_A_gpu, loss_history, log_interval, save_path_html, save_path_md):
-    """生成完整的 Markdown 报告"""
-    
-    # 构建 Loss 表格
     table_rows = []
     for i in range(0, len(loss_history), log_interval):
         table_rows.append({"Epoch": i, "Loss": f"{loss_history[i]:.6f}"})
@@ -182,7 +183,7 @@ if __name__ == "__main__":
                       [0, 1, 0, 1]])
     Y_cpu = np.array([[0, 1, 1, 0]])
     
-    # 网络结构
+    # 网络结构（可自由修改）
     layer_dimensions = [2, 40, 1] 
     
     activation_functions = [
@@ -191,10 +192,10 @@ if __name__ == "__main__":
     ]
     
     learning_rate = 0.5
-    epochs = 15000
+    epochs = 1000*15
     log_interval = 3000
     
-    # 路径配置：强制保存在脚本所在的目录
+    # 路径配置：脚本所在目录（绝对稳定）
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     HTML_PATH = os.path.join(SCRIPT_DIR, "xor_loss_curve.html")
     MD_PATH = os.path.join(SCRIPT_DIR, "training_report.md")
@@ -224,29 +225,27 @@ if __name__ == "__main__":
     print(f"Epoch {epochs:5d} | Loss: {loss_history[-1]:.6f}")
     print("训练完成！")
 
-    # --- 使用 Plotly 绘图 (生成 HTML) ---
+    # --- 绘图 + 生成报告 ---
     plot_loss_curve_plotly(loss_history, HTML_PATH)
-
-    # --- 生成报告 ---
     final_A, _ = nn.forward(X)
     generate_markdown_report(nn, X, Y, final_A, loss_history, log_interval, HTML_PATH, MD_PATH)
 
-
-
-# 从环境变量读取令牌（安全，无明文）
-TOKEN = os.getenv("GITHUB_TOKEN")
-# 自动上传：本地路径 = GitHub路径
-mytools1.magnus_github_upload(
-    github_token=TOKEN,
-    local_file_path="python magnus_code/training_report.md"
-)
-mytools1.magnus_github_upload(
-    github_token=TOKEN,
-    local_file_path="python magnus_code/xor_loss_curve.html"
-)
-
-''' 入口指令cmd
-pip install plotly
-GITHUB_TOKEN=" " python magnus_code/neuralnet.py
-
-'''
+    # ==========================================
+    # 自动上传到 GitHub（修复路径+容错处理）
+    # ==========================================
+    TOKEN = os.getenv("GITHUB_TOKEN")
+    if mytools1 and TOKEN:
+        try:
+            mytools1.magnus_github_upload(
+                github_token=TOKEN,
+                local_file_path=MD_PATH
+            )
+            mytools1.magnus_github_upload(
+                github_token=TOKEN,
+                local_file_path=HTML_PATH
+            )
+            print("[日志] 文件自动上传 GitHub 完成！")
+        except Exception as e:
+            print(f"[错误] 上传失败: {e}")
+    else:
+        print("[日志] 未配置 TOKEN 或 mytools1，跳过自动上传")
