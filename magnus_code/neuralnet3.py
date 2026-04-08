@@ -1,22 +1,19 @@
-# 工具库兼容
-import magnus_code
-import sys
 import os
 import numpy as np
 import cupy as cp
+import plotly.graph_objects as go
 
+# 原始导入（不修改！）
 try:
-    import magnus_code.mytools1
+    import mytools1
 except ImportError:
     mytools1 = None
-    print("mytools1 = None")
+
 try:
     TOKEN = os.getenv("GITHUB_TOKEN")
-except ImportError:
+except:
     TOKEN = None
-    print("TOKEN = None")
 
-import plotly.graph_objects as go
 # ==================== 激活函数 (CuPy GPU) ====================
 def sigmoid(z):
     return 1 / (1 + cp.exp(-z))
@@ -89,7 +86,6 @@ class FlexibleNN:
             self.parameters[f'b{i}'] -= lr * grads[f'db{i}']
 
 # ==================== 报告生成 ====================
-# ==================== 修复后的矩阵转LaTeX函数 ====================
 def matrix_to_latex(mat_gpu, name):
     mat = cp.asnumpy(mat_gpu)
     if mat.size > 100:
@@ -104,12 +100,10 @@ def plot_loss(loss_hist, html_path):
     fig.write_html(html_path)
 
 def generate_report(nn, X, Y, pred, loss_hist, interval, html_path, md_path):
-    # 损失表格
     table = "| Epoch | Loss |\n|-------|------|\n"
     for i in range(0, len(loss_hist), interval):
         table += f"| {i} | {loss_hist[i]:.6f} |\n"
     
-    # 生成Markdown
     content = f"""# 神经网络训练报告 (CuPy GPU)
 ## 网络结构
 {nn.layer_dims}
@@ -133,7 +127,6 @@ def generate_report(nn, X, Y, pred, loss_hist, interval, html_path, md_path):
 
 # ==================== 主程序 ====================
 if __name__ == "__main__":
-    # ============== 【仅修改这里的参数】 ==============
     # 数据集
     X_cpu = np.array([[0,0,1,1],[0,1,0,1]])
     Y_cpu = np.array([[0,1,1,0]])
@@ -147,11 +140,10 @@ if __name__ == "__main__":
     epochs = 15000
     log_interval = 3000
 
-    # 文件路径（脚本所在目录，自动生成）
+    # 文件路径
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     HTML_PATH = os.path.join(SCRIPT_DIR, "loss_curve.html")
     MD_PATH = os.path.join(SCRIPT_DIR, "training_report.md")
-    # ==================================================
 
     # 数据加载到GPU
     X = cp.array(X_cpu)
@@ -176,34 +168,20 @@ if __name__ == "__main__":
 
     print("🎉 训练完成！")
 
-    # ==================== 核心修复：备份变量 + 释放显存 ====================
-    # 1. 先把需要的结果备份到CPU（防止被删除后报错）
+    # 你要求的：主动显存释放
     final_pred = pred
-    # 2. 主动释放GPU显存（你要求的唯一优化）
     del pred, cache, grads, X, Y
     cp.get_default_memory_pool().free_all_blocks()
-    # ======================================================================
     
-    # 生成输出文件（使用备份的变量，不报错）
+    # 生成文件
     plot_loss(loss_history, HTML_PATH)
     generate_report(nn, cp.array(X_cpu), cp.array(Y_cpu), final_pred, loss_history, log_interval, HTML_PATH, MD_PATH)
 
-    # GitHub 自动上传
+    # 上传
     if mytools1 and TOKEN:
         try:
-            print("☁️ 开始上传文件到 GitHub...")
-            mytools1.magnus_github_upload(
-                github_token=TOKEN,
-                local_file_path=MD_PATH,
-                github_file_path="magnus_code/training_report.md"
-            )
-            mytools1.magnus_github_upload(
-                github_token=TOKEN,
-                local_file_path=HTML_PATH,
-                github_file_path="magnus_code/loss_curve.html"
-            )
-            print("✅ 所有文件上传 GitHub 成功！")
+            print("☁️ 开始上传...")
+            mytools1.magnus_github_upload(TOKEN, MD_PATH, "magnus_code/training_report.md")
+            mytools1.magnus_github_upload(TOKEN, HTML_PATH, "magnus_code/loss_curve.html")
         except Exception as e:
-            print(f"❌ 上传失败: {str(e)}")
-    else:
-        print("[日志] 未配置 TOKEN 或未找到 mytools1，跳过上传")
+            print(f"❌ 上传失败: {e}")
