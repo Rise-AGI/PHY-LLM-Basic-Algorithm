@@ -3,7 +3,7 @@ import requests
 TOKEN = "sk-V-v0UMARpccPA_QwXGIoRDc9G2K67XiA"
 MAGNUS_HOST = "http://162.105.151.134:3011"
 HEADERS = {"Authorization": f"Bearer {TOKEN}"}
-JOB_ID = "你的任务ID"  # 替换成上面获取的ID
+JOB_ID = input("你的任务ID")  # 替换成上面获取的ID
 
 # 下载容器内生成的图片文件
 file_path = "magnus_code/xor_loss_curve.png"

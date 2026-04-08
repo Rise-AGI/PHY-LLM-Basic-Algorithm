@@ -113,3 +113,4 @@ plt.legend()
 plt.savefig("magnus_code/xor_loss_curve.png", dpi=300, bbox_inches='tight')
 plt.close()
 
+
