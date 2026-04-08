@@ -48,7 +48,7 @@ m = 4                         # 4个样本
 
 # 3. 初始化参数 (权重和偏置随机开始)
 input_size = 2    # 输入层 2 个神经元
-hidden_size = int(input(hidden_size))   # 隐藏层 4 个神经元
+hidden_size = int(input('hidden_size'))   # 隐藏层 4 个神经元
 output_size = 1   # 输出层 1 个神经元
 
 # 随机初始化权重
