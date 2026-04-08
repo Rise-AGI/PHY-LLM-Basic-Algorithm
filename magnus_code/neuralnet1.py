@@ -58,7 +58,7 @@ W2 = np.random.randn(output_size, hidden_size)
 b2 = np.zeros((output_size, 1))
 
 learning_rate = 0.1
-epochs = 1000*int(input('epochs(k)')) # 训练 k 次
+epochs = 1000*int(input('训练次数epochs(千k)')) # 训练 k 次
 
 # 4. 训练循环 (前向传播 + 反向传播)
 for i in range(epochs):
@@ -93,7 +93,7 @@ for i in range(epochs):
     b2 -= learning_rate * db2
     
     if i % 3000 == 0:
-        print(f"训练次数 {i/1000}k, 当前损失: {loss:.4f}")
+        print(f"训练次数 {int(i/1000)}k, 当前损失: {loss:.4f}")
 
 print("\n训练完成！")
 print("预测结果（理想值：[[0, 1, 1, 0]]）:")
