@@ -112,3 +112,4 @@ plt.grid(True, alpha=0.3)
 plt.legend()
 plt.savefig("xor_loss_curve.png", dpi=300, bbox_inches='tight')
 plt.close()
+
