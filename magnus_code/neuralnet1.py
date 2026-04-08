@@ -110,6 +110,6 @@ plt.ylabel('Loss ')
 plt.title('XOR Neural Network Training Loss Curve')
 plt.grid(True, alpha=0.3)
 plt.legend()
-plt.savefig("xor_loss_curve.png", dpi=300, bbox_inches='tight')
+plt.savefig("magnus_code/xor_loss_curve.png", dpi=300, bbox_inches='tight')
 plt.close()
 
