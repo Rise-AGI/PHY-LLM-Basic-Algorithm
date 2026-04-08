@@ -3,16 +3,23 @@ import numpy as np
 import cupy as cp
 import plotly.graph_objects as go
 
-# 原始导入（不修改！）
+# 原始导入（不修改，加日志排查）
+mytools1 = None
+TOKEN = None
 try:
     import mytools1
-except ImportError:
-    mytools1 = None
+    print("✅ mytools1 导入成功！")  # 加日志，确认是否导入
+except ImportError as e:
+    print(f"❌ mytools1 导入失败: {e}")
 
 try:
     TOKEN = os.getenv("GITHUB_TOKEN")
-except:
-    TOKEN = None
+    if TOKEN:
+        print(f"✅ GITHUB_TOKEN 读取成功: {TOKEN[:5]}...")  # 打印前5位，确认是否读到
+    else:
+        print("❌ GITHUB_TOKEN 为空！")
+except Exception as e:
+    print(f"❌ TOKEN 读取失败: {e}")
 
 # ==================== 激活函数 (CuPy GPU) ====================
 def sigmoid(z):
@@ -177,11 +184,15 @@ if __name__ == "__main__":
     plot_loss(loss_history, HTML_PATH)
     generate_report(nn, cp.array(X_cpu), cp.array(Y_cpu), final_pred, loss_history, log_interval, HTML_PATH, MD_PATH)
 
-    # 上传
+    # 上传（加日志，确保执行）
+    print(f"[日志] mytools1状态: {mytools1}, TOKEN状态: {TOKEN is not None}")  # 加日志，确认条件
     if mytools1 and TOKEN:
         try:
-            print("☁️ 开始上传...")
+            print("☁️ 开始上传文件到 GitHub...")
             mytools1.magnus_github_upload(TOKEN, MD_PATH, "magnus_code/training_report.md")
             mytools1.magnus_github_upload(TOKEN, HTML_PATH, "magnus_code/loss_curve.html")
+            print("✅ 所有文件上传 GitHub 成功！")
         except Exception as e:
-            print(f"❌ 上传失败: {e}")
+            print(f"❌ 上传失败: {str(e)}")
+    else:
+        print("[日志] 跳过上传: mytools1或TOKEN未就绪")
