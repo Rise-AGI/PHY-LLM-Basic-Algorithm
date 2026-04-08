@@ -8,10 +8,12 @@ try:
     import mytools1
 except ImportError:
     mytools1 = None
+    print("mytools1 = None")
 try:
     TOKEN = os.getenv("GITHUB_TOKEN")
 except ImportError:
     TOKEN = None
+    print("TOKEN = None")
 
 # ==================== 激活函数 (CuPy GPU) ====================
 def sigmoid(z):
