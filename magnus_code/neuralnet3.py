@@ -92,9 +92,7 @@ def matrix_to_latex(mat_gpu, name):
     mat = cp.asnumpy(mat_gpu)
     if mat.size > 100:
         return f"${name} \\in \\mathbb{{R}}^{{{mat.shape[0]} \\times {mat.shape[1]}}}$ (内容过长省略)"
-    # 修复：解决字符串转义报错，正确生成LaTeX矩阵
     rows = " \\\\ ".join([" & ".join([f"{x:.4f}" for x in r]) for r in mat])
-    # 关键：用原始字符串格式，避免Python解析错误
     return f"${name} = \\begin{{bmatrix}} {rows} \\end{{bmatrix}}$"
 
 def plot_loss(loss_hist, html_path):
@@ -176,27 +174,27 @@ if __name__ == "__main__":
 
     print("🎉 训练完成！")
 
-    # ==================== 🔥 仅新增：主动释放GPU显存（核心修复）====================
-    del pred, cache, grads, X, Y  # 删除GPU变量引用
-    cp.get_default_memory_pool().free_all_blocks()  # 强制释放CuPy显存
-    cp.get_default_pinned_memory_pool().free_all_blocks()  # 释放锁页内存
-    # ==========================================================================
+    # ==================== 核心修复：备份变量 + 释放显存 ====================
+    # 1. 先把需要的结果备份到CPU（防止被删除后报错）
+    final_pred = pred
+    # 2. 主动释放GPU显存（你要求的唯一优化）
+    del pred, cache, grads, X, Y
+    cp.get_default_memory_pool().free_all_blocks()
+    # ======================================================================
     
-    # 生成输出文件
+    # 生成输出文件（使用备份的变量，不报错）
     plot_loss(loss_history, HTML_PATH)
-    generate_report(nn, cp.array(X_cpu), cp.array(Y_cpu), cp.array(pred), loss_history, log_interval, HTML_PATH, MD_PATH)
+    generate_report(nn, cp.array(X_cpu), cp.array(Y_cpu), final_pred, loss_history, log_interval, HTML_PATH, MD_PATH)
 
     # GitHub 自动上传
     if mytools1 and TOKEN:
         try:
             print("☁️ 开始上传文件到 GitHub...")
-            # 上传报告（指定仓库路径：magnus_code/xxx）
             mytools1.magnus_github_upload(
                 github_token=TOKEN,
                 local_file_path=MD_PATH,
                 github_file_path="magnus_code/training_report.md"
             )
-            # 上传曲线
             mytools1.magnus_github_upload(
                 github_token=TOKEN,
                 local_file_path=HTML_PATH,
