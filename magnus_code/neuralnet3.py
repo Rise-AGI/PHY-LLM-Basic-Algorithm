@@ -175,10 +175,16 @@ if __name__ == "__main__":
             print(f"Epoch {i:5d} | Loss: {loss_history[-1]:.6f}")
 
     print("🎉 训练完成！")
+
+    # ==================== 🔥 仅新增：主动释放GPU显存（核心修复）====================
+    del pred, cache, grads, X, Y  # 删除GPU变量引用
+    cp.get_default_memory_pool().free_all_blocks()  # 强制释放CuPy显存
+    cp.get_default_pinned_memory_pool().free_all_blocks()  # 释放锁页内存
+    # ==========================================================================
     
     # 生成输出文件
     plot_loss(loss_history, HTML_PATH)
-    generate_report(nn, X, Y, pred, loss_history, log_interval, HTML_PATH, MD_PATH)
+    generate_report(nn, cp.array(X_cpu), cp.array(Y_cpu), cp.array(pred), loss_history, log_interval, HTML_PATH, MD_PATH)
 
     # GitHub 自动上传
     if mytools1 and TOKEN:
