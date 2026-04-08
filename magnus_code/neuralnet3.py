@@ -81,12 +81,15 @@ class FlexibleNN:
             self.parameters[f'b{i}'] -= lr * grads[f'db{i}']
 
 # ==================== 报告生成 ====================
+# ==================== 修复后的矩阵转LaTeX函数 ====================
 def matrix_to_latex(mat_gpu, name):
     mat = cp.asnumpy(mat_gpu)
     if mat.size > 100:
         return f"${name} \\in \\mathbb{{R}}^{{{mat.shape[0]} \\times {mat.shape[1]}}}$ (内容过长省略)"
+    # 修复：解决字符串转义报错，正确生成LaTeX矩阵
     rows = " \\\\ ".join([" & ".join([f"{x:.4f}" for x in r]) for r in mat])
-    return f"$$ {name} = \\begin{bmatrix} {rows} \\end{bmatrix} $$"
+    # 关键：用原始字符串格式，避免Python解析错误
+    return f"${name} = \\begin{{bmatrix}} {rows} \\end{{bmatrix}}$"
 
 def plot_loss(loss_hist, html_path):
     fig = go.Figure()
