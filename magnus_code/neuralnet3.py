@@ -4,13 +4,14 @@ import os
 import numpy as np
 import cupy as cp
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+SCRIPT_FOLDER = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, SCRIPT_FOLDER)
 import mytools1
-try:
+'''try:
     import mytools1
 except ImportError:
     mytools1 = None
-    print("mytools1 = None")
+    print("mytools1 = None")'''
 try:
     TOKEN = os.getenv("GITHUB_TOKEN")
 except ImportError:
