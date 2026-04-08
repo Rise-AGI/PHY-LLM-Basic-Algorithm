@@ -1,5 +1,9 @@
 # 工具库兼容
 import sys
+import os
+import numpy as np
+import cupy as cp
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import mytools1
 try:
@@ -12,10 +16,7 @@ try:
 except ImportError:
     TOKEN = None
     print("TOKEN = None")
-    
-import os
-import numpy as np
-import cupy as cp
+
 import plotly.graph_objects as go
 # ==================== 激活函数 (CuPy GPU) ====================
 def sigmoid(z):
