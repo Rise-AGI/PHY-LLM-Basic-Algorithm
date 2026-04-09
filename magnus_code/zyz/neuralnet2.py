@@ -1,4 +1,4 @@
-# magnus_code/neuralnet1.py 【强制生成图片版本】
+# magnus_code/zyz/neuralnet1.py 【强制生成图片版本】
 import numpy as np
 import matplotlib.pyplot as plt
 
