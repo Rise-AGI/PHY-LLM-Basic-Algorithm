@@ -3,25 +3,16 @@ import numpy as np
 import cupy as cp
 import plotly.graph_objects as go
 
-# ==================== 🔥 独立类隔离环境：原封不动内嵌mytools1（无exec）====================
-# 仅新增：class 定义 + 代码缩进，mytools1 内部代码一字不改！
+# ==================== 独立类隔离环境：原封不动内嵌mytools1（无exec）====================
 class MyToolsGitHub:
-    # 👇 直接粘贴你的 mytools1 全部代码（仅缩进，无任何修改）
-    # -*- coding: utf-8 -*-
-    """
-    Magnus 平台 → GitHub 文件上传工具库
-    ✅ 纯Python内置库 | ✅ 无依赖 | ✅ 自动同路径上传 | ✅ 支持覆盖
-    调用规则：
-    1. 自动模式：main(令牌, 本地路径) → GitHub路径 = 本地路径
-    2. 自定义模式：main(令牌, 本地路径, GitHub自定义路径)
-    """
+    # 直接粘贴你的 mytools1 全部代码（仅缩进，无任何修改）
     import base64
     import json
     import urllib.request
     import os
     from urllib.error import HTTPError
 
-    # 固定团队仓库配置（无需修改）
+    # 固定团队仓库配置
     REPO = "Rise-AGI/PHY-LLM-Basic-Algorithm"
     BRANCH = "main"
 
@@ -39,18 +30,11 @@ class MyToolsGitHub:
 
     @classmethod
     def magnus_github_upload(cls, github_token: str, local_file_path: str, github_file_path: str = None):
-        """
-        核心上传函数
-        :param github_token: GitHub PAT 令牌（ghp_/github_pat_）
-        :param local_file_path: Magnus 本地文件相对路径
-        :param github_file_path: GitHub 目标路径（默认=本地路径）
-        """
-        # ================= 自动路径逻辑 =================
+        """核心上传函数"""
         if github_file_path is None:
             github_file_path = local_file_path.strip()
             print(f"[自动路径] GitHub目标路径 = {github_file_path}")
 
-        # 基础校验
         token = github_token.strip()
         local_path = local_file_path.strip()
         if not token:
@@ -60,7 +44,6 @@ class MyToolsGitHub:
             print(f"[错误] 本地文件不存在：{local_path}")
             return
 
-        # 读取文件
         try:
             with open(local_path, "rb") as f:
                 content = cls.base64.b64encode(f.read()).decode("utf-8")
@@ -68,7 +51,6 @@ class MyToolsGitHub:
             print(f"[错误] 文件读取失败：{str(e)}")
             return
 
-        # 构造请求
         url = f"https://api.github.com/repos/{cls.REPO}/contents/{github_file_path}"
         payload = {
             "message": f"auto upload: {cls.os.path.basename(local_path)}",
@@ -76,13 +58,11 @@ class MyToolsGitHub:
             "branch": cls.BRANCH
         }
 
-        # 覆盖已有文件
         sha = cls._get_remote_sha(token, github_file_path)
         if sha:
             payload["sha"] = sha
             print("[信息] 检测到同名文件，自动覆盖")
 
-        # 发送上传
         try:
             req = cls.urllib.request.Request(url, data=cls.json.dumps(payload).encode(), method="PUT")
             req.add_header("Authorization", f"token {token}")
@@ -91,15 +71,15 @@ class MyToolsGitHub:
 
             with cls.urllib.request.urlopen(req):
                 print("="*50)
-                print("上传成功！")
+                print("✅ 上传成功！")
                 print(f"本地：{local_path}")
                 print(f"远程：{github_file_path}")
                 print("="*50)
         except cls.HTTPError as e:
-            print(f"上传失败 HTTP {e.code}")
+            print(f"❌ 上传失败 HTTP {e.code}")
             print("403=令牌权限不足 | 404=路径错误 | 422=缺少SHA")
         except Exception as e:
-            print(f"上传异常：{str(e)}")
+            print(f"❌ 上传异常：{str(e)}")
 # ======================================================================================
 
 # ==================== 激活函数 (CuPy GPU) ====================
@@ -123,7 +103,7 @@ def linear(z):
 def linear_deriv(z):
     return z
 
-# ==================== 神经网络 (CuPy GPU) ====================
+# ==================== 神经网络 ====================
 class FlexibleNN:
     def __init__(self, layer_dims, activations):
         self.layer_dims = layer_dims
@@ -173,13 +153,15 @@ class FlexibleNN:
             self.parameters[f'W{i}'] -= lr * grads[f'dW{i}']
             self.parameters[f'b{i}'] -= lr * grads[f'db{i}']
 
-# ==================== 报告生成 ====================
+# ==================== 报告生成（修复LaTeX报错）====================
 def matrix_to_latex(mat_gpu, name):
+    # 🔥 修复：使用原始字符串，避免f-string转义错误
     mat = cp.asnumpy(mat_gpu)
     if mat.size > 100:
-        return f"${name} \\in \\mathbb{{R}}^{{{mat.shape[0]} \\times {mat.shape[1]}}}$"
+        return f"${name} \\in \\mathbb{{R}}^{{{mat.shape[0]}}} \\times \\mathbb{{R}}^{{{mat.shape[1]}}}$"
     rows = " \\\\ ".join([" & ".join([f"{x:.4f}" for x in r]) for r in mat])
-    return f"${name} = \\begin{{bmatrix}} {rows} \\end{bmatrix}$"
+    # 核心修复：用原始字符串r'' 解决 bmatrix 变量报错
+    return rf"${name} = \begin{{bmatrix}} {rows} \end{{bmatrix}}$"
 
 def plot_loss(loss_hist, html_path):
     fig = go.Figure()
@@ -192,44 +174,50 @@ def generate_report(nn, X, Y, pred, loss_hist, interval, html_path, md_path):
     for i in range(0, len(loss_hist), interval):
         table += f"| {i} | {loss_hist[i]:.6f} |\n"
     
-    content = f"""# 神经网络训练报告
-## 网络结构 {nn.layer_dims}
-## 损失变化
+    content = f"""# CuPy 神经网络训练报告
+## 网络结构
+{nn.layer_dims}
+## 训练损失
 {table}
-## 预测结果
-真实: {matrix_to_latex(Y, 'Y')}
-预测: {matrix_to_latex(pred, 'A')}
+## 数据与预测
+输入矩阵: {matrix_to_latex(X, 'X')}
+标签矩阵: {matrix_to_latex(Y, 'Y')}
+预测结果: {matrix_to_latex(pred, 'A')}
 """
     with open(md_path, 'w', encoding='utf-8') as f:
         f.write(content)
-    print(f"报告已生成: {md_path}")
-    print(f"曲线已生成: {html_path}")
+    print(f"✅ 报告已生成: {md_path}")
+    print(f"✅ 曲线已生成: {html_path}")
 
 # ==================== 主程序 ====================
 if __name__ == "__main__":
     TOKEN = os.getenv("GITHUB_TOKEN")
     
-    # 数据集
-    X_cpu = np.array([[0,0,1,1],[0,1,0,1]])
-    Y_cpu = np.array([[0,1,1,0]])
+    # 原始数据集（固定输入，兼容你的训练逻辑）
+    X_cpu = np.array([[0,0],[0,1],[1,0],[1,1]])
+    Y_cpu = np.array([[0],[1],[1],[0]])
     
+    # 网络配置
     layer_dimensions = [2, 40, 1]
     activation_functions = [(sigmoid, sigmoid_deriv), (sigmoid, sigmoid_deriv)]
     learning_rate = 0.5
     epochs = 15000
     log_interval = 3000
 
+    # 文件路径
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     HTML_PATH = os.path.join(SCRIPT_DIR, "loss_curve.html")
     MD_PATH = os.path.join(SCRIPT_DIR, "training_report.md")
 
-    X = cp.array(X_cpu)
-    Y = cp.array(Y_cpu)
+    # GPU数据
+    X = cp.array(X_cpu, dtype=cp.float32)
+    Y = cp.array(Y_cpu, dtype=cp.float32)
     m = X.shape[1]
 
+    # 训练
     nn = FlexibleNN(layer_dimensions, activation_functions)
     loss_history = []
-    print("CuPy GPU 训练开始...")
+    print("🚀 CuPy GPU 训练开始...")
 
     for i in range(epochs):
         pred, cache = nn.forward(X)
@@ -240,24 +228,24 @@ if __name__ == "__main__":
         if i % log_interval == 0:
             print(f"Epoch {i:5d} | Loss: {loss_history[-1]:.6f}")
 
-    print("训练完成！")
+    print("🎉 训练完成！")
 
     # 主动显存释放
     final_pred = pred
     del pred, cache, grads, X, Y
     cp.get_default_memory_pool().free_all_blocks()
 
-    # 生成文件
+    # 生成报告（修复后无报错）
     plot_loss(loss_history, HTML_PATH)
     generate_report(nn, cp.array(X_cpu), cp.array(Y_cpu), final_pred, loss_history, log_interval, HTML_PATH, MD_PATH)
 
-    # 🔥 调用独立类中的上传函数（无exec、无导入、完美隔离）
+    # 上传文件
     if TOKEN:
         try:
-            print("开始上传...")
+            print("☁️ 开始上传...")
             MyToolsGitHub.magnus_github_upload(TOKEN, MD_PATH, "magnus_code/training_report.md")
             MyToolsGitHub.magnus_github_upload(TOKEN, HTML_PATH, "magnus_code/loss_curve.html")
         except Exception as e:
             print(f"❌ 上传失败: {str(e)}")
     else:
-        print("[日志] 未配置TOKEN，跳过上传")
+        print("[日志] 未配置GITHUB_TOKEN，跳过上传")
