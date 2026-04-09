@@ -13,7 +13,7 @@ from urllib.error import HTTPError
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()
 
 REPO = "Rise-AGI/PHY-LLM-Basic-Algorithm"
-FILE_PATH = "magnus_code/mnist_light_model.pth"
+FILE_PATH = "magnus_code/zyz/mnist_light_model.pth"
 BRANCH = "main"
 COMMIT_MSG = "auto upload trained model"
 

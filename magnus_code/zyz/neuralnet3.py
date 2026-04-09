@@ -239,7 +239,7 @@ if __name__ == "__main__":
     # 上传文件
     if TOKEN:
         print("\n☁️ 开始上传文件到 GitHub...")
-        MyToolsGitHub.magnus_github_upload(TOKEN, MD_PATH, "magnus_code/training_report.md")
-        MyToolsGitHub.magnus_github_upload(TOKEN, HTML_PATH, "magnus_code/loss_curve.html")
+        MyToolsGitHub.magnus_github_upload(TOKEN, MD_PATH, "magnus_code/zyz/training_report.md")
+        MyToolsGitHub.magnus_github_upload(TOKEN, HTML_PATH, "magnus_code/zyz/loss_curve.html")
     else:
         print("\n[日志] 未配置GITHUB_TOKEN，跳过上传")
