@@ -20,6 +20,9 @@ CSV_PATH = "dataset.csv"  # CSV数据路径（仅CSV模式生效）
 def load_csv_data(csv_path):
     """从CSV加载数据：最后一列是标签，前面是特征"""
     X_list, Y_list = [], []
+    if not os.path.exists(csv_path):
+        print(f"❌ CSV文件不存在：{csv_path}，自动切换为手动数据")
+        return None, None
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader)  # 跳过表头
@@ -32,16 +35,27 @@ def load_csv_data(csv_path):
     print(f"✅ CSV数据加载完成 | 输入形状:{X.shape} | 标签形状:{Y.shape}")
     return X, Y
 
-# ==================== 工具：权重W/偏置B导出为CSV ====================
+# ==================== 工具：权重W/偏置B导出为CSV（修复版）====================
 def save_params_to_csv(params, save_dir="trained_params", epoch="final"):
-    """保存每层W/B矩阵为CSV文件"""
+    """保存每层W/B矩阵为CSV文件，100%生成"""
+    # 强制创建目录
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    save_dir = os.path.join(base_dir, save_dir)
     os.makedirs(save_dir, exist_ok=True)
+    
     for key, value in params.items():
-        # CuPy转NumPy保存
+        # CuPy转NumPy
         mat = cp.asnumpy(value)
-        file_path = os.path.join(save_dir, f"{key}_epoch_{epoch}.csv")
-        np.savetxt(file_path, mat, delimiter=",", fmt="%.6f")
-    print(f"✅ 【{epoch}轮】参数已保存至 {save_dir}/")
+        # 拼接完整文件路径
+        file_name = f"{key}_epoch_{epoch}.csv"
+        file_path = os.path.join(save_dir, file_name)
+        
+        # 保存为CSV（标准格式）
+        with open(file_path, 'w', newline='') as f:
+            writer = csv.writer(f)
+            for row in mat:
+                writer.writerow([f"{x:.6f}" for x in row])
+    print(f"✅ 【{epoch}轮】W/B参数CSV已保存至：{save_dir}")
 
 # ==================== Class 上传工具（原版风格保留）====================
 class MyToolsGitHub:
@@ -92,8 +106,8 @@ class MyToolsGitHub:
                 print("="*50)
                 print(f"✅ 上传成功：{github_file_path}")
                 print("="*50)
-        except:
-            print("❌ 上传失败")
+        except Exception as e:
+            print(f"❌ 上传失败：{str(e)}")
 
 # ==================== 激活函数 ====================
 def sigmoid(z):
@@ -144,29 +158,72 @@ class FlexibleNet:
             self.params[f'W{i}'] -= lr * grads[f'dW{i}']
             self.params[f'b{i}'] -= lr * grads[f'db{i}']
 
-# ==================== 报告 + 绘图 ====================
-def generate_full_report(loss_history, layer_dims, md_path):
+# ==================== 【修复】完整详细报告生成 ====================
+def generate_full_report(loss_history, layer_dims, data_mode, md_path):
     final_loss = loss_history[-1]
     structure = " → ".join(map(str, layer_dims))
-    log_loss = f"Epoch 0:{loss_history[0]:.6f} | 3000:{loss_history[3000]:.6f} | 6000:{loss_history[6000]:.6f} | 9000:{loss_history[9000]:.6f} | 12000:{loss_history[12000]:.6f}"
+    
+    # 完整损失记录
+    log_loss = f"""
+Epoch 0      | Loss: {loss_history[0]:.6f}
+Epoch 3000   | Loss: {loss_history[3000]:.6f}
+Epoch 6000   | Loss: {loss_history[6000]:.6f}
+Epoch 9000   | Loss: {loss_history[9000]:.6f}
+Epoch 12000  | Loss: {loss_history[12000]:.6f}
+"""
+    # 超详细报告内容
     report = f"""# CuPy 神经网络训练报告
-## 模型结构：{structure}
-## 最终损失：{final_loss:.6f}
-## 训练状态：{'✅ 收敛' if final_loss<0.01 else '⚠️ 未收敛'}
-## 参数文件：trained_params/ 目录下(W1/b1等CSV矩阵)
+## 一、模型基础信息
+- 模型类型：全连接神经网络
+- 网络结构：{structure}
+- 运行环境：CuPy GPU 加速
+- 数据来源：{'手动导入(异或数据集)' if data_mode=='manual' else 'CSV文件导入'}
+
+## 二、训练超参数
+- 总训练轮次：{EPOCHS}
+- 学习率：{LEARNING_RATE}
+- 激活函数：Sigmoid
+- 损失函数：均方误差(MSE)
+- 参数保存间隔：每{LOG_INTERVAL}轮保存一次
+
+## 三、训练损失详情
+{log_loss}
+- 最终损失值：{final_loss:.6f}
+
+## 四、训练状态
+{'✅ 模型收敛成功' if final_loss < 0.01 else '⚠️ 模型未收敛，建议调整学习率/网络结构'}
+
+## 五、参数文件说明
+1. 训练中参数：`trained_params/W1_epoch_3000.csv` 等（每3000轮权重）
+2. 最终模型参数：`trained_params/*_epoch_final.csv`
+3. 文件格式：标准CSV，可直接用Excel/Python查看
+
+## 六、输出文件
+- `loss_curve.html`：训练损失可视化曲线
+- `training_report.md`：本训练报告
+- `trained_params/`：模型权重W、偏置B矩阵
 """
     with open(md_path, 'w', encoding='utf-8') as f:
         f.write(report)
+    print("✅ 完整详细训练报告已生成！")
 
+# ==================== 损失曲线绘图 ====================
 def plot_loss_curve(loss_hist, html_path):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(y=loss_hist, line=dict(color='#2E86AB')))
-    fig.update_layout(title="训练损失曲线", xaxis_title="轮次", yaxis_title="Loss")
+    fig.add_trace(go.Scatter(y=loss_hist, line=dict(color='#2E86AB', width=2), name="训练损失"))
+    fig.update_layout(
+        title="CuPy 神经网络训练损失曲线",
+        xaxis_title="训练轮次",
+        yaxis_title="损失值",
+        template="plotly_white"
+    )
     fig.write_html(html_path)
 
 # ==================== 主程序 ====================
 if __name__ == "__main__":
     TOKEN = os.getenv("GITHUB_TOKEN")
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    
     # ============== 双数据源切换 ==============
     if DATA_MODE == "manual":
         print("📊 使用【手动导入】异或数据集")
@@ -176,6 +233,11 @@ if __name__ == "__main__":
     else:
         print("📊 使用【CSV文件】数据集")
         X, Y = load_csv_data(CSV_PATH)
+        if X is None:
+            #  fallback 手动数据
+            X_cpu = np.array([[0, 0], [0, 1], [1, 0], [1, 1]]).T
+            Y_cpu = np.array([[0, 1, 1, 0]])
+            X, Y = cp.array(X_cpu, dtype=cp.float32), cp.array(Y_cpu, dtype=cp.float32)
 
     # 初始化模型
     model = FlexibleNet(LAYER_DIMS)
@@ -200,15 +262,14 @@ if __name__ == "__main__":
     save_params_to_csv(model.params, epoch="final")
 
     # 生成报告 + 绘图
-    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     HTML_PATH = os.path.join(SCRIPT_DIR, "loss_curve.html")
     MD_PATH = os.path.join(SCRIPT_DIR, "training_report.md")
     plot_loss_curve(loss_history, HTML_PATH)
-    generate_full_report(loss_history, LAYER_DIMS, MD_PATH)
+    generate_full_report(loss_history, LAYER_DIMS, DATA_MODE, MD_PATH)
 
     # 上传文件
     if TOKEN:
-        print("\n☁️ 开始上传...")
+        print("\n☁️ 开始上传文件到 GitHub...")
         MyToolsGitHub.magnus_github_upload(TOKEN, MD_PATH, "magnus_code/zyz/neuralnet/training_report.md")
         MyToolsGitHub.magnus_github_upload(TOKEN, HTML_PATH, "magnus_code/zyz/neuralnet/loss_curve.html")
     else:
