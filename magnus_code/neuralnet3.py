@@ -2,23 +2,23 @@ import os
 import numpy as np
 import cupy as cp
 import plotly.graph_objects as go
-# 🔥 终极导入工具：动态加载同级py文件（容器专用）
 import importlib.util
 
-# ==================== 终极修复：动态导入 mytools1（100%成功，函数完全分开）====================
-# 获取当前脚本绝对路径
-script_path = os.path.abspath(__file__)
-script_dir = os.path.dirname(script_path)
-mytools_path = os.path.join(script_dir, "mytools1.py")
+# ==================== 100%成功动态导入（同级文件专用）====================
+# 强制获取当前脚本所在的 magnus_code 文件夹
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# 精准定位同级 mytools1.py
+MYTOOLS_PATH = os.path.join(SCRIPT_DIR, "mytools1.py")
 
-# 动态加载模块（不修改mytools1，完全独立）
 mytools1 = None
 TOKEN = None
+
+# 动态加载模块
 try:
-    spec = importlib.util.spec_from_file_location("mytools1", mytools_path)
+    spec = importlib.util.spec_from_file_location("mytools1", MYTOOLS_PATH)
     mytools1 = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mytools1)
-    print("✅ mytools1 动态导入成功！")
+    print("✅ mytools1 导入成功！")
 except Exception as e:
     print(f"❌ mytools1 导入失败: {e}")
 
@@ -29,7 +29,7 @@ try:
         print(f"✅ GITHUB_TOKEN 读取成功: {TOKEN[:5]}...")
 except Exception as e:
     print(f"❌ TOKEN 读取失败: {e}")
-# ======================================================================================
+# ======================================================================
 
 # ==================== 激活函数 (CuPy GPU) ====================
 def sigmoid(z):
@@ -167,17 +167,15 @@ if __name__ == "__main__":
 
     print("🎉 训练完成！")
 
-    # ==================== 主动显存释放（你的核心要求）====================
+    # 主动显存释放
     final_pred = pred
     del pred, cache, grads, X, Y
     cp.get_default_memory_pool().free_all_blocks()
-    # ==================================================================
 
     plot_loss(loss_history, HTML_PATH)
     generate_report(nn, cp.array(X_cpu), cp.array(Y_cpu), final_pred, loss_history, log_interval, HTML_PATH, MD_PATH)
 
-    # 上传逻辑（函数完全分开，独立调用）
-    print(f"[日志] mytools1: {mytools1 is not None}, TOKEN: {TOKEN is not None}")
+    # 上传
     if mytools1 and TOKEN:
         try:
             print("☁️ 开始上传...")
