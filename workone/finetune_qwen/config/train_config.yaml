@@ -1,0 +1,35 @@
+model:
+  name: "Qwen/Qwen1.5-1.8B"
+
+data:
+  train_path: "data/train.jsonl"
+  max_length: 512
+
+lora:
+  enabled: true
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+training:
+  output_dir: "output/qwen_calculus"
+  num_epochs: 3
+  batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 2e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  logging_steps: 10
+  save_steps: 500
+  save_total_limit: 3
+  bf16: true
+  gradient_checkpointing: true
+  optim: "adamw_torch"
