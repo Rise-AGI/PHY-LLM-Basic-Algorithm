@@ -1,9 +1,16 @@
 #!/bin/bash
 # 一键环境配置脚本 - 推荐使用
 
+# 切换到脚本所在目录（post-train）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 ENV_NAME="qwen_integral"
 
-echo "开始配置环境..."
+echo "========================================="
+echo "一键环境配置"
+echo "工作目录: $SCRIPT_DIR"
+echo "========================================="
 
 # 创建环境
 conda create -n ${ENV_NAME} python=3.12 -y
@@ -33,4 +40,16 @@ fi
 # 验证安装
 python -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA: {torch.cuda.is_available()}')"
 
-echo "环境配置完成! 使用: conda activate ${ENV_NAME}"
+echo ""
+echo "========================================="
+echo "环境配置完成!"
+echo "========================================="
+echo ""
+echo "工作目录: $SCRIPT_DIR"
+echo "环境名称: ${ENV_NAME}"
+echo ""
+echo "后续步骤:"
+echo "  1. cd $SCRIPT_DIR"
+echo "  2. conda activate ${ENV_NAME}"
+echo "  3. python generate_data.py"
+echo "  4. ./run_train.sh"

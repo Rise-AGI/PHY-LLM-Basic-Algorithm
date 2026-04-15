@@ -2,12 +2,13 @@
 
 # 服务器训练启动脚本
 
-# 激活环境
-source $(conda info --base)/etc/profile.d/conda.sh
-conda activate qwen_integral
+# 切换到脚本所在目录（post-train）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 echo "========================================="
 echo "Qwen 1.5B 积分计算微调训练"
+echo "工作目录: $SCRIPT_DIR"
 echo "========================================="
 
 # 检查数据是否存在
@@ -15,6 +16,10 @@ if [ ! -f "train.json" ] || [ ! -f "val.json" ]; then
     echo "未找到训练数据，开始生成..."
     python generate_data.py
 fi
+
+# 激活环境
+source $(conda info --base)/etc/profile.d/conda.sh
+conda activate qwen_integral
 
 echo ""
 echo "训练配置:"

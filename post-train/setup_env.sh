@@ -1,7 +1,12 @@
 #!/bin/bash
 
+# 切换到脚本所在目录（post-train）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 echo "========================================="
 echo "Qwen 1.5B 积分计算微调环境配置脚本"
+echo "工作目录: $SCRIPT_DIR"
 echo "========================================="
 
 # 检查conda是否安装
@@ -126,10 +131,13 @@ echo "========================================="
 echo "环境配置完成!"
 echo "========================================="
 echo ""
+echo "工作目录: $SCRIPT_DIR"
+echo ""
 echo "使用方法:"
-echo "  1. 激活环境: conda activate ${ENV_NAME}"
-echo "  2. 生成数据: python generate_data.py"
-echo "  3. 开始训练: python train.py"
+echo "  1. 进入项目目录: cd $SCRIPT_DIR"
+echo "  2. 激活环境: conda activate ${ENV_NAME}"
+echo "  3. 生成数据: python generate_data.py"
+echo "  4. 开始训练: ./run_train.sh 或 python train.py"
 echo ""
 echo "如果遇到网络问题，可以设置镜像源:"
 echo "  pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple"

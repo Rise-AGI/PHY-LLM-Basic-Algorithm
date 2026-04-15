@@ -9,6 +9,7 @@ post-train/
 ├── generate_data.py      # 数据集生成脚本
 ├── train.py             # 模型训练脚本
 ├── inference.py         # 模型推理脚本
+├── start.sh             # 主启动脚本（推荐使用）
 ├── setup_env.sh         # 详细环境配置脚本
 ├── setup_quick.sh       # 一键环境配置脚本
 ├── run_train.sh         # 服务器训练启动脚本
@@ -16,11 +17,36 @@ post-train/
 └── README.md           # 项目说明
 ```
 
+**重要说明：** 所有脚本文件均在 `post-train` 文件夹下运行，脚本会自动切换到正确目录。
+
 ## 快速开始
+
+### 使用主启动脚本（最简单）
+
+```bash
+# 进入post-train目录
+cd post-train
+
+# 给脚本执行权限
+chmod +x *.sh
+
+# 运行主启动脚本（交互式菜单）
+./start.sh
+
+# 选项:
+#   1) 配置环境 (首次运行)
+#   2) 生成训练数据
+#   3) 开始训练
+#   4) 测试模型
+#   5) 完整流程 (配置+生成+训练)
+```
 
 ### 服务器快速运行流程
 
 ```bash
+# 确保在post-train目录下
+cd post-train
+
 # 1. 配置环境（首次运行）
 chmod +x setup_quick.sh
 ./setup_quick.sh
