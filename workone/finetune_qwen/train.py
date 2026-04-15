@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import torch
 from dataclasses import dataclass, field
@@ -14,6 +15,28 @@ from transformers import (
 from datasets import Dataset
 from peft import LoraConfig, get_peft_model, TaskType
 import argparse
+
+
+def check_cuda():
+    print("=" * 50)
+    print("CUDA Environment Check")
+    print("=" * 50)
+    
+    if not torch.cuda.is_available():
+        print("ERROR: CUDA is not available!")
+        print("Please check your CUDA installation.")
+        sys.exit(1)
+    
+    print(f"PyTorch version: {torch.__version__}")
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    print(f"CUDA version: {torch.version.cuda}")
+    print(f"GPU count: {torch.cuda.device_count()}")
+    
+    for i in range(torch.cuda.device_count()):
+        print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
+        print(f"  Memory: {torch.cuda.get_device_properties(i).total_memory / 1024**3:.2f} GB")
+    
+    print("=" * 50)
 
 
 def load_data(data_path):
@@ -50,7 +73,10 @@ def preprocess_function(examples, tokenizer, max_length=512):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='config/train_config.yaml', help='Path to config file')
+    parser.add_argument('--local_rank', type=int, default=-1, help='Local rank for distributed training')
     args = parser.parse_args()
+    
+    check_cuda()
     
     import yaml
     with open(args.config, 'r', encoding='utf-8') as f:
@@ -63,14 +89,29 @@ def main():
     
     print(f"Loading model: {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    tokenizer.pad_token = tokenizer.eos_token
     
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype=torch.bfloat16,
-        device_map="auto",
-        trust_remote_code=True,
-    )
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    
+    model_kwargs = {
+        "trust_remote_code": True,
+        "torch_dtype": torch.bfloat16 if config['training'].get('bf16', True) else torch.float16,
+    }
+    
+    use_flash_attn = config['model'].get('flash_attn', False)
+    if use_flash_attn:
+        try:
+            model_kwargs["attn_implementation"] = "flash_attention_2"
+            print("Using Flash Attention 2")
+        except Exception as e:
+            print(f"Flash Attention not available: {e}")
+    
+    if torch.cuda.is_available():
+        model_kwargs["device_map"] = "auto"
+    
+    model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     
     if config['lora']['enabled']:
         print("Applying LoRA...")
@@ -114,6 +155,9 @@ def main():
         gradient_checkpointing=config['training']['gradient_checkpointing'],
         optim=config['training']['optim'],
         report_to="none",
+        ddp_find_unused_parameters=False,
+        dataloader_num_workers=config['training'].get('num_workers', 4),
+        dataloader_pin_memory=True,
     )
     
     data_collator = DataCollatorForSeq2Seq(

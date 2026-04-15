@@ -4,3 +4,5 @@ peft>=0.7.0
 datasets>=2.14.0
 accelerate>=0.24.0
 pyyaml>=6.0
+sentencepiece>=0.1.99
+tiktoken>=0.6.0

@@ -1,5 +1,6 @@
 model:
   name: "Qwen/Qwen1.5-1.8B"
+  flash_attn: false
 
 data:
   train_path: "data/train.jsonl"
@@ -33,3 +34,4 @@ training:
   bf16: true
   gradient_checkpointing: true
   optim: "adamw_torch"
+  num_workers: 4
