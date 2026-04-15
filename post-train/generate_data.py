@@ -126,15 +126,15 @@ def generate_rational_integrals(n_samples=80):
 
 def generate_complex_integrals(n_samples=120):
     data = []
-    
+    a = symbols('a')
     examples = [
         (x * exp(x), "分部积分法"),
         (x**2 * exp(x), "分部积分法"),
         (x * sin(x), "分部积分法"),
         (x * cos(x), "分部积分法"),
         (log(x), "分部积分法"),
-        (sqrt(a - x**2), "三角换元法", {"a": random.randint(1, 5)}),
-        (1 / sqrt(x**2 + a**2), "三角换元法", {"a": random.randint(1, 5)}),
+        (sqrt(a - x**2), "三角换元法", lambda:{"a": random.randint(1, 5)}),
+        (1 / sqrt(x**2 + a**2), "三角换元法", lambda:{"a": random.randint(1, 5)}),
     ]
     
     for _ in range(n_samples):
@@ -143,7 +143,7 @@ def generate_complex_integrals(n_samples=120):
         
         if len(example) == 3:
             expr_template, method, params = example
-            expr = expr_template.subs(params)
+            expr = expr_template.subs(params())
         else:
             expr_template, method = example
             expr = expr_template

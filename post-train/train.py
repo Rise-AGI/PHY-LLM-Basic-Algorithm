@@ -10,7 +10,8 @@ from transformers import (
 )
 from peft import LoraConfig, get_peft_model, TaskType
 import argparse
-
+if not hasattr(torch, "float8_e8m0fnu"):
+    torch.float8_e8m0fnu = None
 class IntegralDataset(Dataset):
     def __init__(self, file_path, tokenizer, max_length=512):
         self.data = []
@@ -35,24 +36,28 @@ class IntegralDataset(Dataset):
         encoding = self.tokenizer(
             full_text,
             max_length=self.max_length,
-            padding='max_length',
+            # padding='max_length',
+            padding=False,
             truncation=True,
             return_tensors='pt'
         )
         
         input_ids = encoding['input_ids'].squeeze()
         attention_mask = encoding['attention_mask'].squeeze()
-        
-        prompt_encoding = self.tokenizer(
-            prompt,
-            max_length=self.max_length,
-            padding=False,
-            truncation=True,
-            return_tensors='pt'
-        )
-        prompt_length = prompt_encoding['input_ids'].shape[1]
-        
         labels = input_ids.clone()
+        # prompt_encoding = self.tokenizer(
+        #     prompt,
+        #     max_length=self.max_length,
+        #     padding=False,
+        #     truncation=True,
+        #     return_tensors='pt'
+        # )
+        prompt_encoding = self.tokenizer(prompt, return_tensors='pt', add_special_tokens=False)
+        prompt_ids = prompt_encoding['input_ids'].squeeze()
+        
+        prompt_length = len(prompt_ids)
+        if prompt_length > self.max_length:
+            prompt_length = self.max_length
         labels[:prompt_length] = -100
         
         return {
@@ -76,6 +81,7 @@ def load_model_and_tokenizer(model_name, use_4bit=False):
     model_kwargs = {
         "trust_remote_code": True,
         "torch_dtype": torch.float16,
+        "device_map": "auto"
     }
     
     if use_4bit:
@@ -136,7 +142,8 @@ def train(args):
         logging_steps=args.logging_steps,
         save_steps=args.save_steps,
         eval_steps=args.eval_steps,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
+        # evaluation_strategy="steps",
         save_strategy="steps",
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
