@@ -228,10 +228,7 @@ python inference.py --model_path ./output --question "计算不定积分: ∫x²
 #### 使用LoRA模型推理
 
 ```bash
-python inference.py \
-    --model_path ./output \
-    --base_model Qwen/Qwen2.5-1.5B-Instruct \
-    --mode interactive
+python inference.py --model_path ./output --base_model Qwen/Qwen2.5-1.5B-Instruct --question "计算不定积分: ∫\frac{1}{x^3+1}dx"
 ```
 
 ## 示例对话
