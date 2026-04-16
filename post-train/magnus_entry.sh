@@ -20,23 +20,70 @@ echo "  MAGNUS_JOB_ID: ${MAGNUS_JOB_ID:-未设置}"
 echo "  MAGNUS_ACTION: ${MAGNUS_ACTION:-未设置}"
 echo ""
 
-# 工作目录配置
+# 工作目录配置（兼容 MAGNUS_WORKSPACE 未设置的情况）
 WORK_DIR="${MAGNUS_WORKSPACE:-/magnus/workspace}"
-PROJECT_DIR="$WORK_DIR/post-train"
 
-# 自动定位 post-train 目录
-if [ -d "$PROJECT_DIR" ]; then
-    cd "$PROJECT_DIR"
-    echo "切换到项目目录: $PROJECT_DIR"
-elif [ -d "$WORK_DIR" ]; then
-    cd "$WORK_DIR"
-    echo "工作目录: $WORK_DIR"
-else
-    cd "$(pwd)"
-    echo "当前目录: $(pwd)"
+# 自动定位项目目录（检测 repository 子目录）
+SCRIPT_DIR=""
+SEARCH_DIRS=(
+    "$WORK_DIR/repository/post-train"
+    "$WORK_DIR/post-train"
+    "$WORK_DIR/repository"
+    "$WORK_DIR"
+    "$(pwd)/repository/post-train"
+    "$(pwd)/post-train"
+    "$(pwd)"
+)
+
+echo "搜索项目目录..."
+for dir in "${SEARCH_DIRS[@]}"; do
+    echo "  检查: $dir"
+    if [ -d "$dir" ] && [ -f "$dir/train.py" ]; then
+        SCRIPT_DIR="$dir"
+        echo "  ✓ 找到 train.py: $dir/train.py"
+        break
+    fi
+done
+
+if [ -z "$SCRIPT_DIR" ]; then
+    # 如果没找到，列出所有目录帮助定位
+    echo ""
+    echo "未找到 train.py，列出目录结构:"
+    if [ -d "$WORK_DIR" ]; then
+        find "$WORK_DIR" -type d -name "post-train" 2>/dev/null || true
+        find "$WORK_DIR" -type f -name "train.py" 2>/dev/null || true
+    fi
+    echo ""
+    
+    # 尝试在 repository 目录下查找
+    if [ -d "$WORK_DIR/repository" ]; then
+        echo "repository 目录内容:"
+        ls -la "$WORK_DIR/repository/"
+        echo ""
+        
+        # 检查 repository/post-train
+        if [ -d "$WORK_DIR/repository/post-train" ]; then
+            echo "repository/post-train 目录内容:"
+            ls -la "$WORK_DIR/repository/post-train/"
+            SCRIPT_DIR="$WORK_DIR/repository/post-train"
+        fi
+    fi
 fi
 
-SCRIPT_DIR="$(pwd)"
+if [ -z "$SCRIPT_DIR" ] || [ ! -f "$SCRIPT_DIR/train.py" ]; then
+    echo ""
+    echo "错误: 无法定位 post-train 目录"
+    echo ""
+    echo "请确保 Magnus 上传了正确的文件结构:"
+    echo "  方式1: 上传整个仓库 -> repository/post-train/train.py"
+    echo "  方式2: 上传 post-train 目录 -> post-train/train.py"
+    echo "  方式3: 上传单个文件 -> train.py"
+    exit 1
+fi
+
+cd "$SCRIPT_DIR"
+echo ""
+echo "项目目录: $SCRIPT_DIR"
 echo ""
 echo "当前目录文件:"
 ls -la
@@ -54,40 +101,20 @@ export LEARNING_RATE="${LEARNING_RATE:-2e-4}"
 export USE_4BIT="${USE_4BIT:-false}"
 
 # ========================================
-# 文件路径配置（自动检测 post-train 目录）
+# 文件路径配置
 # ========================================
-TRAIN_PY="train.py"
-GENERATE_DATA_PY="generate_data.py"
-INFERENCE_PY="inference.py"
-TRAIN_JSON="train.json"
-VAL_JSON="val.json"
-
-# 如果当前目录不是 post-train，尝试在子目录查找
-if [ ! -f "$TRAIN_PY" ]; then
-    if [ -f "post-train/train.py" ]; then
-        TRAIN_PY="post-train/train.py"
-        GENERATE_DATA_PY="post-train/generate_data.py"
-        INFERENCE_PY="post-train/inference.py"
-        TRAIN_JSON="post-train/train.json"
-        VAL_JSON="post-train/val.json"
-        echo "检测到 post-train 子目录，使用相对路径"
-    fi
-fi
+TRAIN_PY="$SCRIPT_DIR/train.py"
+GENERATE_DATA_PY="$SCRIPT_DIR/generate_data.py"
+INFERENCE_PY="$SCRIPT_DIR/inference.py"
+TRAIN_JSON="$SCRIPT_DIR/train.json"
+VAL_JSON="$SCRIPT_DIR/val.json"
 
 # ========================================
 # 检查必要文件
 # ========================================
 echo "检查必要文件..."
 
-# 检查 train.py
-if [ ! -f "$TRAIN_PY" ]; then
-    echo "错误: 未找到 $TRAIN_PY"
-    echo "请确保已上传以下文件到 Magnus:"
-    echo "  - post-train/train.py"
-    echo "  - post-train/generate_data.py (可选，用于生成训练数据)"
-    echo "  - post-train/inference.py (可选，用于测试)"
-    exit 1
-fi
+# 检查 train.py（已在前面确认）
 echo "✓ $TRAIN_PY 存在"
 
 # 检查训练数据
