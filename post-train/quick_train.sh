@@ -8,17 +8,31 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 自动定位 post-train 目录
+if [[ "$SCRIPT_DIR" != *"post-train"* ]]; then
+    if [ -d "$SCRIPT_DIR/post-train" ]; then
+        SCRIPT_DIR="$SCRIPT_DIR/post-train"
+    fi
+fi
 cd "$SCRIPT_DIR"
 
 # 配置
 MODEL_CACHE_DIR="${MODEL_CACHE_DIR:-$HOME/.cache/huggingface/models}"
 MODEL_NAME="Qwen/Qwen2.5-1.5B-Instruct"
 MODEL_LOCAL_PATH="$MODEL_CACHE_DIR/models--Qwen--Qwen2.5-1.5B-Instruct/snapshots"
-OUTPUT_DIR="./output"
+OUTPUT_DIR="$SCRIPT_DIR/output"
 FINAL_DIR="${FINAL_DIR:-$HOME/trained_models/qwen_integral_$(date +%Y%m%d_%H%M%S)}"
+
+# 文件路径
+TRAIN_PY="$SCRIPT_DIR/train.py"
+GENERATE_DATA_PY="$SCRIPT_DIR/generate_data.py"
+TRAIN_JSON="$SCRIPT_DIR/train.json"
+INFERENCE_PY="$SCRIPT_DIR/inference.py"
 
 echo "========================================="
 echo "Qwen 1.5B 微调 - 普通服务器版"
+echo "项目目录: $SCRIPT_DIR"
 echo "========================================="
 
 # 步骤1：下载模型
@@ -47,8 +61,8 @@ fi
 # 步骤2：准备数据
 echo ""
 echo "[2/4] 准备数据..."
-if [ ! -f "train.json" ]; then
-    python generate_data.py
+if [ ! -f "$TRAIN_JSON" ]; then
+    python "$GENERATE_DATA_PY"
 fi
 
 # 步骤3：训练
@@ -57,7 +71,7 @@ echo "[3/4] 开始训练..."
 source $(conda info --base)/etc/profile.d/conda.sh
 conda activate qwen_integral 2>/dev/null || true
 
-python train.py \
+python "$TRAIN_PY" \
     --model_name "$MODEL_LOCAL_PATH" \
     --output_dir "$OUTPUT_DIR" \
     --num_epochs 3 \
@@ -73,4 +87,4 @@ echo "模型已保存: $FINAL_DIR"
 
 echo ""
 echo "完成! 测试命令:"
-echo "  python inference.py --model_path $FINAL_DIR"
+echo "  python $INFERENCE_PY --model_path $FINAL_DIR"

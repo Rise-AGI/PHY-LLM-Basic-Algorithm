@@ -15,6 +15,13 @@ elif [ -n "$0" ]; then
 else
     SCRIPT_DIR="${MAGNUS_WORKSPACE:-$(pwd)}"
 fi
+
+# 自动定位 post-train 目录
+if [[ "$SCRIPT_DIR" != *"post-train"* ]]; then
+    if [ -d "$SCRIPT_DIR/post-train" ]; then
+        SCRIPT_DIR="$SCRIPT_DIR/post-train"
+    fi
+fi
 cd "$SCRIPT_DIR"
 
 # 尝试加载配置文件（可选，不存在则跳过）
@@ -31,12 +38,15 @@ MODEL_NAME="Qwen/Qwen2.5-1.5B-Instruct"
 MODEL_LOCAL_PATH="${MODEL_CACHE_DIR}/Qwen2.5-1.5B-Instruct"
 
 # 训练输出路径
-OUTPUT_DIR="${OUTPUT_DIR:-./output}"
+OUTPUT_DIR="${OUTPUT_DIR:-$SCRIPT_DIR/output}"
 FINAL_MODEL_DIR="${FINAL_MODEL_DIR:-/shared/trained_models/qwen_integral_$(date +%Y%m%d_%H%M%S)}"
 
-# 数据路径
-TRAIN_FILE="${TRAIN_FILE:-train.json}"
-VAL_FILE="${VAL_FILE:-val.json}"
+# 数据路径（自动检测）
+TRAIN_FILE="${TRAIN_FILE:-$SCRIPT_DIR/train.json}"
+VAL_FILE="${VAL_FILE:-$SCRIPT_DIR/val.json}"
+TRAIN_PY="${TRAIN_PY:-$SCRIPT_DIR/train.py}"
+GENERATE_DATA_PY="${GENERATE_DATA_PY:-$SCRIPT_DIR/generate_data.py}"
+INFERENCE_PY="${INFERENCE_PY:-$SCRIPT_DIR/inference.py}"
 
 # Magnus 环境变量
 MAGNUS_WORKSPACE="${MAGNUS_WORKSPACE:-/magnus/workspace}"
@@ -145,7 +155,7 @@ fi
 # 检查训练数据
 if [ ! -f "$TRAIN_FILE" ] || [ ! -f "$VAL_FILE" ]; then
     echo "生成训练数据..."
-    python generate_data.py
+    python "$GENERATE_DATA_PY"
 fi
 
 # ========================================
@@ -164,7 +174,7 @@ NUM_EPOCHS="${NUM_EPOCHS:-3}"
 LEARNING_RATE="${LEARNING_RATE:-2e-4}"
 USE_4BIT="${USE_4BIT:-false}"
 
-CMD="python train.py \
+CMD="python $TRAIN_PY \
     --model_name $MODEL_LOCAL_PATH \
     --train_file $TRAIN_FILE \
     --val_file $VAL_FILE \
@@ -265,5 +275,5 @@ echo "  - 本地输出: $OUTPUT_DIR"
 echo "  - 持久存储: $FINAL_MODEL_DIR"
 echo ""
 echo "测试模型:"
-echo "  python inference.py --model_path $FINAL_MODEL_DIR --mode interactive"
+echo "  python $INFERENCE_PY --model_path $FINAL_MODEL_DIR --mode interactive"
 echo ""
