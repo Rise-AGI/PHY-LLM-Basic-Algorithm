@@ -2,26 +2,44 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 import argparse
+import os
+
+def is_lora_model(model_path):
+    adapter_config = os.path.join(model_path, "adapter_config.json")
+    adapter_model = os.path.join(model_path, "adapter_model.safetensors")
+    return os.path.exists(adapter_config) or os.path.exists(adapter_model)
 
 def load_model(model_path, base_model_name=None):
     print(f"加载模型: {model_path}")
     
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_path,
-        trust_remote_code=True,
-        use_fast=False
-    )
+    use_lora = is_lora_model(model_path)
+    print(f"检测到 LoRA 模型: {use_lora}")
     
-    if base_model_name:
+    if use_lora and not base_model_name:
+        base_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+        print(f"自动检测基础模型: {base_model_name}")
+    
+    if use_lora and base_model_name:
         print(f"加载基础模型: {base_model_name}")
+        tokenizer = AutoTokenizer.from_pretrained(
+            base_model_name,
+            trust_remote_code=True,
+            use_fast=False
+        )
         base_model = AutoModelForCausalLM.from_pretrained(
             base_model_name,
             trust_remote_code=True,
             torch_dtype=torch.float16,
             device_map="auto"
         )
+        print(f"加载 LoRA 适配器: {model_path}")
         model = PeftModel.from_pretrained(base_model, model_path)
     else:
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_path,
+            trust_remote_code=True,
+            use_fast=False
+        )
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             trust_remote_code=True,
