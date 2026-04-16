@@ -138,26 +138,39 @@ echo "========================================="
 echo "步骤0: 检查并安装依赖"
 echo "========================================="
 
-# 检查关键依赖
-check_and_install() {
-    package=$1
-    pip_name=$2
-    python3 -c "import $package" 2>/dev/null
-    if [ $? -ne 0 ]; then
-        echo "安装 $pip_name..."
-        pip install "$pip_name" --quiet
-    else
-        echo "✓ $package 已安装"
-    fi
+# 使用国内镜像加速
+PIP_INDEX="${PIP_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}"
+
+# 检查并安装缺失的依赖
+MISSING_PACKAGES=""
+for pkg in "transformers" "huggingface_hub" "peft" "accelerate" "datasets" "sympy"; do
+    python3 -c "import ${pkg//-/_}" 2>/dev/null || MISSING_PACKAGES="$MISSING_PACKAGES $pkg"
+done
+
+# torch 单独处理（已安装但可能需要验证）
+python3 -c "import torch; print(f'✓ torch {torch.__version__}')" 2>/dev/null || {
+    echo "torch 未安装，请确保 Magnus 镜像已包含 torch"
 }
 
-# 安装必要依赖
-check_and_install "torch" "torch"
-check_and_install "transformers" "transformers"
-check_and_install "huggingface_hub" "huggingface_hub"
-check_and_install "peft" "peft"
-check_and_install "accelerate" "accelerate"
-check_and_install "datasets" "datasets"
+if [ -n "$MISSING_PACKAGES" ]; then
+    echo "安装缺失的依赖: $MISSING_PACKAGES"
+    echo "使用镜像: $PIP_INDEX"
+    pip install $MISSING_PACKAGES --index-url "$PIP_INDEX" --timeout 60
+else
+    echo "✓ 所有依赖已安装"
+fi
+
+# 验证关键包
+echo ""
+echo "依赖版本:"
+python3 -c "
+import torch
+import transformers
+import huggingface_hub
+print(f'  torch: {torch.__version__}')
+print(f'  transformers: {transformers.__version__}')
+print(f'  huggingface_hub: {huggingface_hub.__version__}')
+" 2>/dev/null || echo "部分依赖安装失败，但继续尝试..."
 
 echo "依赖检查完成"
 
