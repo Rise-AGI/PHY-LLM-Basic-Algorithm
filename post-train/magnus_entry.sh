@@ -20,13 +20,24 @@ echo "  MAGNUS_JOB_ID: ${MAGNUS_JOB_ID:-未设置}"
 echo "  MAGNUS_ACTION: ${MAGNUS_ACTION:-未设置}"
 echo ""
 
-# 切换到工作目录
+# 工作目录配置
 WORK_DIR="${MAGNUS_WORKSPACE:-/magnus/workspace}"
-cd "$WORK_DIR"
-echo "工作目录: $WORK_DIR"
-echo ""
+PROJECT_DIR="$WORK_DIR/post-train"
 
-# 列出当前目录文件
+# 自动定位 post-train 目录
+if [ -d "$PROJECT_DIR" ]; then
+    cd "$PROJECT_DIR"
+    echo "切换到项目目录: $PROJECT_DIR"
+elif [ -d "$WORK_DIR" ]; then
+    cd "$WORK_DIR"
+    echo "工作目录: $WORK_DIR"
+else
+    cd "$(pwd)"
+    echo "当前目录: $(pwd)"
+fi
+
+SCRIPT_DIR="$(pwd)"
+echo ""
 echo "当前目录文件:"
 ls -la
 echo ""
@@ -35,7 +46,7 @@ echo ""
 # 配置参数（直接在此设置，无需外部配置文件）
 # ========================================
 export MODEL_CACHE_DIR="${MODEL_CACHE_DIR:-/shared/models}"
-export OUTPUT_DIR="${OUTPUT_DIR:-$WORK_DIR/output}"
+export OUTPUT_DIR="${OUTPUT_DIR:-$SCRIPT_DIR/output}"
 export FINAL_MODEL_DIR="${FINAL_MODEL_DIR:-/shared/trained_models/qwen_integral_$(date +%Y%m%d_%H%M%S)}"
 export BATCH_SIZE="${BATCH_SIZE:-4}"
 export NUM_EPOCHS="${NUM_EPOCHS:-3}"
@@ -43,29 +54,50 @@ export LEARNING_RATE="${LEARNING_RATE:-2e-4}"
 export USE_4BIT="${USE_4BIT:-false}"
 
 # ========================================
+# 文件路径配置（自动检测 post-train 目录）
+# ========================================
+TRAIN_PY="train.py"
+GENERATE_DATA_PY="generate_data.py"
+INFERENCE_PY="inference.py"
+TRAIN_JSON="train.json"
+VAL_JSON="val.json"
+
+# 如果当前目录不是 post-train，尝试在子目录查找
+if [ ! -f "$TRAIN_PY" ]; then
+    if [ -f "post-train/train.py" ]; then
+        TRAIN_PY="post-train/train.py"
+        GENERATE_DATA_PY="post-train/generate_data.py"
+        INFERENCE_PY="post-train/inference.py"
+        TRAIN_JSON="post-train/train.json"
+        VAL_JSON="post-train/val.json"
+        echo "检测到 post-train 子目录，使用相对路径"
+    fi
+fi
+
+# ========================================
 # 检查必要文件
 # ========================================
 echo "检查必要文件..."
 
 # 检查 train.py
-if [ ! -f "train.py" ]; then
-    echo "错误: 未找到 train.py"
+if [ ! -f "$TRAIN_PY" ]; then
+    echo "错误: 未找到 $TRAIN_PY"
     echo "请确保已上传以下文件到 Magnus:"
-    echo "  - train.py"
-    echo "  - generate_data.py (可选，用于生成训练数据)"
-    echo "  - inference.py (可选，用于测试)"
+    echo "  - post-train/train.py"
+    echo "  - post-train/generate_data.py (可选，用于生成训练数据)"
+    echo "  - post-train/inference.py (可选，用于测试)"
     exit 1
 fi
-echo "✓ train.py 存在"
+echo "✓ $TRAIN_PY 存在"
 
 # 检查训练数据
-if [ ! -f "train.json" ] || [ ! -f "val.json" ]; then
+if [ ! -f "$TRAIN_JSON" ] || [ ! -f "$VAL_JSON" ]; then
     echo "未找到训练数据，尝试生成..."
-    if [ -f "generate_data.py" ]; then
-        python generate_data.py
+    if [ -f "$GENERATE_DATA_PY" ]; then
+        python "$GENERATE_DATA_PY"
     else
-        echo "错误: 未找到 generate_data.py，无法生成训练数据"
-        echo "请上传 train.json 和 val.json 文件"
+        echo "错误: 未找到 $GENERATE_DATA_PY，无法生成训练数据"
+        echo "请上传 post-train/train.json 和 post-train/val.json 文件"
         exit 1
     fi
 fi
@@ -135,8 +167,10 @@ echo "========================================="
 echo "步骤2: 开始训练"
 echo "========================================="
 
-CMD="python train.py \
+CMD="python $TRAIN_PY \
     --model_name $MODEL_PATH \
+    --train_file $TRAIN_JSON \
+    --val_file $VAL_JSON \
     --output_dir $OUTPUT_DIR \
     --num_epochs $NUM_EPOCHS \
     --batch_size $BATCH_SIZE \
@@ -234,5 +268,5 @@ echo "  - 训练输出: $OUTPUT_DIR"
 echo "  - 最终模型: $FINAL_MODEL_DIR"
 echo ""
 echo "测试命令:"
-echo "  python inference.py --model_path $FINAL_MODEL_DIR"
+echo "  python $INFERENCE_PY --model_path $FINAL_MODEL_DIR"
 echo ""
