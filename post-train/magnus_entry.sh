@@ -185,17 +185,26 @@ echo "========================================="
 MODEL_NAME="Qwen/Qwen2.5-1.5B-Instruct"
 MODEL_PATH="${MODEL_CACHE_DIR}/Qwen2.5-1.5B-Instruct"
 
+# HuggingFace 镜像配置
+HF_ENDPOINT="${HF_ENDPOINT:-https://hf-mirror.com}"
+
 # 检查模型是否已缓存
 if [ -d "$MODEL_PATH" ] && ls "$MODEL_PATH"/*.safetensors 1> /dev/null 2>&1; then
     echo "模型已缓存: $MODEL_PATH"
 else
     echo "模型未缓存，开始下载..."
+    echo "使用镜像: $HF_ENDPOINT"
     mkdir -p "$MODEL_CACHE_DIR"
+    
+    export HF_ENDPOINT="$HF_ENDPOINT"
     
     python3 << 'DOWNLOAD_SCRIPT'
 import os
 import sys
 from pathlib import Path
+
+# 设置镜像
+os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 
 model_cache = os.environ.get("MODEL_CACHE_DIR", "/shared/models")
 model_name = "Qwen/Qwen2.5-1.5B-Instruct"
@@ -208,22 +217,35 @@ if local_path.exists() and any(local_path.glob("*.safetensors")):
 local_path.mkdir(parents=True, exist_ok=True)
 
 print(f"下载模型到: {local_path}")
+print(f"镜像地址: {os.environ.get('HF_ENDPOINT')}")
+
 try:
     from huggingface_hub import snapshot_download
     snapshot_download(
         repo_id=model_name,
         local_dir=str(local_path),
-        local_dir_use_symlinks=False,
-        resume_download=True
+        etag_timeout=30,
+        max_workers=4
     )
     print("模型下载完成!")
 except Exception as e:
     print(f"下载失败: {e}")
+    print("提示: 如果网络问题持续，请尝试:")
+    print("  1. 设置 HF_ENDPOINT 环境变量")
+    print("  2. 手动下载模型到 /shared/models/Qwen2.5-1.5B-Instruct")
+    print("  3. 或使用已预置模型的 Magnus 镜像")
     sys.exit(1)
 DOWNLOAD_SCRIPT
 
     if [ $? -ne 0 ]; then
+        echo ""
         echo "错误: 模型下载失败"
+        echo ""
+        echo "解决方案:"
+        echo "  1. 设置环境变量 HF_ENDPOINT=https://hf-mirror.com"
+        echo "  2. 手动下载模型到集群存储: /shared/models/Qwen2.5-1.5B-Instruct"
+        echo "  3. 使用 MODEL_SECRET 通过 Magnus File Custody 传入模型"
+        echo "  4. 使用预置了 Qwen 模型的 Docker/Apptainer 镜像"
         exit 1
     fi
 fi
