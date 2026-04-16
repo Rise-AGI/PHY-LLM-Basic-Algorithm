@@ -131,6 +131,37 @@ fi
 echo "✓ 训练数据就绪"
 
 # ========================================
+# 安装依赖（如果需要）
+# ========================================
+echo ""
+echo "========================================="
+echo "步骤0: 检查并安装依赖"
+echo "========================================="
+
+# 检查关键依赖
+check_and_install() {
+    package=$1
+    pip_name=$2
+    python3 -c "import $package" 2>/dev/null
+    if [ $? -ne 0 ]; then
+        echo "安装 $pip_name..."
+        pip install "$pip_name" --quiet
+    else
+        echo "✓ $package 已安装"
+    fi
+}
+
+# 安装必要依赖
+check_and_install "torch" "torch"
+check_and_install "transformers" "transformers"
+check_and_install "huggingface_hub" "huggingface_hub"
+check_and_install "peft" "peft"
+check_and_install "accelerate" "accelerate"
+check_and_install "datasets" "datasets"
+
+echo "依赖检查完成"
+
+# ========================================
 # 检查/下载模型
 # ========================================
 echo ""
