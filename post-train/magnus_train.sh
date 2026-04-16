@@ -7,9 +7,23 @@ set -e
 # 功能：下载模型 → 微调训练 → 固化结果
 # ========================================
 
-# 路径配置
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 获取脚本所在目录（兼容 Magnus 环境和普通环境）
+if [ -n "${BASH_SOURCE[0]}" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+elif [ -n "$0" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+else
+    SCRIPT_DIR="${MAGNUS_WORKSPACE:-$(pwd)}"
+fi
 cd "$SCRIPT_DIR"
+
+# 尝试加载配置文件（可选，不存在则跳过）
+if [ -f "$SCRIPT_DIR/magnus_config.env" ]; then
+    source "$SCRIPT_DIR/magnus_config.env"
+    echo "已加载配置文件: magnus_config.env"
+else
+    echo "未找到配置文件，使用默认配置"
+fi
 
 # 模型存储路径（集群共享存储，持久化）
 MODEL_CACHE_DIR="${MODEL_CACHE_DIR:-/shared/models}"
