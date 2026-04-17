@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Magnus 平台 Qwen 1.5B SFT 训练任务提交与结果下载脚本
+适配文档：Magnus_SFT_Qwen1.5B.md
+功能：提交任务 → 实时监控状态 → 查看日志 → 下载训练模型
+"""
+
+import os
+import time
+import magnus
+from typing import Dict, Optional
+
+# ============================ 全局配置（需根据实际环境修改） ============================
+MAGNUS_CONFIG = {
+    "token": "sk-V-v0UMARpccPA_QwXGIoRDc9G2K67XiA",          # 替换为你的 Magnus token
+    "address": "http://162.105.151.134:3011/",  # 替换为 Magnus 服务地址
+    "blueprint_name": "qwen-sft",      # Blueprint 名称（需与平台一致）
+    "repo_name": "OpenFundus",         # 存放 sft_train.py 的代码仓库名
+}
+
+# 训练任务参数（可根据需求调整）
+TRAIN_PARAMS = {
+    "model_path": "Qwen/Qwen2.5-1.5B",  # 模型路径（HuggingFace ID 或集群本地路径）
+    "data_path": "/data/sft/train.jsonl",# 训练数据路径（集群端）
+    "output_dir": "/data/outputs/qwen-sft-v1",  # 模型输出路径（集群端）
+    "epochs": 3,                       # 训练轮数
+    "batch_size": 8,                   # 单卡 batch size
+    "learning_rate": 2e-5,             # 学习率
+    "max_length": 1024,                # 最大序列长度
+    "gpu_count": 2,                    # GPU 数量
+    "priority": "A2",                  # 作业优先级（A2 推荐）
+    "runner": "your-username",         # 提交者用户名
+}
+
+# 监控配置
+MONITOR_CONFIG = {
+    "timeout": 86400,          # 最长等待时间（秒），24小时
+    "poll_interval": 30,       # 状态轮询间隔（秒）
+    "log_page_size": 100,      # 日志每页行数
+}
+
+# ============================ 核心功能函数 ============================
+def init_magnus() -> None:
+    """初始化 Magnus 连接"""
+    try:
+        magnus.configure(
+            token=MAGNUS_CONFIG["token"],
+            address=MAGNUS_CONFIG["address"],
+        )
+        # 验证连接
+        magnus.job.list(limit=1)
+        print("[✅] Magnus 连接初始化成功")
+    except Exception as e:
+        print(f"[❌] Magnus 连接失败：{e}")
+        raise
+
+
+def submit_sft_job(params: Dict) -> str:
+    """
+    提交 SFT 训练任务
+    :param params: 训练参数（对应 Blueprint 参数）
+    :return: 任务 ID
+    """
+    try:
+        print(f"[📤] 提交 Qwen 1.5B SFT 训练任务，参数：{params}")
+        job_id = magnus.launch_blueprint(
+            blueprint_name=MAGNUS_CONFIG["blueprint_name"],
+            args=params,
+        )
+        print(f"[✅] 任务提交成功，Job ID: {job_id}")
+        return job_id
+    except Exception as e:
+        print(f"[❌] 任务提交失败：{e}")
+        raise
+
+
+def monitor_job_status(job_id: str) -> Dict:
+    """
+    监控任务状态，直到完成/失败/超时
+    :param job_id: 任务 ID
+    :return: 任务最终状态信息
+    """
+    start_time = time.time()
+    print(f"\n[🔍] 开始监控任务 {job_id}，轮询间隔 {MONITOR_CONFIG['poll_interval']}s")
+    
+    while True:
+        # 检查超时
+        if time.time() - start_time > MONITOR_CONFIG["timeout"]:
+            print(f"[⏰] 任务监控超时（{MONITOR_CONFIG['timeout']}s）")
+            raise TimeoutError(f"Job {job_id} timeout")
+        
+        # 获取任务状态
+        try:
+            job_info = magnus.get_job(job_id)
+            status = job_info["status"]
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 任务状态：{status}")
+            
+            # 任务完成/失败/终止，退出循环
+            if status in ("Success", "Failed", "Terminated"):
+                print(f"\n[📊] 任务最终状态：{status}")
+                return job_info
+            
+            # 未完成，等待下一次轮询
+            time.sleep(MONITOR_CONFIG["poll_interval"])
+        
+        except Exception as e:
+            print(f"[⚠️] 获取任务状态失败：{e}，30s 后重试")
+            time.sleep(30)
+
+
+def get_job_logs(job_id: str, page: int = 1) -> None:
+    """
+    获取任务日志
+    :param job_id: 任务 ID
+    :param page: 日志页码
+    """
+    try:
+        print(f"\n[📜] 获取任务 {job_id} 日志（第 {page} 页）：")
+        logs = magnus.get_job_logs(
+            job_id=job_id,
+            page=page,
+            page_size=MONITOR_CONFIG["log_page_size"],
+        )
+        print(logs)
+    except Exception as e:
+        print(f"[❌] 获取日志失败：{e}")
+
+
+def download_train_result(job_id: str, local_dir: str = "./qwen-sft-checkpoint") -> None:
+    """
+    下载训练结果（模型文件）
+    :param job_id: 任务 ID
+    :param local_dir: 本地保存目录
+    """
+    try:
+        # 方式1：从 MAGNUS_ACTION 获取下载命令（推荐）
+        print(f"\n[📥] 准备下载训练结果到 {local_dir}")
+        action_cmd = magnus.get_job_action(job_id)
+        if action_cmd and "magnus receive" in action_cmd:
+            print(f"[💡] 执行自动生成的下载命令：{action_cmd}")
+            os.system(action_cmd)
+        
+        # 方式2：手动生成 FileSecret 下载（备用）
+        else:
+            output_dir = TRAIN_PARAMS["output_dir"]
+            print(f"[💡] 手动生成 {output_dir} 的下载令牌")
+            secret = magnus.custody_file(output_dir, expire_minutes=1440)
+            magnus.download_file(secret, local_dir)
+        
+        print(f"[✅] 训练结果已下载到：{local_dir}")
+    except Exception as e:
+        print(f"[❌] 下载训练结果失败：{e}")
+        raise
+
+
+def get_job_result(job_id: str) -> Optional[Dict]:
+    """
+    获取任务结果（MAGNUS_RESULT 内容）
+    :param job_id: 任务 ID
+    :return: 任务结果字典
+    """
+    try:
+        result = magnus.get_job_result(job_id)
+        print(f"\n[📋] 任务结果：{result}")
+        return result
+    except Exception as e:
+        print(f"[❌] 获取任务结果失败：{e}")
+        return None
+
+# ============================ 主流程 ============================
+if __name__ == "__main__":
+    try:
+        # 1. 初始化连接
+        init_magnus()
+        
+        # 2. 提交任务
+        job_id = submit_sft_job(TRAIN_PARAMS)
+        
+        # 3. 可选：查看任务提交后的初始日志
+        get_job_logs(job_id, page=1)
+        
+        # 4. 监控任务状态
+        job_info = monitor_job_status(job_id)
+        
+        # 5. 任务成功则下载结果
+        if job_info["status"] == "Success":
+            # 查看最终日志
+            get_job_logs(job_id, page=2)
+            
+            # 获取任务结果
+            get_job_result(job_id)
+            
+            # 下载训练好的模型
+            download_train_result(job_id)
+        
+        print("\n[🎉] 流程执行完成")
+
+    except Exception as e:
+        print(f"\n[💥] 流程执行失败：{e}")
+        exit(1)
