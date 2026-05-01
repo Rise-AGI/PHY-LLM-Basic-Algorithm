@@ -782,6 +782,68 @@ bash 将未闭合字符串后的 `(` 字符（例如诊断代码中的 `CUDA_VIS
 
 **修复**：确保所有 `_log` 字符串以 `"` 正确闭合。该 bug 已在两个蓝图中修复。
 
+### 8.10 tokenizer.chat_template 未设置（如 DeepSeek 模型）
+
+**现象**：
+```
+ValueError: Cannot use chat template functions because tokenizer.chat_template is not set
+and no template argument was passed! For information about writing templates and setting
+the tokenizer.chat_template attribute, please see the documentation at
+https://huggingface.co/docs/transformers/main/en/chat_templating
+```
+
+**原因**：部分模型的 tokenizer（如 `deepseek-math-7b-base`）未预置 `chat_template`。蓝图中的 `SFTDataset.__getitem__` 和 eval 脚本使用 `tokenizer.apply_chat_template()` 会直接失败。
+
+**修复**：在 tokenizer 加载后检测并设置默认模板：
+```python
+if tokenizer.chat_template is None:
+    tokenizer.chat_template = (
+        "{% for message in messages %}"
+        "{% if message['role'] == 'user' %}"
+        "{{ 'User: ' + message['content'] + '\n\nAssistant: ' }}"
+        "{% elif message['role'] == 'assistant' %}"
+        "{{ message['content'] + '\n\n' }}"
+        "{% endif %}"
+        "{% endfor %}"
+    )
+```
+已应用于 SFT 和 LoRA 蓝图的训练脚本及 eval 脚本（共 4 处）。
+
+### 8.11 NaN Loss + FSDP 跨卡污染
+
+**现象**（2 GPU FSDP 训练 deepseek-math-7b-base）：
+- rank 0 从 step 20 开始持续 NaN loss，rank 1 初始正常
+- step 140 后两个 rank 全部 NaN
+- loss 曲线：`0.70 → 0.61 → 0.60 → NaN → NaN ...`
+
+**原因**：
+1. 训练数据中部分样本 `output` 为空 → `labels` 全部为 -100 → CrossEntropyLoss 返回 NaN
+2. `batch_size=1` 时每张卡独立处理一个样本，坏样本只出现在一个 rank
+3. `loss.backward()` 将 NaN 梯度写入模型参数 → FSDP 下一次 allreduce 时 NaN 传播到所有 rank
+4. 一旦模型参数含 NaN，所有后续 batch 的 loss 全部 NaN
+
+**修复**：在 `backward()` 前检测 NaN/Inf，跳过坏 batch：
+```python
+if torch.isnan(loss) or torch.isinf(loss):
+    nan_count += 1
+    if local_rank == 0 and nan_count <= 5:
+        log(f"  [警告] NaN/Inf loss @ step {step}, 跳过此 batch (#{nan_count})")
+    continue
+```
+已应用于 `OpenFundus_SFT_zyz.magnus` 和 `LoRA_zyz.magnus`。
+
+### 8.12 NCCL 超时（NaN 二次效应）
+
+**现象**：
+```
+[Rank 0] Watchdog caught collective operation timeout:
+WorkNCCL(SeqNum=77204, OpType=_REDUCE_SCATTER_BASE, ...) ran for 600065 milliseconds
+```
+
+**原因**：NaN 梯度导致 FSDP reduce_scatter 操作挂住。torchrun 默认心跳超时 600s（10min）后触发 watchdog 异常。
+
+**修复**：修复 NaN loss 传播（见 §8.11）即可消除此类 NCCL 超时。NCCL 超时本身不是根因。
+
 ---
 
 ## 9. 推荐工作流

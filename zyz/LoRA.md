@@ -200,7 +200,7 @@ magnus run LoRA_zyz -- \
 **原因**：容器镜像中 bitsandbytes 版本与 CUDA 不匹配。
 
 **解决**：
-- 使用自定义镜像（如 `docker://crpi-.../<your-namespace>/sft-base:v1`，已预装兼容版本）
+- 使用自定义镜像（已预装兼容版本）
 - 或在蓝图中指定 `quantization="none"`，使用 bf16 LoRA（需 8+ 卡）
 
 ### 6.2 QLoRA 多卡 DDP 慢
@@ -249,3 +249,31 @@ transformers.modeling_utils.check_torch_load_is_safe = lambda: None
 **现象**：torchrun 启动后无 Python traceback 直接 Failed。
 
 **修复**：蓝图已添加 `2>&1` 重定向、`--log-dir` 各 rank 独立日志、训练前 CUDA/语法预检、失败时自动 dump 所有 rank 日志。详见 SFT.md §8.7。
+
+### 6.6 tokenizer.chat_template 未设置（如 DeepSeek 模型）
+
+**现象**：
+```
+ValueError: Cannot use chat template functions because tokenizer.chat_template is not set and no template argument was passed!
+```
+
+**原因**：部分模型的 tokenizer（如 `deepseek-math-7b-base`）未预置 `chat_template`。蓝图中 Dataset 和 eval 脚本使用 `tokenizer.apply_chat_template()` 会直接失败。
+
+**修复**：tokenizer 加载后检测并设置默认模板（User/Assistant 格式），训练和 eval 共 2 处。
+
+### 6.7 NaN Loss + 分布式传播
+
+**现象**（2 GPU 训练）：
+- 一个 rank 持续 NaN loss，另一个正常；数步后两个 rank 全部 NaN
+
+**原因**：训练数据中部分样本 `output` 为空 → labels 全部为 -100 → loss NaN。bf16 训练下 NaN 梯度过 `backward()` 进入模型参数 → allreduce 时污染所有 rank。
+
+**修复**：在 `backward()` 前添加 NaN/Inf 检测，跳过坏 batch。详见 SFT.md §8.11。
+
+### 6.8 NCCL 超时（NaN 二次效应）
+
+**现象**：`Watchdog caught collective operation timeout: WorkNCCL(_REDUCE_SCATTER_BASE)` 超时 600s。
+
+**原因**：NaN 梯度导致 NCCL 通信操作挂住。
+
+**修复**：修复 NaN loss 传播（见 §6.7）即可消除。NCCL 超时本身不是根因。
