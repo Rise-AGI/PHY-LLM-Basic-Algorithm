@@ -1,7 +1,7 @@
 """
 Submit SFT training via Magnus blueprint (save to server + launch).
 
-Workflow: read .magnus blueprint → save to server → wait 30s → launch → monitor
+Workflow: read .magnus blueprint → save to server → wait 10s → launch
 
 Usage:
     python submit_sft.py                          # use config section below
@@ -10,7 +10,6 @@ Usage:
 
 import argparse
 import os
-import re
 import sys
 import time
 from datetime import datetime
@@ -18,10 +17,7 @@ from typing import Optional
 
 import magnus
 
-from monitor import (
-    Monitor, record_storage, check_model_version_exists,
-    SFT_DATA_DIR, _ensure_record, auto_source, notify_exe,
-)
+
 
 DEFAULT_ADDRESS = "http://162.105.151.134:3011/"
 DEFAULT_TOKEN   = "sk-xxx"
@@ -87,22 +83,12 @@ RESUME_FROM     = None
 
 
 def _auto_model_version(short_name: str) -> str:
-    record = _ensure_record()
-    existing = [e for e in record.get("model-version", [])
-                if e.get("model", "").startswith(short_name + "-v")]
-    max_v = 0
-    for e in existing:
-        m = re.search(r'-v(\d+)$', e.get("model", ""))
-        if m:
-            v = int(m.group(1))
-            if v > max_v:
-                max_v = v
-    return f"{short_name}-v{max_v + 1}"
+    return f"{short_name}-v{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
 
 def _download_report(model_version: str, secret_or_text: str) -> Optional[str]:
-    os.makedirs(SFT_DATA_DIR, exist_ok=True)
-    dest = os.path.join(SFT_DATA_DIR, model_version)
+    dest = os.path.join(HERE, "reports", model_version)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
     if secret_or_text.startswith("magnus-secret:"):
         try:
             magnus.download_file(secret_or_text, dest)
@@ -181,7 +167,7 @@ def main():
     parser.add_argument("--model-version", default=MODEL_VERSION,
                         help="override model version (default: auto-increment)")
     parser.add_argument("--poll-interval", type=int, default=60,
-                        help="monitor poll interval in seconds (default: 60)")
+                        help="poll interval in seconds (default: 60)")
     args = parser.parse_args()
 
     # -- 0. resolve auto-config --
@@ -195,11 +181,6 @@ def main():
     print(f"       blueprint={os.path.basename(bp_path)}")
     print(f"       model version: {model_version}")
     print(f"       output dir: {out_dir}")
-    if check_model_version_exists(model_version):
-        print(f"[FATAL] model version '{model_version}' already exists.")
-        print(f"       use --model-version to specify a new one")
-        sys.exit(1)
-    print(f"       version check passed")
 
     # -- 1. configure --
     magnus.configure(address=args.address, token=args.token)
@@ -245,11 +226,9 @@ def main():
     print(f"       Job ID: {job_id}")
     print()
 
-    # -- 5. monitor + post-process --
-    print(f"[5/5] monitoring (poll={args.poll_interval}s)")
+    # -- 5. post-process --
+    print(f"[5/5] job submitted, waiting for completion (poll={args.poll_interval}s)")
     print("-" * 60)
-    notify_exe(job_id=job_id)
-    Monitor(poll_interval=args.poll_interval, source=auto_source()).add(job_id).run()
 
     job = magnus.get_job(job_id)
     if job.get("status") == "Success":
@@ -266,14 +245,7 @@ def main():
             else:
                 print(f"       report download failed, raw result: {result[:200]}")
 
-        record_storage("model-version", {
-            "time": datetime.now().isoformat(),
-            "model": model_version,
-            "local_path": out_dir,
-            "base_model": MODEL_PATH,
-            "status": "success",
-        })
-        print(f"       model-version recorded: {model_version}")
+        print(f"       version: {model_version}")
     else:
         print(f"       job did not succeed, skipping record")
 

@@ -12,14 +12,13 @@
 
 import argparse
 import os
-import re
 import sys
 from datetime import datetime
 from typing import Optional
 
 import magnus
 
-from monitor import Monitor, record_storage, check_model_version_exists, SFT_DATA_DIR, _ensure_record, auto_source, notify_exe
+
 
 
 DEFAULT_ADDRESS = "http://162.105.151.134:3011/"
@@ -35,24 +34,14 @@ def _extract_model_short_name(model_path: str) -> str:
 
 
 def _auto_model_version(short_name: str) -> str:
-    """自动生成下一个版本号 (model-v1, model-v2, ...)。"""
-    record = _ensure_record()
-    existing = [e for e in record.get("model-version", [])
-                if e.get("model", "").startswith(short_name + "-v")]
-    max_v = 0
-    for e in existing:
-        m = re.search(r'-v(\d+)$', e.get("model", ""))
-        if m:
-            v = int(m.group(1))
-            if v > max_v:
-                max_v = v
-    return f"{short_name}-v{max_v + 1}"
+    """生成基于时间戳的版本号。"""
+    return f"{short_name}-v{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
 
 def _download_report(model_version: str, secret_or_text: str) -> Optional[str]:
-    """尝试将报告保存到 SFT_data/ 目录。返回本地路径或 None。"""
-    os.makedirs(SFT_DATA_DIR, exist_ok=True)
-    dest = os.path.join(SFT_DATA_DIR, model_version)
+    """尝试将报告保存到本地目录。返回本地路径或 None。"""
+    dest = os.path.join(HERE, "reports", model_version)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
 
     # 如果结果是 custody secret，用 magnus download
     if secret_or_text.startswith("magnus-secret:"):
@@ -131,10 +120,6 @@ def main():
     short_name = _extract_model_short_name(args.model)
     model_version = args.model_version or _auto_model_version(short_name)
     print(f"[0/6] 模型版本: {model_version}")
-    if check_model_version_exists(model_version):
-        print(f"[FATAL] 模型版本 '{model_version}' 已存在于存储记录中，拒绝提交。")
-        print(f"       如需重新训练，请使用 --model-version 指定新版本号")
-        sys.exit(1)
     print(f"       版本检查通过")
 
     # ── 1. 配置 ──────────────────────────────────────────
@@ -207,10 +192,8 @@ def main():
     print()
 
     # ── 5. 监控 ──────────────────────────────────────────
-    print(f"[5/6] 开始监控 (poll_interval={args.poll_interval}s)")
+    print(f"[5/6] 作业已提交，等待完成 (poll_interval={args.poll_interval}s)")
     print("-" * 60)
-    notify_exe(job_id=job_id)
-    Monitor(poll_interval=args.poll_interval, source=auto_source()).add(job_id).run()
 
     # ── 6. 后处理 ──────────────────────────────────────────
     print(f"[6/6] 后处理")
@@ -229,14 +212,7 @@ def main():
             else:
                 print(f"      报告下载失败，原始结果: {result[:200]}")
 
-        record_storage("model-version", {
-            "time": datetime.now().isoformat(),
-            "model": model_version,
-            "local_path": args.output_dir,
-            "base_model": args.model,
-            "status": "success",
-        })
-        print(f"      已记录 model-version: {model_version}")
+        print(f"      完成: {model_version}")
     else:
         print(f"      任务未成功，跳过记录")
 

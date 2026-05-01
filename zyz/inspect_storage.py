@@ -15,7 +15,6 @@ import time
 from datetime import datetime
 
 import magnus
-from monitor import notify_exe
 
 
 DEFAULT_ADDRESS = "http://162.105.151.134:3011/"
@@ -203,7 +202,6 @@ def main():
 
     # ── 3. 通知 EXE + 轮询 ──
     print(f"[3/3] 提交成功，Job ID: {job_id}")
-    notify_exe(job_id=job_id)
     print(f"      每 {args.poll_interval}s 轮询状态...")
     print()
     job = _poll_status(job_id, args.poll_interval)

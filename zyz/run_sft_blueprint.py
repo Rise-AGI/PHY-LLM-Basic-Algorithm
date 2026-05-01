@@ -78,11 +78,8 @@ def main():
     )
     print(f"      Job ID: {job_id}")
     print()
-    print(f"[3/4] 监控作业（每 60s 轮询）...")
 
-    from monitor import Monitor, auto_source, notify_exe
-    notify_exe(job_id=job_id)
-    Monitor(poll_interval=60, source=auto_source()).add(job_id).run()
+    print(f"[3/4] 作业已提交，Job ID: {job_id}")
     print()
 
     print(f"[4/4] 作业完成")

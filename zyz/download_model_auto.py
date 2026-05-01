@@ -1,11 +1,8 @@
 
 import sys
 import argparse
-from datetime import datetime
 
 import magnus
-
-from monitor import Monitor, record_storage, auto_source, notify_exe, SYSTEM_ENTRY_COMMAND
 
 # -- default Magnus connection --
 DEFAULT_ADDRESS = "http://162.105.151.134:3011/"
@@ -88,7 +85,6 @@ ls "$SAVE_DIR"
         task_name         = f"DownloadModel-{model_name}",
         description       = f"download {model_id} to persistent storage",
         entry_command     = entry_command,
-        system_entry_command = SYSTEM_ENTRY_COMMAND,
         namespace         = "Rise-AGI",
         repo_name         = "OpenFundus",
         gpu_count         = 0,
@@ -99,24 +95,10 @@ ls "$SAVE_DIR"
         job_type          = "A2",
     )
 
-    # -- step 3: notify EXE + monitor --
+    # -- step 3: done --
     print(f"[3/3] submitted, Job ID: {job_id}")
     print(f"      model: {model_id} -> /data/<user>/models/{model_name}")
-    print(f"      monitor polling every 60s...")
     print()
-
-    notify_exe(job_id=job_id)
-    Monitor(poll_interval=60, source=auto_source()).add(job_id).run()
-
-    # -- record to storage --
-    job = magnus.get_job(job_id)
-    if job.get("status") == "Success":
-        record_storage("modelscope", {
-            "time": datetime.now().isoformat(),
-            "model": model_id,
-            "target": f"/data/<user>/models/{model_name}",
-            "status": "success",
-        })
 
 
 if __name__ == "__main__":

@@ -12,11 +12,8 @@
 import argparse
 import os
 import sys
-from datetime import datetime
 
 import magnus
-
-from monitor import Monitor, record_storage, auto_source, notify_exe, SYSTEM_ENTRY_COMMAND
 
 DEFAULT_ADDRESS = "http://162.105.151.134:3011/"
 DEFAULT_TOKEN   = "sk-xxx"
@@ -122,7 +119,6 @@ ls "$SAVE_DIR"/*.whl 2>/dev/null || echo "(无 wheel 文件)"
         task_name         = "Warmup-Pip-Cache",
         description       = f"预热 {len(PACKAGES)} 个 pip 包到持久存储",
         entry_command     = entry_command,
-        system_entry_command = SYSTEM_ENTRY_COMMAND,
         namespace         = "Rise-AGI",
         repo_name         = "OpenFundus",
         gpu_count         = 0,
@@ -134,21 +130,9 @@ ls "$SAVE_DIR"/*.whl 2>/dev/null || echo "(无 wheel 文件)"
     )
     print(f"      Job ID: {job_id}")
 
-    notify_exe(job_id=job_id)
-    Monitor(poll_interval=60, source=auto_source()).add(job_id).run()
+    # Monitor removed - check status manually
 
-    # 成功后记录持久存储
-    job = magnus.get_job(job_id)
-    if job.get("status") == "Success":
-        record_storage("pip", {
-            "time": datetime.now().isoformat(),
-            "target": "/data/<用户名>/pip-cache/wheels",
-            "packages": len(PACKAGES),
-            "status": "success",
-        })
-        print(f"\n{'=' * 60}")
-        print(f"预热完成！蓝图可通过 PIP_FIND_LINKS 使用本地缓存。")
-        print(f"{'=' * 60}")
+    
 
 
 if __name__ == "__main__":

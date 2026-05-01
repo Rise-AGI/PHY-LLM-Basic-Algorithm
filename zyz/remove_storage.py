@@ -16,8 +16,6 @@ from datetime import datetime
 
 import magnus
 
-from monitor import Monitor, auto_source, notify_exe, SYSTEM_ENTRY_COMMAND
-
 DEFAULT_ADDRESS = "http://162.105.151.134:3011/"
 DEFAULT_TOKEN   = "sk-xxx"
 
@@ -90,7 +88,6 @@ fi
         task_name         = f"Remove-{target.split('/')[-1]}",
         description       = f"删除: {target}",
         entry_command     = entry_command,
-        system_entry_command = SYSTEM_ENTRY_COMMAND,
         namespace         = "Rise-AGI",
         repo_name         = "OpenFundus",
         gpu_count         = 0,
@@ -102,8 +99,7 @@ fi
     )
     print(f"  Job ID: {job_id}")
 
-    notify_exe(job_id=job_id)
-    Monitor(poll_interval=30, source=auto_source()).add(job_id).run()
+    # Monitor removed - check status manually via magnus CLI
 
     job = magnus.get_job(job_id)
     if job.get("status") == "Success":
