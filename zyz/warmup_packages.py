@@ -32,6 +32,7 @@ PACKAGES = [
     "matplotlib", "seaborn",
     "requests",
 ]
+#这些其实已经包括在镜像 docker://crpi-32rssczyu25r10yu.cn-beijing.personal.cr.aliyuncs.com/zyz25/sft-base:v2 中
 
 
 def main():
