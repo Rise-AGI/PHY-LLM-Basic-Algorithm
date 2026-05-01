@@ -1,0 +1,17 @@
+# PyInstaller build artifacts
+build/
+dist/
+*.exe
+*.spec
+
+# Python
+__pycache__/
+*.pyc
+
+# Data / logs
+data1/
+data2/
+
+# IDE
+.idea/
+.vscode/
