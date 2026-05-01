@@ -1,0 +1,84 @@
+@{23257fd3e145.data1,
+  time = 2026-05-01T01:29:10.198437,
+  name = SFT-deepseek-math-7b-base,
+  submitter = magnus,
+  job_id = 23257fd3e145d151,
+  type = 日志,
+  status = Running,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-05-01T01:29:10.198437,
+  updated_at = 2026-05-01 09:30:22,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+[2026-05-01 09:30:22] [SFT-deepseek-math-7b-base] [Running]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-05-01 09:29:16] === [Warmup] 检查本地 pip 缓存 ====
+[2026-05-01 09:29:16] [Warmup] 命中缓存: /data/magnus/pip-cache/wheels（80 个 wheel）
+[2026-05-01 09:29:16] === [0/5] 检查输出目录 ===
+[2026-05-01 09:29:16] 输出目录可用: /data/magnus/models/deepseek-math-7b-base-sft-v1
+[2026-05-01 09:29:16] === [1/5] 环境信息 ===
+Fri May  1 09:29:19 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.211.01             Driver Version: 570.211.01     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100 80GB PCIe          Off |   00000000:E5:00.0 Off |                    0 |
+| N/A   67C    P0             92W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA A100 80GB PCIe          Off |   00000000:E6:00.0 Off |                    0 |
+| N/A   72C    P0            107W /  300W |       0MiB /  81920MiB |      1%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Python 3.11.10
+[2026-05-01 09:29:20] === [2/5] 检查依赖 ===
+  [就绪] transformers 5.7.0
+  [就绪] datasets 4.8.5
+  [就绪] accelerate 1.13.0
+  [就绪] pandas 3.0.2
+  [就绪] einops 0.8.2
+  [就绪] sentencepiece 0.2.1
+  [就绪] google.protobuf 
+  [警告] magnus SDK 未找到，custody 上传将失败
+所有依赖已就绪，跳过 pip install
+[环境] torch 2.5.1+cu124 | CUDA 12.4 | GPU 2 张
+[2026-05-01 09:29:56] === [3/5] 准备模型和数据 ===
+[2026-05-01 09:29:56] === 加载模型 ===
+[2026-05-01 09:29:56] [模型] 使用本地路径: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:29:56] [模型] 模型文件列表:
+    594  /data/magnus/models/deepseek-math-7b-base/config.json
+     79  /data/magnus/models/deepseek-math-7b-base/configuration.json
+    121  /data/magnus/models/deepseek-math-7b-base/generation_config.json
+   9.3G  /data/magnus/models/deepseek-math-7b-base/pytorch_model-00001-of-00002.bin
+   3.6G  /data/magnus/models/deepseek-math-7b-base/pytorch_model-00002-of-00002.bin
+    22K  /data/magnus/models/deepseek-math-7b-base/pytorch_model.bin.index.json
+   4.4M  /data/magnus/models/deepseek-math-7b-base/tokenizer.json
+    655  /data/magnus/models/deepseek-math-7b-base/tokenizer_config.json
+[2026-05-01 09:29:56] [模型] 目录总大小: 13G
+[2026-05-01 09:29:56] === [4/5] 开始 SFT 训练 ===
+[2026-05-01 09:29:56] [诊断] launcher=torchrun --nproc_per_node=2
+[2026-05-01 09:29:56] [诊断] ACTUAL_MODEL_PATH=/data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:29:56] [诊断] TRAIN_DATA_PATH=/data/magnus/training_data/train.json
+[2026-05-01 09:29:56] [诊断] TEST_DATA_PATH=/data/magnus/training_data/test.json
+[2026-05-01 09:29:56] [诊断] CUDA_VISIBLE_DEVICES=0,1
+[诊断] torch=2.5.1+cu124, cuda=True, gpu_count=2
+[诊断] sft_train.py 语法检查通过
+[诊断] transformers 核心导入 OK
+W0501 09:30:23.898000 254 site-packages/torch/distributed/run.py:793] 
+W0501 09:30:23.898000 254 site-packages/torch/distributed/run.py:793] *****************************************
+W0501 09:30:23.898000 254 site-packages/torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0501 09:30:23.898000 254 site-packages/torch/distributed/run.py:793] *****************************************

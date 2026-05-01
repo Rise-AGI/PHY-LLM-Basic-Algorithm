@@ -1,0 +1,112 @@
+@{20260424-165654-s-mag-Warmup-SFT-Packages-092.data1,
+  time = 2026-04-24T16:56:54.732952,
+  name = Warmup-SFT-Packages,
+  submitter = magnus,
+  job_id = 999cb303349b8e59,
+  type = 日志,
+  status = Success,
+  source_abbr = mag,
+  seq = 092,
+  created_at = 2026-04-24T16:56:54.732952,
+  updated_at = 2026-04-27 16:22:12,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-04-27 16:22:12] [Warmup-SFT-Packages] [Success]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+=== 预热 pip 包到 /data/magnus/pip-cache/wheels ===
+=== 下载 wheel（优先预编译二进制）===
+Collecting transformers
+  Downloading transformers-5.6.2-py3-none-any.whl.metadata (33 kB)
+Collecting accelerate
+  Downloading accelerate-1.13.0-py3-none-any.whl.metadata (19 kB)
+Collecting datasets
+  Downloading datasets-4.8.4-py3-none-any.whl.metadata (19 kB)
+Collecting tokenizers
+  Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+Collecting safetensors
+  Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+Collecting peft
+  Downloading peft-0.19.1-py3-none-any.whl.metadata (15 kB)
+Collecting trl
+  Downloading trl-1.2.0-py3-none-any.whl.metadata (11 kB)
+Collecting bitsandbytes
+  Downloading bitsandbytes-0.49.2-py3-none-manylinux_2_24_x86_64.whl.metadata (10 kB)
+Collecting pandas
+  Downloading pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+Collecting numpy
+  Downloading numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+Collecting scipy
+  Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+Collecting pyarrow
+  Downloading pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (3.0 kB)
+Collecting jinja2
+  Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+Collecting protobuf
+  Downloading protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl.metadata (595 bytes)
+Collecting sentencepiece
+  Downloading sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (10 kB)
+Collecting tiktoken
+  Downloading tiktoken-0.12.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (6.7 kB)
+Collecting huggingface-hub
+  Downloading huggingface_hub-1.12.0-py3-none-any.whl.metadata (14 kB)
+Collecting modelscope
+  Downloading modelscope-1.36.2-py3-none-any.whl.metadata (43 kB)
+Collecting einops
+  Downloading einops-0.8.2-py3-none-any.whl.metadata (13 kB)
+Collecting wandb
+  Downloading wandb-0.26.1-py3-none-manylinux_2_28_x86_64.whl.metadata (11 kB)
+Collecting tenacity
+  Downloading tenacity-9.1.4-py3-none-any.whl.metadata (1.2 kB)
+Collecting psutil
+  Downloading psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl.metadata (22 kB)
+Collecting pyyaml
+  Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Collecting click
+  Downloading click-8.3.3-py3-none-any.whl.metadata (2.6 kB)
+Collecting fire
+  Downloading fire-0.7.1-py3-none-any.whl.metadata (5.8 kB)
+Collecting scikit-learn
+  Downloading scikit_learn-1.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (11 kB)
+Collecting matplotlib
+  Downloading matplotlib-3.10.9-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (52 kB)
+Collecting seaborn
+  Downloading seaborn-0.13.2-py3-none-any.whl.metadata (5.4 kB)
+Collecting opencv-python
+  Downloading opencv_python-4.13.0.92-cp37-abi3-manylinux_2_28_x86_64.whl.metadata (19 kB)
+Collecting pillow
+  Downloading pillow-12.2.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (8.8 kB)
+Collecting ffmpeg-python
+  Downloading ffmpeg_python-0.2.0-py3-none-any.whl.metadata (1.7 kB)
+Collecting gradio
+  Downloading gradio-6.13.0-py3-none-any.whl.metadata (17 kB)
+Collecting streamlit
+  Downloading streamlit-1.56.0-py3-none-any.whl.metadata (9.8 kB)
+Collecting fastapi
+  Downloading fastapi-0.136.1-py3-none-any.whl.metadata (28 kB)
+Collecting uvicorn
+  Downloading uvicorn-0.46.0-py3-none-any.whl.metadata (6.7 kB)
+Collecting requests
+  Downloading requests-2.33.1-py3-none-any.whl.metadata (4.8 kB)
+Collecting urllib3
+  Downloading urllib3-2.6.3-py3-none-any.whl.metadata (6.9 kB)
+Collecting charset-normalizer
+  Downloading charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+Collecting idna
+  Downloading idna-3.13-py3-none-any.whl.metadata (8.0 kB)
+Collecting certifi
+  Downloading certifi-2026.4.22-py3-none-any.whl.metadata (2.5 kB)
+Collecting torchao
+  Downloading torchao-0.17.0-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (20 kB)
+Collecting auto-gptq
+  Downloading auto_gptq-0.7.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (18 kB)
+ERROR: Ignored the following versions that require a different python version: 0.55.2 Requires-Python <3.5
+ERROR: Could not find a version that satisfies the requirement auto-awq (from versions: none)
+ERROR: No matching distribution found for auto-awq
+[完成] 部分包无预编译 wheel 已跳过，源码包将从 PyPI 正常安装
+=== 缓存文件统计 ===
+total 0
+总文件数: 0
+4.0K	/data/magnus/pip-cache/wheels
+=== 预热完成 ===

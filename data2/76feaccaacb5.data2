@@ -1,0 +1,21 @@
+@{76feaccaacb5.data2,
+  time = 2026-04-28T00:25:55.080654,
+  name = FakeTest-Qwen2.5-72B,
+  submitter = submit_sft.py,
+  job_id = 76feaccaacb54c69,
+  type = 时间线,
+  status = Terminated,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-04-28T00:25:55.080654,
+  updated_at = 2026-05-01 09:05:10,
+  gpu_count = 3,
+  gpu_type = a100,
+}
+
+
+[2026-05-01 09:05:10] [Terminated]
+  [任务开始] 2026-04-28T00:25:55.080654
+
+[2026-05-01 09:05:10] [Terminated]
+  [任务结束] Terminated 2026-05-01 09:05:10

@@ -13,7 +13,7 @@ from typing import Dict, Optional
 
 # ============================ 全局配置（需根据实际环境修改） ============================
 MAGNUS_CONFIG = {
-    "token": "sk-V-v0UMARpccPA_QwXGIoRDc9G2K67XiA",          # 替换为你的 Magnus token
+    "token": "sk-xxx",          # 替换为你的 Magnus token
     "address": "http://162.105.151.134:3011/",  # 替换为 Magnus 服务地址
     "blueprint_name": "qwen-sft",      # Blueprint 名称（需与平台一致）
     "repo_name": "OpenFundus",         # 存放 sft_train.py 的代码仓库名

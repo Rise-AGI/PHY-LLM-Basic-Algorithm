@@ -1,0 +1,21 @@
+@{4f48bebcf0de.data2,
+  time = 2026-04-27T23:46:44.724980,
+  name = PersistTest-Write,
+  submitter = warmup_test.py,
+  job_id = 4f48bebcf0de8918,
+  type = 时间线,
+  status = Success,
+  source_abbr = wt,
+  seq = 000,
+  created_at = 2026-04-27T23:46:44.724980,
+  updated_at = 2026-05-01 09:05:09,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:09] [Success]
+  [任务开始] 2026-04-27T23:46:44.724980
+
+[2026-05-01 09:05:09] [Success]
+  [任务结束] Success 2026-05-01 09:05:09

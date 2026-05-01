@@ -1,0 +1,17 @@
+@{20260427-011900-t-mag-DownloadModel-Qwen2_5-Math-PRM-7B-005.data2,
+  time = 2026-04-27T01:19:00.069783,
+  name = DownloadModel-Qwen2.5-Math-PRM-7B,
+  submitter = magnus,
+  job_id = 3f0eda773c12abb1,
+  type = 时间线,
+  status = Terminated,
+  source_abbr = mag,
+  seq = 005,
+  created_at = 2026-04-27T01:19:00.069783,
+  updated_at = 2026-04-27 15:31:14,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-04-27 15:31:14] [Terminated] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted

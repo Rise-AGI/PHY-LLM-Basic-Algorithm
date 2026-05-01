@@ -1,0 +1,42 @@
+@{ae1fea3f50e0.data1,
+  time = 2026-04-28T19:35:57.877839,
+  name = FakeTest-Qwen2.5-72B-Instruct,
+  submitter = submit_sft.py,
+  job_id = ae1fea3f50e029b6,
+  type = 日志,
+  status = Running,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-04-28T19:35:57.877839,
+  updated_at = 2026-04-28 21:55:39,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+[2026-04-28 21:55:39] [FakeTest-Qwen2.5-72B-Instruct] [Running]
+Traceback (most recent call last):
+  File "/tmp/sft_train.py", line 330, in <module>
+    train()
+  File "/tmp/sft_train.py", line 242, in train
+    model.to(device)
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1340, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 900, in _apply
+    module._apply(fn)
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 900, in _apply
+    module._apply(fn)
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 900, in _apply
+    module._apply(fn)
+  [Previous line repeated 3 more times]
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 927, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1326, in convert
+    return t.to(
+           ^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 462.00 MiB. GPU 0 has a total capacity of 79.25 GiB of which 136.94 MiB is free. Process 3764257 has 79.11 GiB memory in use. Of the allocated memory 78.71 GiB is allocated by PyTorch, and 1.64 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[2026-04-28 21:55:24] [FATAL] 训练异常退出，trap 将自动打包已保存的 checkpoint
+[2026-04-28 21:55:24] 
+[2026-04-28 21:55:24] === [退出] 上传训练日志 ===
+[2026-04-28 21:55:24] [警告] 未找到训练日志: /data/magnus/models/Qwen2.5-72B-Instruct-sft-v1/training_log.json

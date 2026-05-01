@@ -1,0 +1,22 @@
+@{20260427-163807-t-ss-FakeTest-Qwen2_5-72B-001.data1,
+  time = 2026-04-27 16:38:07,
+  name = FakeTest-Qwen2.5-72B,
+  submitter = ss,
+  job_id = 1935d19eddefeb12,
+  type = 日志,
+  status = Terminated,
+  source_abbr = ss,
+  seq = 001,
+  created_at = 2026-04-27T16:38:07.007021,
+  updated_at = 2026-04-28 00:39:09,
+}
+
+[监控] poll_interval=60s | 跟踪 1 个任务
+[监控] ──────────────────────────────────────────────────
+[2026-04-28 00:38:09] [FakeTest-Qwen2.5-72B] [Pending]
+[2026-04-28 00:38:09] [FakeTest-Qwen2.5-72B] --- 日志 ---
+  Waiting for output stream...
+
+[2026-04-28 00:39:09] [FakeTest-Qwen2.5-72B] [Pending] → [Terminated]
+[2026-04-28 00:39:09] [FakeTest-Qwen2.5-72B] ❌ Terminated
+[监控] 结束 (共运行 60s)

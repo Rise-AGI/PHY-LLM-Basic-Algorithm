@@ -1,0 +1,21 @@
+@{deca3afd8de2.data2,
+  time = 2026-04-25T02:28:48.771710,
+  name = Warmup-SFT-Packages,
+  submitter = magnus,
+  job_id = deca3afd8de2a825,
+  type = 时间线,
+  status = Success,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-25T02:28:48.771710,
+  updated_at = 2026-05-01 09:05:04,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:04] [Success]
+  [任务开始] 2026-04-25T02:28:48.771710
+
+[2026-05-01 09:05:04] [Success]
+  [任务结束] Success 2026-05-01 09:05:04

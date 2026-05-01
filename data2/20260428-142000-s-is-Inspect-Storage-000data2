@@ -1,0 +1,121 @@
+@{7ce853296acb.data2,
+  time = 2026-04-28T14:20:00.939891,
+  name = Inspect-Storage,
+  submitter = inspect_storage.py,
+  job_id = 7ce853296acb0453,
+  type = 时间线,
+  status = Success,
+  source_abbr = is,
+  seq = 000,
+  created_at = 2026-04-28T14:20:00.939891,
+  updated_at = 2026-04-28 14:20:33,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-04-28 14:20:33] [Success] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-28 14:21:31] [Success] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-28 14:21:31] [Success] 用户: magnus
+[2026-04-28 14:21:31] [Success] 
+[2026-04-28 14:21:31] [Success] ========== pip 缓存 (/data/magnus/pip-cache/) ==========
+[2026-04-28 14:21:31] [Success] 路径: /data/magnus/pip-cache/wheels
+[2026-04-28 14:21:31] [Success] wheel 数量: 80
+[2026-04-28 14:21:31] [Success] 总大小:   208M
+[2026-04-28 14:21:31] [Success] 标记文件: ✗ 不存在
+[2026-04-28 14:21:31] [Success] 
+[2026-04-28 14:21:31] [Success] --- wheel 列表（前 20 个）---
+[2026-04-28 14:21:31] [Success]   certifi-2026.4.22-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   pygments-2.20.0-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   threadpoolctl-3.6.0-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-28 14:21:31] [Success]   scikit_learn-1.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-28 14:21:31] [Success]   gitpython-3.1.47-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   modelscope-1.36.2-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-28 14:21:31] [Success]   sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-28 14:21:31] [Success]   urllib3-2.6.3-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   dill-0.4.1-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   six-1.17.0-py2.py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+[2026-04-28 14:21:31] [Success]   setuptools-82.0.1-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   platformdirs-4.9.6-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   fsspec-2026.3.0-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   h11-0.16.0-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   multiprocess-0.70.19-py311-none-any.whl
+[2026-04-28 14:21:31] [Success]   httpx-0.28.1-py3-none-any.whl
+[2026-04-28 14:21:31] [Success]   ... 共 80 个
+[2026-04-28 14:21:31] [Success] 
+[2026-04-28 14:21:31] [Success] ========== 模型存储 (/data/magnus/models/) ==========
+[2026-04-28 14:21:31] [Success] 路径: /data/magnus/models
+[2026-04-28 14:21:31] [Success] 
+[2026-04-28 14:21:31] [Success] --- 模型: /data/magnus/models/Qwen2.5-1.5B ---
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 2.9G Apr 18 01:33 /data/magnus/models/Qwen2.5-1.5B/model.safetensors
+[2026-04-28 14:21:31] [Success]   文件数: 10
+[2026-04-28 14:21:31] [Success]   大小:   2.9G
+[2026-04-28 14:21:31] [Success] 
+[2026-04-28 14:21:31] [Success] --- 模型: /data/magnus/models/deepseek-math-7b-base ---
+[2026-04-28 14:21:31] [Success]   (无 safetensors 文件)
+[2026-04-28 14:21:31] [Success]   文件数: 10
+[2026-04-28 14:21:31] [Success]   大小:   13G
+[2026-04-28 14:21:31] [Success] 
+[2026-04-28 14:21:31] [Success] --- 模型: /data/magnus/models/Qwen2.5-72B ---
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.6G Apr 24 23:06 /data/magnus/models/Qwen2.5-72B/model-00001-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:07 /data/magnus/models/Qwen2.5-72B/model-00002-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.6G Apr 24 23:08 /data/magnus/models/Qwen2.5-72B/model-00003-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:09 /data/magnus/models/Qwen2.5-72B/model-00004-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:10 /data/magnus/models/Qwen2.5-72B/model-00005-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:11 /data/magnus/models/Qwen2.5-72B/model-00006-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.6G Apr 24 23:12 /data/magnus/models/Qwen2.5-72B/model-00007-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:13 /data/magnus/models/Qwen2.5-72B/model-00008-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00009-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00010-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.6G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00011-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00012-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00013-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00014-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.6G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00015-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00016-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00017-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00018-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.6G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00019-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00020-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00021-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00022-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.6G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00023-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00024-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00025-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:14 /data/magnus/models/Qwen2.5-72B/model-00026-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.6G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00027-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00028-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00029-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00030-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.6G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00031-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00032-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00033-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00034-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.6G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00035-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.8G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00036-of-00037.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 3.3G Apr 24 23:15 /data/magnus/models/Qwen2.5-72B/model-00037-of-00037.safetensors
+[2026-04-28 14:21:31] [Success]   文件数: 47
+[2026-04-28 14:21:31] [Success]   大小:   74G
+[2026-04-28 14:21:31] [Success] 
+[2026-04-28 14:21:31] [Success] --- 模型: /data/magnus/models/internlm2-math-7b ---
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00001-of-00008.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00002-of-00008.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00003-of-00008.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00004-of-00008.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00005-of-00008.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00006-of-00008.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00007-of-00008.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 1.7G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00008-of-00008.safetensors
+[2026-04-28 14:21:31] [Success]   文件数: 20
+[2026-04-28 14:21:31] [Success]   大小:   15G
+[2026-04-28 14:21:31] [Success] 
+[2026-04-28 14:21:31] [Success] --- 模型: /data/magnus/models/qwen-sft-v1/final ---
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 1.7G Apr 24 00:04 /data/magnus/models/qwen-sft-v1/final/model-00001-of-00002.safetensors
+[2026-04-28 14:21:31] [Success] -rw-r--r-- 1 magnus magnus 1.3G Apr 24 00:04 /data/magnus/models/qwen-sft-v1/final/model-00002-of-00002.safetensors
+[2026-04-28 14:21:31] [Success]   文件数: 8
+[2026-04-28 14:21:31] [Success]   大小:   2.9G
+[2026-04-28 14:21:31] [Success] 
+[2026-04-28 14:21:31] [Success] ========== 检查完成 ==========

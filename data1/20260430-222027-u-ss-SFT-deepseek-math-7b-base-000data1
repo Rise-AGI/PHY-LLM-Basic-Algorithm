@@ -1,0 +1,17 @@
+@{d3ba4020353f.data1,
+  time = 2026-04-30T22:20:27.074838,
+  name = SFT-deepseek-math-7b-base,
+  submitter = submit_sft.py,
+  job_id = d3ba4020353f3477,
+  type = 日志,
+  status = Pending,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-04-30T22:20:27.074838,
+  updated_at = 2026-04-30 22:20:30,
+  gpu_count = 6,
+  gpu_type = a100,
+}
+
+[2026-04-30 22:20:30] [SFT-deepseek-math-7b-base] [Pending]
+Waiting for output stream...

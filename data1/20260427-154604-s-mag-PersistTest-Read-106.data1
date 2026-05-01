@@ -1,0 +1,73 @@
+@{20260427-154604-s-mag-PersistTest-Read-106.data1,
+  time = 2026-04-27T15:46:04.167014,
+  name = PersistTest-Read,
+  submitter = magnus,
+  job_id = b0695841692c4a51,
+  type = 日志,
+  status = Success,
+  source_abbr = mag,
+  seq = 106,
+  created_at = 2026-04-27T15:46:04.167014,
+  updated_at = 2026-04-27 23:47:27,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-04-27 23:47:27] [PersistTest-Read] [Success]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+=== 检查标记文件 ===
+路径: /data/magnus/persist-test/hello.txt
+结果: 文件存在 — 持久存储正常工作！
+内容: Hello from job 2026-04-27T23:45:34+08:00
+=== /data/ 顶层面板 ===
+total 39088
+drwxr-xr-x 36 magnus magnus      4096 Apr 27 23:45 .
+drwxr-xr-x 28 nobody nogroup     4096 Mar 29 21:09 ..
+drwxr-xr-x  9 magnus magnus      4096 Jan 12 22:08 .Mathematica
+drwxrwxr-x  9 magnus magnus      4096 Apr  9 10:54 .WolframEngine
+drwxrwxr-x  2 magnus magnus      4096 Jan 11 22:12 .anaconda
+drwx------  3 magnus magnus      4096 Feb  6 15:49 .apptainer
+-rw-------  1 magnus magnus     46502 Apr 27 16:28 .bash_history
+-rw-r--r--  1 magnus magnus       220 Jan  7  2022 .bash_logout
+-rw-r--r--  1 magnus magnus     10717 Apr 25 19:09 .bashrc
+drwxr-xr-x  3 magnus magnus      4096 Jan 12 23:43 .bun
+drwx------ 17 magnus magnus      4096 Apr 25 19:16 .cache
+drwxrwxr-x 15 magnus magnus      4096 Apr 25 11:14 .claude
+-rw-------  1 magnus magnus     26547 Apr 25 11:32 .claude.json
+drwxrwxr-x  9 magnus magnus      4096 Apr 25 19:08 .codex
+drwxrwsr-x  5 magnus magnus      4096 Jan 11 22:13 .conda
+drwx------ 10 magnus magnus      4096 Apr 25 19:16 .config
+drwx------  3 magnus magnus      4096 Mar 25 19:32 .copilot
+drwxrwxr-x  5 magnus magnus      4096 Feb  2 17:58 .dbclient
+drwxrwxr-x  3 magnus magnus      4096 Dec 24 17:17 .dotnet
+-rw-------  1 magnus magnus        74 Apr 14 12:00 .git-credentials
+-rw-rw-r--  1 magnus magnus       318 Apr 14 12:02 .gitconfig
+drwx------  5 magnus magnus      4096 Mar  1 15:42 .local
+drwxrwxr-x  2 magnus magnus      4096 Apr 25 19:06 .magnus
+drwxrwxr-x  4 magnus magnus      4096 Jan 12 00:01 .npm
+drwx------  3 magnus magnus      4096 Jan 11 22:12 .nv
+-rw-r--r--  1 magnus magnus      1078 Jan 23 19:41 .profile
+drwx------  3 magnus magnus      4096 Jan 12 21:23 .ssh
+-rw-r--r--  1 magnus magnus         0 Dec 24 17:17 .sudo_as_admin_successful
+drwxr-xr-x  3 magnus magnus      4096 Jan 12 23:31 .triton
+drwxr-x---  5 magnus magnus      4096 Apr 25 19:14 .vscode-server
+-rw-rw-r--  1 magnus magnus       183 Apr 25 11:03 .wget-hsts
+drwxr-xr-x  2 nobody nogroup     4096 Feb 27 12:52 .wolfram-
+drwxr-xr-x  2 magnus magnus      4096 Feb 27 13:03 .wolfram-container-license
+drwxrwxr-x  8 magnus magnus      4096 Apr  7 11:10 Phy-LLM-infra-credit
+drwxrwxr-x  2 magnus magnus      4096 Jan 12 10:46 bin
+-rwxr-xr-x  1 magnus magnus  39667364 Mar 19 10:16 cloudflared
+drwxrwxr-x 11 magnus magnus      4096 Apr 25 13:52 magnus
+lrwxrwxrwx  1 nobody nogroup       16 Feb 27 19:32 magnus-data -> /opt/magnus-data
+drwxrwxr-x  4 magnus magnus      4096 Jan 13 14:13 magnus-data-develop
+drwxr-xr-x 11 magnus magnus      4096 Apr 25 01:00 models
+drwxr-xr-x  2 magnus magnus      4096 Apr 27 23:45 persist-test
+drwxrwxr-x  3 magnus magnus      4096 Apr  7 08:26 phy-llm-infra-credit-data
+drwxr-xr-x  3 magnus magnus      4096 Apr 27 23:35 pip-cache
+drwxrwxr-x  8 magnus magnus      4096 Apr 12 22:41 porter
+drwxr-xr-x  5 magnus magnus      4096 Apr 21 02:48 rl-group
+drwx------  3 magnus magnus      4096 Jan 26 23:28 snap
+drwxr-xr-x  2 magnus magnus      4096 Apr 21 00:01 training_data
+-rw-rw-r--  1 magnus magnus     89858 Apr 25 12:18 tunnel.log
+-rw-rw-r--  1 magnus magnus         6 Apr  5 14:17 tunnel.pid
+---DONE---

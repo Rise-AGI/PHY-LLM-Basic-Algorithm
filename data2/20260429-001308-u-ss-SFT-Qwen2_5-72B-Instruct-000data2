@@ -1,0 +1,29 @@
+@{adcdd8f09068.data2,
+  time = 2026-04-29T00:13:08.958982,
+  name = SFT-Qwen2.5-72B-Instruct,
+  submitter = submit_sft.py,
+  job_id = adcdd8f09068a703,
+  type = 时间线,
+  status = Pending,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-04-29T00:13:08.958982,
+  updated_at = 2026-04-29 00:14:07,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+[2026-04-29 00:14:07] [Pending] Waiting for output stream...
+[2026-04-29 00:15:13] [Pending] (运行中, 无新日志)
+
+[2026-04-29 00:15:18] [Pending]
+  (运行中, 无新日志)
+
+[2026-04-29 00:14] [Pending]
+  Waiting for output stream...
+[2026-04-29 00:16:18] [Pending] (运行中, 无新日志)
+[2026-04-29 00:17:23] [Pending] (运行中, 无新日志)
+[2026-04-29 00:18:28] [Pending] (运行中, 无新日志)
+[2026-04-29 00:19:34] [Pending] (运行中, 无新日志)
+[2026-04-29 00:20:40] [Pending] (运行中, 无新日志)
+[2026-04-29 00:21:45] [Pending] (运行中, 无新日志)

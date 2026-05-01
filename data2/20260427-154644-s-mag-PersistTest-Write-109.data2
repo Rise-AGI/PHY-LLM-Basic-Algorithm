@@ -1,0 +1,23 @@
+@{20260427-154644-s-mag-PersistTest-Write-109.data2,
+  time = 2026-04-27T15:46:44.331000,
+  name = PersistTest-Write,
+  submitter = magnus,
+  job_id = 4f48bebcf0de8918,
+  type = 时间线,
+  status = Success,
+  source_abbr = mag,
+  seq = 109,
+  created_at = 2026-04-27T15:46:44.331000,
+  updated_at = 2026-04-27 23:48:33,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-04-27 23:47:36] [Success] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 23:48:33] [Success] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 23:48:33] [Success] === 写入完成 ===
+[2026-04-27 23:48:33] [Success] 用户: magnus
+[2026-04-27 23:48:33] [Success] 文件: /data/magnus/persist-test/hello.txt
+[2026-04-27 23:48:33] [Success] 内容: Hello from job 2026-04-27T23:46:48+08:00
+[2026-04-27 23:48:33] [Success] ---DONE---

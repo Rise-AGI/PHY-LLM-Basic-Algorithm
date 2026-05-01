@@ -1,0 +1,449 @@
+@{2578bebeef28.data1,
+  time = 2026-04-28T20:31:59.249834,
+  name = SFT-Qwen2.5-72B-Instruct,
+  submitter = submit_sft.py,
+  job_id = 2578bebeef28898e,
+  type = 日志,
+  status = Failed,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-04-28T20:31:59.249834,
+  updated_at = 2026-05-01 09:05:14,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+[2026-05-01 09:05:14] [SFT-Qwen2.5-72B-Instruct] [Failed]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-28 20:32:11] === [Warmup] 检查本地 pip 缓存 ====
+[2026-04-28 20:32:11] [Warmup] 命中缓存: /data/magnus/pip-cache/wheels（80 个 wheel）
+[2026-04-28 20:32:11] === [0/5] 检查输出目录 ===
+[2026-04-28 20:32:11] 输出目录可用: /data/magnus/models/Qwen2.5-72B-Instruct-sft-v1
+[2026-04-28 20:32:11] === [1/5] 环境信息 ===
+Tue Apr 28 20:32:15 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.211.01             Driver Version: 570.211.01     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100 80GB PCIe          Off |   00000000:E7:00.0 Off |                    0 |
+| N/A   63C    P0             86W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA A100 80GB PCIe          Off |   00000000:E8:00.0 Off |                    0 |
+| N/A   66C    P0             85W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Python 3.11.10
+[2026-04-28 20:32:17] === [2/5] 检查依赖 ===
+  [缺失] transformers
+  [缺失] datasets
+  [缺失] accelerate
+  [缺失] pandas
+  [缺失] einops
+  [缺失] sentencepiece
+  [缺失] protobuf
+  [警告] magnus SDK 未找到，custody 上传将失败
+安装缺失依赖: transformers datasets accelerate pandas einops sentencepiece protobuf
+Looking in links: /data/magnus/pip-cache/wheels, /data/magnus/pip-cache/wheels
+Processing /data/magnus/pip-cache/wheels/transformers-5.6.2-py3-none-any.whl
+Processing /data/magnus/pip-cache/wheels/datasets-4.8.4-py3-none-any.whl
+Processing /data/magnus/pip-cache/wheels/accelerate-1.13.0-py3-none-any.whl
+Processing /data/magnus/pip-cache/wheels/pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Processing /data/magnus/pip-cache/wheels/einops-0.8.2-py3-none-any.whl
+Processing /data/magnus/pip-cache/wheels/sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Processing /data/magnus/pip-cache/wheels/protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl
+Processing /data/magnus/pip-cache/wheels/huggingface_hub-1.12.0-py3-none-any.whl (from transformers)
+Requirement already satisfied: numpy>=1.17 in /opt/conda/lib/python3.11/site-packages (from transformers) (2.1.2)
+Requirement already satisfied: packaging>=20.0 in /opt/conda/lib/python3.11/site-packages (from transformers) (24.1)
+Requirement already satisfied: pyyaml>=5.1 in /opt/conda/lib/python3.11/site-packages (from transformers) (6.0.2)
+Processing /data/magnus/pip-cache/wheels/regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (from transformers)
+Processing /data/magnus/pip-cache/wheels/tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (from transformers)
+Processing /data/magnus/pip-cache/wheels/typer-0.25.0-py3-none-any.whl (from transformers)
+Processing /data/magnus/pip-cache/wheels/safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (from transformers)
+Requirement already satisfied: tqdm>=4.27 in /opt/conda/lib/python3.11/site-packages (from transformers) (4.66.5)
+Requirement already satisfied: filelock in /opt/conda/lib/python3.11/site-packages (from datasets) (3.16.1)
+Processing /data/magnus/pip-cache/wheels/pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl (from datasets)
+Processing /data/magnus/pip-cache/wheels/dill-0.4.1-py3-none-any.whl (from datasets)
+Requirement already satisfied: requests>=2.32.2 in /opt/conda/lib/python3.11/site-packages (from datasets) (2.32.3)
+Processing /data/magnus/pip-cache/wheels/httpx-0.28.1-py3-none-any.whl (from datasets)
+Processing /data/magnus/pip-cache/wheels/xxhash-3.7.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (from datasets)
+Processing /data/magnus/pip-cache/wheels/multiprocess-0.70.19-py311-none-any.whl (from datasets)
+Requirement already satisfied: fsspec<=2026.2.0,>=2023.1.0 in /opt/conda/lib/python3.11/site-packages (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets) (2024.10.0)
+Requirement already satisfied: psutil in /opt/conda/lib/python3.11/site-packages (from accelerate) (6.1.0)
+Requirement already satisfied: torch>=2.0.0 in /opt/conda/lib/python3.11/site-packages (from accelerate) (2.5.1+cu124)
+Processing /data/magnus/pip-cache/wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl (from pandas)
+Processing /data/magnus/pip-cache/wheels/aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+Processing /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl (from httpx<1.0.0->datasets)
+Requirement already satisfied: certifi in /opt/conda/lib/python3.11/site-packages (from httpx<1.0.0->datasets) (2024.8.30)
+Processing /data/magnus/pip-cache/wheels/httpcore-1.0.9-py3-none-any.whl (from httpx<1.0.0->datasets)
+Requirement already satisfied: idna in /opt/conda/lib/python3.11/site-packages (from httpx<1.0.0->datasets) (3.10)
+Processing /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl (from httpcore==1.*->httpx<1.0.0->datasets)
+Processing /data/magnus/pip-cache/wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (from huggingface-hub<2.0,>=1.5.0->transformers)
+Requirement already satisfied: typing-extensions>=4.1.0 in /opt/conda/lib/python3.11/site-packages (from huggingface-hub<2.0,>=1.5.0->transformers) (4.12.2)
+Requirement already satisfied: six>=1.5 in /opt/conda/lib/python3.11/site-packages (from python-dateutil>=2.8.2->pandas) (1.16.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/conda/lib/python3.11/site-packages (from requests>=2.32.2->datasets) (3.4.0)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/conda/lib/python3.11/site-packages (from requests>=2.32.2->datasets) (2.2.3)
+Requirement already satisfied: networkx in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (3.4.2)
+Requirement already satisfied: jinja2 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (3.1.4)
+Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.4.127 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.127)
+Requirement already satisfied: nvidia-cuda-runtime-cu12==12.4.127 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.127)
+Requirement already satisfied: nvidia-cuda-cupti-cu12==12.4.127 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.127)
+Requirement already satisfied: nvidia-cudnn-cu12==9.1.0.70 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (9.1.0.70)
+Requirement already satisfied: nvidia-cublas-cu12==12.4.5.8 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.5.8)
+Requirement already satisfied: nvidia-cufft-cu12==11.2.1.3 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (11.2.1.3)
+Requirement already satisfied: nvidia-curand-cu12==10.3.5.147 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (10.3.5.147)
+Requirement already satisfied: nvidia-cusolver-cu12==11.6.1.9 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (11.6.1.9)
+Requirement already satisfied: nvidia-cusparse-cu12==12.3.1.170 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.3.1.170)
+Requirement already satisfied: nvidia-nccl-cu12==2.21.5 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (2.21.5)
+Requirement already satisfied: nvidia-nvtx-cu12==12.4.127 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.127)
+Requirement already satisfied: nvidia-nvjitlink-cu12==12.4.127 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.127)
+Requirement already satisfied: triton==3.1.0 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (3.1.0)
+Requirement already satisfied: sympy==1.13.1 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (1.13.1)
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in /opt/conda/lib/python3.11/site-packages (from sympy==1.13.1->torch>=2.0.0->accelerate) (1.3.0)
+Processing /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl (from typer->transformers)
+Processing /data/magnus/pip-cache/wheels/shellingham-1.5.4-py2.py3-none-any.whl (from typer->transformers)
+Processing /data/magnus/pip-cache/wheels/rich-15.0.0-py3-none-any.whl (from typer->transformers)
+Processing /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl (from typer->transformers)
+Processing /data/magnus/pip-cache/wheels/aiohappyeyeballs-2.6.1-py3-none-any.whl (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+Processing /data/magnus/pip-cache/wheels/aiosignal-1.4.0-py3-none-any.whl (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+Requirement already satisfied: attrs>=17.3.0 in /opt/conda/lib/python3.11/site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets) (24.2.0)
+Processing /data/magnus/pip-cache/wheels/frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+Processing /data/magnus/pip-cache/wheels/multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+Processing /data/magnus/pip-cache/wheels/propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+Processing /data/magnus/pip-cache/wheels/yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+Processing /data/magnus/pip-cache/wheels/markdown_it_py-4.0.0-py3-none-any.whl (from rich>=13.8.0->typer->transformers)
+Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /opt/conda/lib/python3.11/site-packages (from rich>=13.8.0->typer->transformers) (2.18.0)
+Requirement already satisfied: MarkupSafe>=2.0 in /opt/conda/lib/python3.11/site-packages (from jinja2->torch>=2.0.0->accelerate) (3.0.2)
+Processing /data/magnus/pip-cache/wheels/mdurl-0.1.2-py3-none-any.whl (from markdown-it-py>=2.2.0->rich>=13.8.0->typer->transformers)
+Installing collected packages: xxhash, shellingham, sentencepiece, safetensors, regex, python-dateutil, pyarrow, protobuf, propcache, multidict, mdurl, hf-xet, h11, frozenlist, einops, dill, click, anyio, annotated-doc, aiohappyeyeballs, yarl, pandas, multiprocess, markdown-it-py, httpcore, aiosignal, rich, httpx, aiohttp, typer, huggingface-hub, tokenizers, datasets, accelerate, transformers
+  Attempting uninstall: click
+    Found existing installation: click 8.1.7
+    Uninstalling click-8.1.7:
+      Successfully uninstalled click-8.1.7
+Successfully installed accelerate-1.13.0 aiohappyeyeballs-2.6.1 aiohttp-3.13.5 aiosignal-1.4.0 annotated-doc-0.0.4 anyio-4.13.0 click-8.3.3 datasets-4.8.4 dill-0.4.1 einops-0.8.2 frozenlist-1.8.0 h11-0.16.0 hf-xet-1.4.3 httpcore-1.0.9 httpx-0.28.1 huggingface-hub-1.12.0 markdown-it-py-4.0.0 mdurl-0.1.2 multidict-6.7.1 multiprocess-0.70.19 pandas-3.0.2 propcache-0.4.1 protobuf-7.34.1 pyarrow-24.0.0 python-dateutil-2.9.0.post0 regex-2026.4.4 rich-15.0.0 safetensors-0.7.0 sentencepiece-0.2.1 shellingham-1.5.4 tokenizers-0.22.2 transformers-5.6.2 typer-0.25.0 xxhash-3.7.0 yarl-1.23.0
+[环境] torch 2.5.1+cu124 | CUDA 12.4 | GPU 2 张
+[2026-04-28 22:41:03] === [3/5] 准备模型和数据 ===
+[2026-04-28 22:41:03] === 加载模型 ===
+[2026-04-28 22:41:03] [模型] 使用本地路径: /data/magnus/models/Qwen2.5-72B-Instruct
+[2026-04-28 22:41:03] === [4/5] 开始 SFT 训练 ===
+W0428 22:41:09.476000 82 site-packages/torch/distributed/run.py:793] 
+W0428 22:41:09.476000 82 site-packages/torch/distributed/run.py:793] *****************************************
+W0428 22:41:09.476000 82 site-packages/torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0428 22:41:09.476000 82 site-packages/torch/distributed/run.py:793] *****************************************
+[2026-04-28 22:41:36] [环境] 设备=cuda:0, GPU 数量=2
+[2026-04-28 22:41:36] [配置] epochs=3, batch_size=2, lr=2e-05, max_length=1024
+[2026-04-28 22:41:36] [环境] 设备=cuda:1, GPU 数量=2
+[2026-04-28 22:41:36] [配置] epochs=3, batch_size=2, lr=2e-05, max_length=1024
+
+Loading weights:   0%|          | 0/963 [00:00<?, ?it/s]
+Loading weights:   0%|          | 0/963 [00:00<?, ?it/s]
+Loading weights:   1%|▏         | 14/963 [00:00<00:08, 106.59it/s]
+Loading weights:   3%|▎         | 25/963 [00:00<00:10, 88.53it/s] 
+Loading weights:  13%|█▎        | 128/963 [00:00<00:01, 830.77it/s]
+Loading weights:   4%|▎         | 34/963 [00:00<00:30, 30.65it/s]
+Loading weights:   8%|▊         | 73/963 [00:01<00:10, 82.52it/s]
+Loading weights:  16%|█▌        | 151/963 [00:01<00:04, 183.05it/s]
+Loading weights:  18%|█▊        | 178/963 [00:02<00:10, 72.93it/s] 
+Loading weights:  20%|██        | 197/963 [00:04<00:26, 28.72it/s]
+Loading weights:  22%|██▏       | 210/963 [00:05<00:27, 27.37it/s]
+Loading weights:  22%|██▏       | 212/963 [00:06<00:29, 25.88it/s] 
+Loading weights:  23%|██▎       | 220/963 [00:06<00:44, 16.84it/s]
+Loading weights:  24%|██▎       | 227/963 [00:07<00:52, 14.15it/s]
+Loading weights:  24%|██▍       | 233/963 [00:08<00:50, 14.41it/s]
+Loading weights:  25%|██▍       | 237/963 [00:08<00:53, 13.56it/s]
+Loading weights:  25%|██▌       | 241/963 [00:08<00:48, 14.93it/s]
+Loading weights:  26%|██▌       | 247/963 [00:09<00:32, 21.87it/s]
+Loading weights:  25%|██▌       | 245/963 [00:09<00:55, 12.85it/s]
+Loading weights:  26%|██▌       | 250/963 [00:09<01:00, 11.74it/s]
+Loading weights:  26%|██▌       | 252/963 [00:10<00:58, 12.21it/s]
+Loading weights:  26%|██▋       | 255/963 [00:10<01:07, 10.47it/s]
+Loading weights:  27%|██▋       | 257/963 [00:11<01:26,  8.14it/s]
+Loading weights:  28%|██▊       | 267/963 [00:10<00:35, 19.35it/s]
+Loading weights:  28%|██▊       | 272/963 [00:11<00:38, 18.12it/s]
+Loading weights:  29%|██▉       | 277/963 [00:11<00:43, 15.68it/s]
+Loading weights:  29%|██▉       | 280/963 [00:11<00:35, 19.09it/s]
+Loading weights:  30%|██▉       | 285/963 [00:11<00:33, 20.54it/s]
+Loading weights:  30%|███       | 289/963 [00:12<00:35, 18.74it/s]
+Loading weights:  30%|███       | 289/963 [00:12<00:41, 16.37it/s]
+Loading weights:  32%|███▏      | 306/963 [00:12<00:28, 23.27it/s]
+Loading weights:  31%|███▏      | 301/963 [00:12<00:33, 19.92it/s]
+Loading weights:  33%|███▎      | 313/963 [00:13<00:38, 16.92it/s]
+Loading weights:  33%|███▎      | 315/963 [00:13<00:36, 17.79it/s]
+Loading weights:  33%|███▎      | 316/963 [00:14<00:46, 14.02it/s]
+Loading weights:  33%|███▎      | 321/963 [00:14<00:41, 15.47it/s]
+Loading weights:  33%|███▎      | 318/963 [00:14<00:53, 12.09it/s]
+Loading weights:  34%|███▎      | 325/963 [00:15<01:10,  9.06it/s]
+Loading weights:  34%|███▍      | 326/963 [00:15<00:55, 11.40it/s]
+Loading weights:  34%|███▍      | 330/963 [00:15<00:58, 10.89it/s]
+Loading weights:  35%|███▍      | 333/963 [00:16<01:04,  9.84it/s]
+Loading weights:  34%|███▍      | 327/963 [00:16<01:51,  5.69it/s]
+Loading weights:  35%|███▍      | 335/963 [00:16<01:07,  9.24it/s]
+Loading weights:  35%|███▍      | 337/963 [00:17<01:14,  8.40it/s]
+Loading weights:  36%|███▌      | 344/963 [00:17<00:57, 10.84it/s]
+Loading weights:  35%|███▌      | 339/963 [00:17<01:10,  8.89it/s]
+Loading weights:  37%|███▋      | 358/963 [00:17<00:33, 18.14it/s]
+Loading weights:  37%|███▋      | 355/963 [00:17<00:41, 14.49it/s]
+Loading weights:  38%|███▊      | 365/963 [00:18<00:35, 16.73it/s]
+Loading weights:  38%|███▊      | 363/963 [00:18<00:46, 12.93it/s]
+Loading weights:  38%|███▊      | 369/963 [00:18<00:41, 14.16it/s]
+Loading weights:  38%|███▊      | 365/963 [00:19<00:58, 10.14it/s]
+Loading weights:  39%|███▊      | 371/963 [00:19<00:53, 10.97it/s]
+Loading weights:  39%|███▉      | 379/963 [00:19<00:45, 12.88it/s]
+Loading weights:  39%|███▉      | 377/963 [00:20<00:46, 12.70it/s]
+Loading weights:  40%|███▉      | 383/963 [00:21<01:32,  6.24it/s]
+Loading weights:  40%|████      | 388/963 [00:21<01:00,  9.46it/s]
+Loading weights:  41%|████      | 394/963 [00:21<00:52, 10.83it/s]
+Loading weights:  40%|████      | 390/963 [00:22<01:11,  8.00it/s]
+Loading weights:  41%|████▏     | 398/963 [00:22<00:56, 10.01it/s]
+Loading weights:  41%|████      | 394/963 [00:22<01:00,  9.39it/s]
+Loading weights:  42%|████▏     | 401/963 [00:22<00:54, 10.24it/s]
+Loading weights:  42%|████▏     | 401/963 [00:22<00:45, 12.29it/s]
+Loading weights:  42%|████▏     | 404/963 [00:23<00:48, 11.55it/s]
+Loading weights:  42%|████▏     | 404/963 [00:23<01:15,  7.36it/s]
+Loading weights:  43%|████▎     | 415/963 [00:24<01:00,  9.13it/s]
+Loading weights:  42%|████▏     | 406/963 [00:24<01:36,  5.75it/s]
+Loading weights:  44%|████▍     | 422/963 [00:24<00:47, 11.44it/s]
+Loading weights:  44%|████▎     | 421/963 [00:24<00:42, 12.74it/s]
+Loading weights:  44%|████▍     | 424/963 [00:24<00:42, 12.82it/s]
+Loading weights:  44%|████▍     | 427/963 [00:24<00:43, 12.40it/s]
+Loading weights:  45%|████▌     | 438/963 [00:25<00:27, 19.26it/s]
+Loading weights:  45%|████▌     | 435/963 [00:25<00:33, 15.55it/s]
+Loading weights:  46%|████▌     | 441/963 [00:25<00:28, 18.54it/s]
+Loading weights:  45%|████▌     | 438/963 [00:25<00:34, 15.20it/s]
+Loading weights:  47%|████▋     | 449/963 [00:25<00:25, 19.87it/s]
+Loading weights:  47%|████▋     | 450/963 [00:26<00:45, 11.37it/s]
+Loading weights:  47%|████▋     | 452/963 [00:26<00:48, 10.56it/s]
+Loading weights:  48%|████▊     | 462/963 [00:26<00:29, 16.80it/s]
+Loading weights:  47%|████▋     | 457/963 [00:27<00:53,  9.53it/s]
+Loading weights:  48%|████▊     | 465/963 [00:27<00:36, 13.55it/s]
+Loading weights:  49%|████▉     | 473/963 [00:27<00:27, 18.05it/s]
+Loading weights:  49%|████▊     | 468/963 [00:27<00:35, 13.98it/s]
+Loading weights:  50%|████▉     | 477/963 [00:28<00:36, 13.27it/s]
+Loading weights:  49%|████▉     | 470/963 [00:31<02:19,  3.55it/s]
+Loading weights:  49%|████▉     | 472/963 [00:31<02:16,  3.60it/s]
+Loading weights:  50%|████▉     | 480/963 [00:31<01:51,  4.33it/s]
+Loading weights:  49%|████▉     | 474/963 [00:31<01:56,  4.21it/s]
+Loading weights:  51%|█████▏    | 495/963 [00:32<00:42, 11.00it/s]
+Loading weights:  52%|█████▏    | 497/963 [00:32<01:02,  7.44it/s]
+Loading weights:  52%|█████▏    | 497/963 [00:32<00:41, 11.11it/s]
+Loading weights:  52%|█████▏    | 499/963 [00:33<00:47,  9.70it/s]
+Loading weights:  52%|█████▏    | 504/963 [00:33<00:56,  8.11it/s]
+Loading weights:  52%|█████▏    | 505/963 [00:34<01:04,  7.08it/s]
+Loading weights:  53%|█████▎    | 507/963 [00:34<01:04,  7.08it/s]
+Loading weights:  53%|█████▎    | 510/963 [00:34<00:46,  9.74it/s]
+Loading weights:  53%|█████▎    | 512/963 [00:34<00:45,  9.86it/s]
+Loading weights:  53%|█████▎    | 509/963 [00:35<01:18,  5.79it/s]
+Loading weights:  53%|█████▎    | 514/963 [00:35<00:59,  7.59it/s]
+Loading weights:  53%|█████▎    | 511/963 [00:36<01:36,  4.70it/s]
+Loading weights:  53%|█████▎    | 515/963 [00:35<01:37,  4.60it/s]
+Loading weights:  54%|█████▎    | 516/963 [00:36<01:59,  3.73it/s]
+Loading weights:  55%|█████▍    | 525/963 [00:36<00:52,  8.39it/s]
+Loading weights:  56%|█████▌    | 538/963 [00:36<00:26, 16.28it/s]
+Loading weights:  55%|█████▍    | 527/963 [00:36<00:50,  8.72it/s]
+Loading weights:  55%|█████▍    | 529/963 [00:37<00:50,  8.55it/s]
+Loading weights:  56%|█████▋    | 542/963 [00:37<00:27, 15.28it/s]
+Loading weights:  57%|█████▋    | 550/963 [00:37<00:22, 18.24it/s]
+Loading weights:  57%|█████▋    | 545/963 [00:37<00:32, 13.03it/s]
+Loading weights:  57%|█████▋    | 549/963 [00:37<00:30, 13.41it/s]
+Loading weights:  57%|█████▋    | 553/963 [00:38<00:35, 11.39it/s]
+Loading weights:  58%|█████▊    | 557/963 [00:39<00:43,  9.24it/s]
+Loading weights:  58%|█████▊    | 557/963 [00:39<00:40,  9.98it/s]
+Loading weights:  58%|█████▊    | 562/963 [00:39<00:39, 10.06it/s]
+Loading weights:  59%|█████▊    | 564/963 [00:39<00:40,  9.76it/s]
+Loading weights:  58%|█████▊    | 563/963 [00:39<00:39, 10.23it/s]
+Loading weights:  59%|█████▉    | 568/963 [00:39<00:32, 12.11it/s]
+Loading weights:  60%|█████▉    | 575/963 [00:41<01:00,  6.40it/s]
+Loading weights:  59%|█████▉    | 570/963 [00:41<01:03,  6.20it/s]
+Loading weights:  59%|█████▉    | 571/963 [00:42<01:16,  5.16it/s]
+Loading weights:  60%|█████▉    | 577/963 [00:42<01:14,  5.21it/s]
+Loading weights:  61%|██████    | 583/963 [00:42<00:38,  9.89it/s]
+Loading weights:  60%|██████    | 579/963 [00:42<01:06,  5.77it/s]
+Loading weights:  61%|██████    | 587/963 [00:43<00:35, 10.74it/s]
+Loading weights:  61%|██████    | 585/963 [00:43<01:03,  5.93it/s]
+Loading weights:  61%|██████▏   | 590/963 [00:43<00:45,  8.16it/s]
+Loading weights:  62%|██████▏   | 593/963 [00:43<00:37,  9.91it/s]
+Loading weights:  62%|██████▏   | 597/963 [00:43<00:30, 12.02it/s]
+Loading weights:  62%|██████▏   | 601/963 [00:44<00:31, 11.58it/s]
+Loading weights:  62%|██████▏   | 596/963 [00:44<00:40,  9.14it/s]
+Loading weights:  63%|██████▎   | 604/963 [00:45<00:41,  8.74it/s]
+Loading weights:  62%|██████▏   | 598/963 [00:44<00:55,  6.62it/s]
+Loading weights:  63%|██████▎   | 606/963 [00:45<00:42,  8.44it/s]
+Loading weights:  63%|██████▎   | 608/963 [00:45<00:42,  8.36it/s]
+Loading weights:  64%|██████▍   | 618/963 [00:45<00:21, 16.01it/s]
+Loading weights:  64%|██████▍   | 615/963 [00:45<00:25, 13.73it/s]
+Loading weights:  65%|██████▍   | 625/963 [00:45<00:17, 19.20it/s]
+Loading weights:  66%|██████▌   | 631/963 [00:45<00:14, 22.62it/s]
+Loading weights:  65%|██████▍   | 623/963 [00:45<00:16, 20.37it/s]
+Loading weights:  66%|██████▌   | 635/963 [00:46<00:19, 17.06it/s]
+Loading weights:  66%|██████▌   | 635/963 [00:46<00:16, 20.42it/s]
+Loading weights:  67%|██████▋   | 644/963 [00:46<00:13, 23.43it/s]
+Loading weights:  68%|██████▊   | 653/963 [00:46<00:10, 30.34it/s]
+Loading weights:  68%|██████▊   | 651/963 [00:46<00:09, 32.48it/s]
+Loading weights:  68%|██████▊   | 656/963 [00:46<00:10, 28.80it/s]
+Loading weights:  68%|██████▊   | 658/963 [00:46<00:12, 25.33it/s]
+Loading weights:  69%|██████▉   | 666/963 [00:47<00:08, 35.37it/s]
+Loading weights:  69%|██████▊   | 662/963 [00:46<00:11, 27.12it/s]
+Loading weights:  69%|██████▉   | 668/963 [00:47<00:09, 31.86it/s]
+Loading weights:  70%|██████▉   | 671/963 [00:47<00:08, 33.10it/s]
+Loading weights:  70%|██████▉   | 673/963 [00:47<00:08, 33.40it/s]
+Loading weights:  71%|███████   | 686/963 [00:47<00:05, 46.62it/s]
+Loading weights:  71%|███████   | 682/963 [00:47<00:06, 40.67it/s]
+Loading weights:  71%|███████▏  | 687/963 [00:47<00:10, 27.21it/s]
+Loading weights:  72%|███████▏  | 692/963 [00:47<00:09, 29.31it/s]
+Loading weights:  73%|███████▎  | 704/963 [00:47<00:06, 39.93it/s]
+Loading weights:  72%|███████▏  | 691/963 [00:47<00:11, 23.17it/s]
+Loading weights:  74%|███████▍  | 713/963 [00:48<00:05, 42.58it/s]
+Loading weights:  74%|███████▍  | 713/963 [00:48<00:04, 51.96it/s]
+Loading weights:  75%|███████▍  | 721/963 [00:48<00:04, 50.62it/s]
+Loading weights:  75%|███████▍  | 719/963 [00:48<00:06, 40.28it/s]
+Loading weights:  76%|███████▌  | 728/963 [00:49<00:11, 19.61it/s]
+Loading weights:  75%|███████▌  | 727/963 [00:49<00:13, 17.84it/s]
+Loading weights:  78%|███████▊  | 748/963 [00:50<00:09, 22.07it/s]
+Loading weights:  77%|███████▋  | 744/963 [00:50<00:11, 19.41it/s]
+Loading weights:  79%|███████▊  | 757/963 [00:50<00:09, 20.73it/s]
+Loading weights:  78%|███████▊  | 755/963 [00:50<00:10, 20.00it/s]
+Loading weights:  79%|███████▉  | 765/963 [00:51<00:09, 20.88it/s]
+Loading weights:  79%|███████▉  | 765/963 [00:51<00:09, 20.11it/s]
+Loading weights:  81%|████████▏ | 783/963 [00:51<00:08, 22.33it/s]
+Loading weights:  81%|████████  | 779/963 [00:51<00:09, 19.89it/s]
+Loading weights:  83%|████████▎ | 795/963 [00:52<00:07, 21.95it/s]
+Loading weights:  83%|████████▎ | 796/963 [00:52<00:07, 22.38it/s]
+Loading weights:  84%|████████▎ | 805/963 [00:53<00:08, 18.50it/s]
+Loading weights:  84%|████████▍ | 808/963 [00:53<00:08, 18.08it/s]
+Loading weights:  83%|████████▎ | 799/963 [00:53<00:11, 14.49it/s]
+Loading weights:  85%|████████▍ | 814/963 [00:53<00:08, 17.78it/s]
+Loading weights:  84%|████████▍ | 808/963 [00:53<00:09, 16.05it/s]
+Loading weights:  85%|████████▌ | 819/963 [00:54<00:10, 14.06it/s]
+Loading weights:  84%|████████▍ | 811/963 [00:54<00:12, 11.90it/s]
+Loading weights:  85%|████████▌ | 821/963 [00:54<00:10, 13.34it/s]
+Loading weights:  85%|████████▍ | 815/963 [00:54<00:12, 12.29it/s]
+Loading weights:  86%|████████▌ | 829/963 [00:55<00:09, 14.83it/s]
+Loading weights:  85%|████████▍ | 817/963 [00:54<00:12, 11.76it/s]
+Loading weights:  87%|████████▋ | 833/963 [00:55<00:07, 16.70it/s]
+Loading weights:  85%|████████▌ | 819/963 [00:55<00:11, 12.19it/s]
+Loading weights:  87%|████████▋ | 837/963 [00:55<00:09, 12.60it/s]
+Loading weights:  87%|████████▋ | 839/963 [00:56<00:16,  7.67it/s]
+Loading weights:  87%|████████▋ | 840/963 [00:56<00:09, 13.66it/s]
+Loading weights:  87%|████████▋ | 842/963 [00:56<00:09, 12.76it/s]
+Loading weights:  88%|████████▊ | 844/963 [00:57<00:10, 11.37it/s]
+Loading weights:  88%|████████▊ | 848/963 [00:57<00:11,  9.68it/s]
+Loading weights:  88%|████████▊ | 850/963 [00:57<00:11, 10.12it/s]
+Loading weights:  89%|████████▉ | 859/963 [00:57<00:05, 19.31it/s]
+Loading weights:  90%|████████▉ | 862/963 [00:57<00:05, 19.42it/s]
+Loading weights:  90%|█████████ | 870/963 [00:57<00:04, 22.14it/s]
+Loading weights:  91%|█████████▏| 881/963 [00:58<00:03, 24.22it/s]
+Loading weights:  90%|█████████ | 871/963 [00:58<00:04, 19.52it/s]
+Loading weights:  91%|█████████ | 874/963 [00:58<00:05, 17.23it/s]
+Loading weights:  92%|█████████▏| 884/963 [00:58<00:03, 20.73it/s]
+Loading weights:  92%|█████████▏| 883/963 [00:58<00:03, 23.70it/s]
+Loading weights:  92%|█████████▏| 887/963 [00:59<00:05, 13.65it/s]
+Loading weights:  92%|█████████▏| 887/963 [00:59<00:06, 11.53it/s]
+Loading weights:  92%|█████████▏| 889/963 [00:59<00:07, 10.22it/s]
+Loading weights:  92%|█████████▏| 890/963 [00:59<00:07, 10.19it/s]
+Loading weights:  93%|█████████▎| 891/963 [01:00<00:07,  9.56it/s]
+Loading weights:  93%|█████████▎| 892/963 [01:00<00:06, 10.84it/s]
+Loading weights:  93%|█████████▎| 893/963 [01:00<00:06, 10.38it/s]
+Loading weights:  93%|█████████▎| 895/963 [01:00<00:07,  9.01it/s]
+Loading weights:  93%|█████████▎| 900/963 [01:00<00:05, 11.63it/s]
+Loading weights:  93%|█████████▎| 897/963 [01:01<00:10,  6.12it/s]
+Loading weights:  93%|█████████▎| 899/963 [01:01<00:10,  5.89it/s]
+Loading weights:  94%|█████████▎| 902/963 [01:01<00:10,  6.00it/s]
+Loading weights:  93%|█████████▎| 900/963 [01:02<00:14,  4.21it/s]
+Loading weights:  94%|█████████▎| 901/963 [01:02<00:14,  4.25it/s]
+Loading weights:  94%|█████████▍| 903/963 [01:02<00:14,  4.11it/s]
+Loading weights:  98%|█████████▊| 947/963 [01:02<00:00, 42.93it/s]
+Loading weights:  97%|█████████▋| 938/963 [01:02<00:01, 22.88it/s]
+Loading weights: 100%|█████████▉| 960/963 [01:02<00:00, 50.52it/s]
+Loading weights: 100%|██████████| 963/963 [01:02<00:00, 15.31it/s]
+
+Loading weights: 100%|██████████| 963/963 [01:03<00:00, 15.27it/s]
+[2026-04-28 22:42:54] [模型] 加载完成，dtype=torch.bfloat16[2026-04-28 22:42:54] [模型] 加载完成，dtype=torch.bfloat16
+
+[2026-04-28 22:42:55]   GPU 0: 空闲 84.2GB / 总计 85.1GB
+[2026-04-28 22:42:55]   GPU 0: 空闲 84.2GB / 总计 85.1GB
+[2026-04-28 22:42:55]   GPU 1: 空闲 84.6GB / 总计 85.1GB
+[2026-04-28 22:42:55] [模型] gradient_checkpointing 已开启，use_cache 已关闭
+[2026-04-28 22:42:55]   GPU 1: 空闲 81.7GB / 总计 85.1GB
+[2026-04-28 22:42:55] [模型] gradient_checkpointing 已开启，use_cache 已关闭
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/tmp/sft_train.py", line 375, in <module>
+[rank0]:     train()
+[rank0]:   File "/tmp/sft_train.py", line 274, in train
+[rank0]:     model = FSDP(
+[rank0]:             ^^^^^
+[rank0]:   File "/opt/conda/lib/python3.11/site-packages/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 509, in __init__
+[rank0]:     _init_param_handle_from_module(
+[rank0]:   File "/opt/conda/lib/python3.11/site-packages/torch/distributed/fsdp/_init_utils.py", line 612, in _init_param_handle_from_module
+[rank0]:     _move_module_to_device(
+[rank0]:   File "/opt/conda/lib/python3.11/site-packages/torch/distributed/fsdp/_init_utils.py", line 1005, in _move_module_to_device
+[rank0]:     _move_states_to_device(params_to_move, bufs_to_move, device_from_device_id)
+[rank0]:   File "/opt/conda/lib/python3.11/site-packages/torch/distributed/fsdp/_init_utils.py", line 1035, in _move_states_to_device
+[rank0]:     param.data = param.to(device_from_device_id)
+[rank0]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 128.00 MiB. GPU 0 has a total capacity of 79.25 GiB of which 69.38 MiB is free. Process 4073254 has 414.00 MiB memory in use. Process 4073252 has 78.77 GiB memory in use. Of the allocated memory 78.36 GiB is allocated by PyTorch, and 600.00 KiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/tmp/sft_train.py", line 375, in <module>
+[rank1]:     train()
+[rank1]:   File "/tmp/sft_train.py", line 274, in train
+[rank1]:     model = FSDP(
+[rank1]:             ^^^^^
+[rank1]:   File "/opt/conda/lib/python3.11/site-packages/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 509, in __init__
+[rank1]:     _init_param_handle_from_module(
+[rank1]:   File "/opt/conda/lib/python3.11/site-packages/torch/distributed/fsdp/_init_utils.py", line 612, in _init_param_handle_from_module
+[rank1]:     _move_module_to_device(
+[rank1]:   File "/opt/conda/lib/python3.11/site-packages/torch/distributed/fsdp/_init_utils.py", line 1005, in _move_module_to_device
+[rank1]:     _move_states_to_device(params_to_move, bufs_to_move, device_from_device_id)
+[rank1]:   File "/opt/conda/lib/python3.11/site-packages/torch/distributed/fsdp/_init_utils.py", line 1035, in _move_states_to_device
+[rank1]:     param.data = param.to(device_from_device_id)
+[rank1]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 128.00 MiB. GPU 1 has a total capacity of 79.25 GiB of which 69.38 MiB is free. Process 4073254 has 78.77 GiB memory in use. Process 4073252 has 414.00 MiB memory in use. Of the allocated memory 78.36 GiB is allocated by PyTorch, and 600.00 KiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[rank0]:[W428 22:44:24.787970623 ProcessGroupNCCL.cpp:1250] Warning: WARNING: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group to ensure that any pending NCCL operations have finished in this process. In rare cases this process can exit before this point and block the progress of another member of the process group. This constraint has always been present,  but this warning has only been added since PyTorch 2.4 (function operator())
+W0428 22:44:25.109000 82 site-packages/torch/distributed/elastic/multiprocessing/api.py:897] Sending process 123 closing signal SIGTERM
+E0428 22:44:30.585000 82 site-packages/torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 1 (pid: 124) of binary: /opt/conda/bin/python3.11
+Traceback (most recent call last):
+  File "/opt/conda/bin/torchrun", line 8, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/distributed/run.py", line 919, in main
+    run(args)
+  File "/opt/conda/lib/python3.11/site-packages/torch/distributed/run.py", line 910, in run
+    elastic_launch(
+  File "/opt/conda/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/tmp/sft_train.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-04-28_22:44:25
+  host      : localhost
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 124)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+[2026-04-28 22:44:30] [FATAL] 训练异常退出，trap 将自动打包已保存的 checkpoint
+[2026-04-28 22:44:30] 
+[2026-04-28 22:44:30] === [退出] 上传训练日志 ===
+[2026-04-28 22:44:30] [警告] 未找到训练日志: /data/magnus/models/Qwen2.5-72B-Instruct-sft-v1/training_log.json

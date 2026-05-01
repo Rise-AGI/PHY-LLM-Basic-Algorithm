@@ -1,0 +1,21 @@
+@{1d0d8dabde2c.data2,
+  time = 2026-04-27T23:35:32.674795,
+  name = PersistTest-Write,
+  submitter = warmup_test.py,
+  job_id = 1d0d8dabde2c000c,
+  type = 时间线,
+  status = Failed,
+  source_abbr = wt,
+  seq = 000,
+  created_at = 2026-04-27T23:35:32.674795,
+  updated_at = 2026-05-01 09:05:08,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:08] [Failed]
+  [任务开始] 2026-04-27T23:35:32.674795
+
+[2026-05-01 09:05:08] [Failed]
+  [任务结束] Failed 2026-05-01 09:05:08

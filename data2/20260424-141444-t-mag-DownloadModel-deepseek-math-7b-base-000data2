@@ -1,0 +1,16 @@
+@{e2b21e861c17.data2,
+  time = 2026-04-24T14:14:44.061134,
+  name = DownloadModel-deepseek-math-7b-base,
+  submitter = magnus,
+  job_id = e2b21e861c175f4d,
+  type = 时间线,
+  status = Terminated,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-24T14:14:44.061134,
+  updated_at = 2026-04-27 15:33:35,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-04-27 15:33:35] [Terminated] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted

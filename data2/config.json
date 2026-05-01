@@ -1,0 +1,9 @@
+{
+  "address": "http://162.105.151.134:3011/",
+  "token": "sk-xxx",
+  "poll_interval": 60,
+  "auto_discover": true,
+  "discover_limit": 50,
+  "minimize_to_tray": true,
+  "auto_start": true
+}

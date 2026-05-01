@@ -1,0 +1,661 @@
+@{20260427-165244-f-wp-Warmup-Pip-Cache-055.data2,
+  time = 2026-04-27T16:52:44.090629,
+  name = Warmup-Pip-Cache,
+  submitter = warmup_packages.py,
+  job_id = 03952427fe4efe14,
+  type = 时间线,
+  status = Failed,
+  source_abbr = wp,
+  seq = 055,
+  created_at = 2026-04-27T16:52:44.090629,
+  updated_at = 2026-04-27 17:03:09,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-04-27 16:54:07] [Running] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 16:54:15] [Running] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 16:54:15] [Running] === 当前用户 ===
+[2026-04-27 16:54:15] [Running] magnus
+[2026-04-27 16:54:15] [Running] 缓存目录: /data/magnus/pip-cache/wheels
+[2026-04-27 16:54:15] [Running] === 开始下载 wheel 包到 /tmp/pip-wheels ===
+[2026-04-27 16:54:15] [Running] --- transformers ---
+[2026-04-27 16:54:15] [Running] Collecting transformers
+[2026-04-27 16:54:15] [Running]   Downloading transformers-5.6.2-py3-none-any.whl.metadata (33 kB)
+[2026-04-27 16:54:15] [Running] Collecting huggingface-hub<2.0,>=1.5.0 (from transformers)
+[2026-04-27 16:54:15] [Running]   Downloading huggingface_hub-1.12.0-py3-none-any.whl.metadata (14 kB)
+[2026-04-27 16:54:15] [Running] Collecting numpy>=1.17 (from transformers)
+[2026-04-27 16:54:15] [Running]   Downloading numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+[2026-04-27 16:54:15] [Running] Collecting packaging>=20.0 (from transformers)
+[2026-04-27 16:54:15] [Running]   Downloading packaging-26.2-py3-none-any.whl.metadata (3.5 kB)
+[2026-04-27 16:54:15] [Running] Collecting pyyaml>=5.1 (from transformers)
+[2026-04-27 16:54:15] [Running]   Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+[2026-04-27 16:54:15] [Running] Collecting regex>=2025.10.22 (from transformers)
+[2026-04-27 16:54:15] [Running]   Downloading regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+[2026-04-27 16:54:15] [Running] Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers)
+[2026-04-27 16:54:15] [Running]   Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+[2026-04-27 16:54:15] [Running] Collecting typer (from transformers)
+[2026-04-27 16:54:15] [Running]   Downloading typer-0.25.0-py3-none-any.whl.metadata (15 kB)
+[2026-04-27 16:54:15] [Running] Collecting safetensors>=0.4.3 (from transformers)
+[2026-04-27 16:54:15] [Running]   Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+[2026-04-27 16:54:15] [Running] Collecting tqdm>=4.27 (from transformers)
+[2026-04-27 16:54:15] [Running]   Downloading tqdm-4.67.3-py3-none-any.whl.metadata (57 kB)
+[2026-04-27 16:54:15] [Running] Collecting filelock>=3.10.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading filelock-3.29.0-py3-none-any.whl.metadata (2.0 kB)
+[2026-04-27 16:54:15] [Running] Collecting fsspec>=2023.5.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading fsspec-2026.3.0-py3-none-any.whl.metadata (10 kB)
+[2026-04-27 16:54:15] [Running] Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.9 kB)
+[2026-04-27 16:54:15] [Running] Collecting httpx<1,>=0.23.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+[2026-04-27 16:54:15] [Running] Collecting typing-extensions>=4.1.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+[2026-04-27 16:54:15] [Running] Collecting click>=8.2.1 (from typer->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading click-8.3.3-py3-none-any.whl.metadata (2.6 kB)
+[2026-04-27 16:54:15] [Running] Collecting shellingham>=1.3.0 (from typer->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading shellingham-1.5.4-py2.py3-none-any.whl.metadata (3.5 kB)
+[2026-04-27 16:54:15] [Running] Collecting rich>=13.8.0 (from typer->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+[2026-04-27 16:54:15] [Running] Collecting annotated-doc>=0.0.2 (from typer->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading annotated_doc-0.0.4-py3-none-any.whl.metadata (6.6 kB)
+[2026-04-27 16:54:15] [Running] Collecting anyio (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading anyio-4.13.0-py3-none-any.whl.metadata (4.5 kB)
+[2026-04-27 16:54:15] [Running] Collecting certifi (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading certifi-2026.4.22-py3-none-any.whl.metadata (2.5 kB)
+[2026-04-27 16:54:15] [Running] Collecting httpcore==1.* (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+[2026-04-27 16:54:15] [Running] Collecting idna (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading idna-3.13-py3-none-any.whl.metadata (8.0 kB)
+[2026-04-27 16:54:15] [Running] Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+[2026-04-27 16:54:15] [Running] Collecting markdown-it-py>=2.2.0 (from rich>=13.8.0->typer->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading markdown_it_py-4.0.0-py3-none-any.whl.metadata (7.3 kB)
+[2026-04-27 16:54:15] [Running] Collecting pygments<3.0.0,>=2.13.0 (from rich>=13.8.0->typer->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading pygments-2.20.0-py3-none-any.whl.metadata (2.5 kB)
+[2026-04-27 16:54:15] [Running] Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=13.8.0->typer->transformers)
+[2026-04-27 16:54:15] [Running]   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+[2026-04-27 16:54:15] [Running] Downloading transformers-5.6.2-py3-none-any.whl (10.4 MB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.4/10.4 MB 11.5 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading huggingface_hub-1.12.0-py3-none-any.whl (646 kB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 646.8/646.8 kB 2.9 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.9 MB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.9/16.9 MB 17.2 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading packaging-26.2-py3-none-any.whl (100 kB)
+[2026-04-27 16:54:15] [Running] Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 806.6/806.6 kB 4.8 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (799 kB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 799.8/799.8 kB 4.3 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (507 kB)
+[2026-04-27 16:54:15] [Running] Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.3 MB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.3/3.3 MB 11.0 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading tqdm-4.67.3-py3-none-any.whl (78 kB)
+[2026-04-27 16:54:15] [Running] Downloading typer-0.25.0-py3-none-any.whl (55 kB)
+[2026-04-27 16:54:15] [Running] Downloading annotated_doc-0.0.4-py3-none-any.whl (5.3 kB)
+[2026-04-27 16:54:15] [Running] Downloading click-8.3.3-py3-none-any.whl (110 kB)
+[2026-04-27 16:54:15] [Running] Downloading filelock-3.29.0-py3-none-any.whl (39 kB)
+[2026-04-27 16:54:15] [Running] Downloading fsspec-2026.3.0-py3-none-any.whl (202 kB)
+[2026-04-27 16:54:15] [Running] Downloading hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.2 MB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.2/4.2 MB 12.6 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+[2026-04-27 16:54:15] [Running] Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+[2026-04-27 16:54:15] [Running] Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+[2026-04-27 16:54:15] [Running] Downloading shellingham-1.5.4-py2.py3-none-any.whl (9.8 kB)
+[2026-04-27 16:54:15] [Running] Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+[2026-04-27 16:54:15] [Running] Downloading markdown_it_py-4.0.0-py3-none-any.whl (87 kB)
+[2026-04-27 16:54:15] [Running] Downloading pygments-2.20.0-py3-none-any.whl (1.2 MB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 8.3 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading anyio-4.13.0-py3-none-any.whl (114 kB)
+[2026-04-27 16:54:15] [Running] Downloading idna-3.13-py3-none-any.whl (68 kB)
+[2026-04-27 16:54:15] [Running] Downloading certifi-2026.4.22-py3-none-any.whl (135 kB)
+[2026-04-27 16:54:15] [Running] Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+[2026-04-27 16:54:15] [Running] Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/transformers-5.6.2-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/huggingface_hub-1.12.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/packaging-26.2-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/tqdm-4.67.3-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/typer-0.25.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/annotated_doc-0.0.4-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/click-8.3.3-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/filelock-3.29.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/fsspec-2026.3.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/httpx-0.28.1-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/httpcore-1.0.9-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/rich-15.0.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/shellingham-1.5.4-py2.py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/typing_extensions-4.15.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/markdown_it_py-4.0.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/pygments-2.20.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/anyio-4.13.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/idna-3.13-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/certifi-2026.4.22-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/h11-0.16.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/mdurl-0.1.2-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Successfully downloaded transformers huggingface-hub numpy packaging pyyaml regex safetensors tokenizers tqdm typer annotated-doc click filelock fsspec hf-xet httpx httpcore rich shellingham typing-extensions markdown-it-py pygments anyio idna certifi h11 mdurl
+[2026-04-27 16:54:15] [Running] --- datasets ---
+[2026-04-27 16:54:15] [Running] Collecting datasets
+[2026-04-27 16:54:15] [Running]   Downloading datasets-4.8.4-py3-none-any.whl.metadata (19 kB)
+[2026-04-27 16:54:15] [Running] Collecting filelock (from datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/filelock-3.29.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting numpy>=1.17 (from datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Collecting pyarrow>=21.0.0 (from datasets)
+[2026-04-27 16:54:15] [Running]   Downloading pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (3.0 kB)
+[2026-04-27 16:54:15] [Running] Collecting dill<0.4.2,>=0.3.0 (from datasets)
+[2026-04-27 16:54:15] [Running]   Downloading dill-0.4.1-py3-none-any.whl.metadata (10 kB)
+[2026-04-27 16:54:15] [Running] Collecting pandas (from datasets)
+[2026-04-27 16:54:15] [Running]   Downloading pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+[2026-04-27 16:54:15] [Running] Collecting requests>=2.32.2 (from datasets)
+[2026-04-27 16:54:15] [Running]   Downloading requests-2.33.1-py3-none-any.whl.metadata (4.8 kB)
+[2026-04-27 16:54:15] [Running] Collecting httpx<1.0.0 (from datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/httpx-0.28.1-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting tqdm>=4.66.3 (from datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/tqdm-4.67.3-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting xxhash (from datasets)
+[2026-04-27 16:54:15] [Running]   Downloading xxhash-3.7.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (13 kB)
+[2026-04-27 16:54:15] [Running] Collecting multiprocess<0.70.20 (from datasets)
+[2026-04-27 16:54:15] [Running]   Downloading multiprocess-0.70.19-py311-none-any.whl.metadata (7.5 kB)
+[2026-04-27 16:54:15] [Running] Collecting fsspec<=2026.2.0,>=2023.1.0 (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading fsspec-2026.2.0-py3-none-any.whl.metadata (10 kB)
+[2026-04-27 16:54:15] [Running] Collecting huggingface-hub<2.0,>=0.25.0 (from datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/huggingface_hub-1.12.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting packaging (from datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/packaging-26.2-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting pyyaml>=5.1 (from datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Collecting aiohttp!=4.0.0a0,!=4.0.0a1 (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.1 kB)
+[2026-04-27 16:54:15] [Running] Collecting anyio (from httpx<1.0.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/anyio-4.13.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting certifi (from httpx<1.0.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/certifi-2026.4.22-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting httpcore==1.* (from httpx<1.0.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/httpcore-1.0.9-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting idna (from httpx<1.0.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/idna-3.13-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting h11>=0.16 (from httpcore==1.*->httpx<1.0.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/h11-0.16.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub<2.0,>=0.25.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+[2026-04-27 16:54:15] [Running] Collecting typer (from huggingface-hub<2.0,>=0.25.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/typer-0.25.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting typing-extensions>=4.1.0 (from huggingface-hub<2.0,>=0.25.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/typing_extensions-4.15.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting charset_normalizer<4,>=2 (from requests>=2.32.2->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+[2026-04-27 16:54:15] [Running] Collecting urllib3<3,>=1.26 (from requests>=2.32.2->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading urllib3-2.6.3-py3-none-any.whl.metadata (6.9 kB)
+[2026-04-27 16:54:15] [Running] Collecting python-dateutil>=2.8.2 (from pandas->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+[2026-04-27 16:54:15] [Running] Collecting aiohappyeyeballs>=2.5.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading aiohappyeyeballs-2.6.1-py3-none-any.whl.metadata (5.9 kB)
+[2026-04-27 16:54:15] [Running] Collecting aiosignal>=1.4.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting attrs>=17.3.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+[2026-04-27 16:54:15] [Running] Collecting frozenlist>=1.1.1 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (20 kB)
+[2026-04-27 16:54:15] [Running] Collecting multidict<7.0,>=4.5 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (5.3 kB)
+[2026-04-27 16:54:15] [Running] Collecting propcache>=0.2.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (13 kB)
+[2026-04-27 16:54:15] [Running] Collecting yarl<2.0,>=1.17.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+[2026-04-27 16:54:15] [Running] Collecting six>=1.5 (from python-dateutil>=2.8.2->pandas->datasets)
+[2026-04-27 16:54:15] [Running]   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting click>=8.2.1 (from typer->huggingface-hub<2.0,>=0.25.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/click-8.3.3-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting shellingham>=1.3.0 (from typer->huggingface-hub<2.0,>=0.25.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/shellingham-1.5.4-py2.py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting rich>=13.8.0 (from typer->huggingface-hub<2.0,>=0.25.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/rich-15.0.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting annotated-doc>=0.0.2 (from typer->huggingface-hub<2.0,>=0.25.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/annotated_doc-0.0.4-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting markdown-it-py>=2.2.0 (from rich>=13.8.0->typer->huggingface-hub<2.0,>=0.25.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/markdown_it_py-4.0.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting pygments<3.0.0,>=2.13.0 (from rich>=13.8.0->typer->huggingface-hub<2.0,>=0.25.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/pygments-2.20.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=13.8.0->typer->huggingface-hub<2.0,>=0.25.0->datasets)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/mdurl-0.1.2-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Downloading datasets-4.8.4-py3-none-any.whl (526 kB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 527.0/527.0 kB 1.5 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading dill-0.4.1-py3-none-any.whl (120 kB)
+[2026-04-27 16:54:15] [Running] Downloading fsspec-2026.2.0-py3-none-any.whl (202 kB)
+[2026-04-27 16:54:15] [Running] Downloading multiprocess-0.70.19-py311-none-any.whl (144 kB)
+[2026-04-27 16:54:15] [Running] Downloading pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl (48.8 MB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 48.8/48.8 MB 11.7 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading requests-2.33.1-py3-none-any.whl (64 kB)
+[2026-04-27 16:54:15] [Running] Downloading pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (11.3 MB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 11.3/11.3 MB 15.1 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading xxhash-3.7.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (193 kB)
+[2026-04-27 16:54:15] [Running] Downloading aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.8 MB)
+[2026-04-27 16:54:15] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 9.1 MB/s eta 0:00:00
+[2026-04-27 16:54:15] [Running] Downloading charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (214 kB)
+[2026-04-27 16:54:15] [Running] Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+[2026-04-27 16:54:15] [Running] Downloading urllib3-2.6.3-py3-none-any.whl (131 kB)
+[2026-04-27 16:54:15] [Running] Downloading aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
+[2026-04-27 16:54:15] [Running] Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+[2026-04-27 16:54:15] [Running] Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+[2026-04-27 16:54:15] [Running] Downloading frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+[2026-04-27 16:54:15] [Running] Downloading multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (246 kB)
+[2026-04-27 16:54:15] [Running] Downloading propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (210 kB)
+[2026-04-27 16:54:15] [Running] Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+[2026-04-27 16:54:15] [Running] Downloading yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (102 kB)
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/datasets-4.8.4-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/dill-0.4.1-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/fsspec-2026.2.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/multiprocess-0.70.19-py311-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/requests-2.33.1-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/xxhash-3.7.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/urllib3-2.6.3-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/aiohappyeyeballs-2.6.1-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/aiosignal-1.4.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/attrs-26.1.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/six-1.17.0-py2.py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Saved /tmp/pip-wheels/yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Successfully downloaded datasets dill fsspec httpx httpcore huggingface-hub filelock multiprocess numpy packaging pyarrow pyyaml requests tqdm pandas xxhash aiohttp certifi charset_normalizer hf-xet idna python-dateutil typing-extensions urllib3 anyio typer aiohappyeyeballs aiosignal annotated-doc attrs click frozenlist h11 multidict propcache rich shellingham six yarl markdown-it-py pygments mdurl
+[2026-04-27 16:54:15] [Running] --- accelerate ---
+[2026-04-27 16:54:15] [Running] Collecting accelerate
+[2026-04-27 16:54:15] [Running]   Downloading accelerate-1.13.0-py3-none-any.whl.metadata (19 kB)
+[2026-04-27 16:54:15] [Running] Collecting numpy>=1.17 (from accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Collecting packaging>=20.0 (from accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/packaging-26.2-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting psutil (from accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl.metadata (22 kB)
+[2026-04-27 16:54:15] [Running] Collecting pyyaml (from accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 16:54:15] [Running] Collecting torch>=2.0.0 (from accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (29 kB)
+[2026-04-27 16:54:15] [Running] Collecting huggingface_hub>=0.21.0 (from accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/huggingface_hub-1.12.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting safetensors>=0.4.3 (from accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+[2026-04-27 16:54:15] [Running] Collecting filelock>=3.10.0 (from huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/filelock-3.29.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting fsspec>=2023.5.0 (from huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/fsspec-2026.3.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+[2026-04-27 16:54:15] [Running] Collecting httpx<1,>=0.23.0 (from huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/httpx-0.28.1-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting tqdm>=4.42.1 (from huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/tqdm-4.67.3-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting typer (from huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/typer-0.25.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting typing-extensions>=4.1.0 (from huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/typing_extensions-4.15.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting setuptools<82 (from torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading setuptools-81.0.0-py3-none-any.whl.metadata (6.6 kB)
+[2026-04-27 16:54:15] [Running] Collecting sympy>=1.13.3 (from torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading sympy-1.14.0-py3-none-any.whl.metadata (12 kB)
+[2026-04-27 16:54:15] [Running] Collecting networkx>=2.5.1 (from torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading networkx-3.6.1-py3-none-any.whl.metadata (6.8 kB)
+[2026-04-27 16:54:15] [Running] Collecting jinja2 (from torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+[2026-04-27 16:54:15] [Running] Collecting cuda-toolkit==13.0.2 (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading cuda_toolkit-13.0.2-py2.py3-none-any.whl.metadata (9.4 kB)
+[2026-04-27 16:54:15] [Running] Collecting cuda-bindings<14,>=13.0.3 (from torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (2.3 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-cudnn-cu13==9.19.0.56 (from torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl.metadata (1.9 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-cusparselt-cu13==0.8.0 (from torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl.metadata (12 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-nccl-cu13==2.28.9 (from torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl.metadata (2.0 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-nvshmem-cu13==3.4.5 (from torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.1 kB)
+[2026-04-27 16:54:15] [Running] Collecting triton==3.6.0 (from torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (1.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-cublas==13.1.0.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl.metadata (1.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-cuda-runtime==13.0.96.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-cufft==12.0.0.61.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.8 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-cufile==1.15.1.6.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-cuda-cupti==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl.metadata (1.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-curand==10.4.0.35.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl.metadata (1.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-cusolver==12.0.4.66.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl.metadata (1.8 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-cusparse==12.6.3.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.8 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-nvjitlink==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl.metadata (1.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-cuda-nvrtc==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl.metadata (1.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting nvidia-nvtx==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl.metadata (1.8 kB)
+[2026-04-27 16:54:15] [Running] Collecting cuda-pathfinder~=1.1 (from cuda-bindings<14,>=13.0.3->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading cuda_pathfinder-1.5.3-py3-none-any.whl.metadata (1.9 kB)
+[2026-04-27 16:54:15] [Running] Collecting anyio (from httpx<1,>=0.23.0->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/anyio-4.13.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting certifi (from httpx<1,>=0.23.0->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/certifi-2026.4.22-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting httpcore==1.* (from httpx<1,>=0.23.0->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/httpcore-1.0.9-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting idna (from httpx<1,>=0.23.0->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/idna-3.13-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/h11-0.16.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+[2026-04-27 16:54:15] [Running] Collecting MarkupSafe>=2.0 (from jinja2->torch>=2.0.0->accelerate)
+[2026-04-27 16:54:15] [Running]   Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+[2026-04-27 16:54:15] [Running] Collecting click>=8.2.1 (from typer->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/click-8.3.3-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting shellingham>=1.3.0 (from typer->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/shellingham-1.5.4-py2.py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting rich>=13.8.0 (from typer->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/rich-15.0.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting annotated-doc>=0.0.2 (from typer->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/annotated_doc-0.0.4-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting markdown-it-py>=2.2.0 (from rich>=13.8.0->typer->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/markdown_it_py-4.0.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting pygments<3.0.0,>=2.13.0 (from rich>=13.8.0->typer->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/pygments-2.20.0-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=13.8.0->typer->huggingface_hub>=0.21.0->accelerate)
+[2026-04-27 16:54:15] [Running]   File was already downloaded /tmp/pip-wheels/mdurl-0.1.2-py3-none-any.whl
+[2026-04-27 16:54:15] [Running] Downloading accelerate-1.13.0-py3-none-any.whl (383 kB)
+[2026-04-27 16:54:15] [Running] Downloading torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl (530.6 MB)
+[2026-04-27 16:55:31] [Running] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 530.6/530.6 MB 2.3 MB/s eta 0:00:00
+[2026-04-27 16:55:41] [Running] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 530.6/530.6 MB 2.3 MB/s eta 0:00:00
+[2026-04-27 16:55:41] [Running] Downloading cuda_toolkit-13.0.2-py2.py3-none-any.whl (2.4 kB)
+[2026-04-27 16:55:41] [Running] Downloading nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl (366.1 MB)
+[2026-04-27 16:56:56] [Running] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 366.1/366.1 MB 851.8 kB/s eta 0:00:00
+[2026-04-27 16:57:03] [Running] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 366.1/366.1 MB 851.8 kB/s eta 0:00:00
+[2026-04-27 16:57:03] [Running] Downloading nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl (169.9 MB)
+[2026-04-27 16:57:03] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 169.9/169.9 MB 8.2 MB/s eta 0:00:00
+[2026-04-27 16:57:03] [Running] Downloading nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl (196.5 MB)
+[2026-04-27 16:57:03] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 196.5/196.5 MB 9.3 MB/s eta 0:00:00
+[2026-04-27 16:57:03] [Running] Downloading nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (60.4 MB)
+[2026-04-27 16:57:03] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 60.4/60.4 MB 10.4 MB/s eta 0:00:00
+[2026-04-27 16:57:03] [Running] Downloading triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (188.2 MB)
+[2026-04-27 16:58:19] [Running] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 188.2/188.2 MB 10.7 MB/s eta 0:00:00
+[2026-04-27 16:58:40] [Running] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 188.2/188.2 MB 10.7 MB/s eta 0:00:00
+[2026-04-27 16:58:40] [Running] Downloading nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl (423.1 MB)
+[2026-04-27 16:58:40] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 423.1/423.1 MB 346.8 kB/s eta 0:00:00
+[2026-04-27 16:58:40] [Running] Downloading nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl (10.7 MB)
+[2026-04-27 16:58:40] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.7/10.7 MB 6.6 MB/s eta 0:00:00
+[2026-04-27 16:58:40] [Running] Downloading nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (90.2 MB)
+[2026-04-27 16:58:40] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 90.2/90.2 MB 7.7 MB/s eta 0:00:00
+[2026-04-27 16:58:40] [Running] Downloading nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (2.2 MB)
+[2026-04-27 16:58:40] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 3.6 MB/s eta 0:00:00
+[2026-04-27 16:58:40] [Running] Downloading nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (214.1 MB)
+[2026-04-27 16:59:55] [Running] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 90.2/90.2 MB 7.7 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 214.1/214.1 MB 6.5 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Downloading nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.2 MB)
+[2026-04-27 17:00:29] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 1.5 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Downloading nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl (59.5 MB)
+[2026-04-27 17:00:29] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 59.5/59.5 MB 10.0 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Downloading nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl (200.9 MB)
+[2026-04-27 17:00:29] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 200.9/200.9 MB 11.9 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Downloading nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (145.9 MB)
+[2026-04-27 17:00:29] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 145.9/145.9 MB 10.5 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Downloading nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (40.7 MB)
+[2026-04-27 17:00:29] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 40.7/40.7 MB 13.0 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Downloading nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl (148 kB)
+[2026-04-27 17:00:29] [Running] Downloading psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl (155 kB)
+[2026-04-27 17:00:29] [Running] Downloading cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (6.3 MB)
+[2026-04-27 17:00:29] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.3/6.3 MB 12.4 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Downloading networkx-3.6.1-py3-none-any.whl (2.1 MB)
+[2026-04-27 17:00:29] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 8.7 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Downloading setuptools-81.0.0-py3-none-any.whl (1.1 MB)
+[2026-04-27 17:00:29] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.1/1.1 MB 6.0 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Downloading sympy-1.14.0-py3-none-any.whl (6.3 MB)
+[2026-04-27 17:00:29] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.3/6.3 MB 12.4 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+[2026-04-27 17:00:29] [Running] Downloading cuda_pathfinder-1.5.3-py3-none-any.whl (49 kB)
+[2026-04-27 17:00:29] [Running] Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+[2026-04-27 17:00:29] [Running] Downloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+[2026-04-27 17:00:29] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 536.2/536.2 kB 2.5 MB/s eta 0:00:00
+[2026-04-27 17:00:29] [Running] Saved /tmp/pip-wheels/accelerate-1.13.0-py3-none-any.whl
+[2026-04-27 17:01:27] [Running] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 40.7/40.7 MB 13.0 MB/s eta 0:00:00
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/cuda_toolkit-13.0.2-py2.py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/networkx-3.6.1-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/setuptools-81.0.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/sympy-1.14.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/jinja2-3.1.6-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/cuda_pathfinder-1.5.3-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/mpmath-1.3.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded accelerate huggingface_hub numpy packaging pyyaml safetensors torch cuda-toolkit nvidia-cudnn-cu13 nvidia-cusparselt-cu13 nvidia-nccl-cu13 nvidia-nvshmem-cu13 triton nvidia-cublas nvidia-cuda-cupti nvidia-cuda-nvrtc nvidia-cuda-runtime nvidia-cufft nvidia-cufile nvidia-curand nvidia-cusolver nvidia-cusparse nvidia-nvjitlink nvidia-nvtx psutil cuda-bindings filelock fsspec hf-xet httpx httpcore networkx setuptools sympy tqdm typing-extensions jinja2 typer annotated-doc click cuda-pathfinder MarkupSafe mpmath rich shellingham anyio idna certifi h11 markdown-it-py pygments mdurl
+[2026-04-27 17:02:02] [Running] --- pandas ---
+[2026-04-27 17:02:02] [Running] Collecting pandas
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Collecting numpy>=1.26.0 (from pandas)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Collecting python-dateutil>=2.8.2 (from pandas)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting six>=1.5 (from python-dateutil>=2.8.2->pandas)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/six-1.17.0-py2.py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded pandas numpy python-dateutil six
+[2026-04-27 17:02:02] [Running] --- einops ---
+[2026-04-27 17:02:02] [Running] Collecting einops
+[2026-04-27 17:02:02] [Running]   Downloading einops-0.8.2-py3-none-any.whl.metadata (13 kB)
+[2026-04-27 17:02:02] [Running] Downloading einops-0.8.2-py3-none-any.whl (65 kB)
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/einops-0.8.2-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded einops
+[2026-04-27 17:02:02] [Running] --- sentencepiece ---
+[2026-04-27 17:02:02] [Running] Collecting sentencepiece
+[2026-04-27 17:02:02] [Running]   Downloading sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (10 kB)
+[2026-04-27 17:02:02] [Running] Downloading sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (1.4 MB)
+[2026-04-27 17:02:02] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 1.2 MB/s eta 0:00:00
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded sentencepiece
+[2026-04-27 17:02:02] [Running] --- protobuf ---
+[2026-04-27 17:02:02] [Running] Collecting protobuf
+[2026-04-27 17:02:02] [Running]   Downloading protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl.metadata (595 bytes)
+[2026-04-27 17:02:02] [Running] Downloading protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl (324 kB)
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded protobuf
+[2026-04-27 17:02:02] [Running] --- tokenizers ---
+[2026-04-27 17:02:02] [Running] Collecting tokenizers
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+[2026-04-27 17:02:02] [Running] Collecting huggingface-hub<2.0,>=0.16.4 (from tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/huggingface_hub-1.12.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting filelock>=3.10.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/filelock-3.29.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting fsspec>=2023.5.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/fsspec-2026.3.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+[2026-04-27 17:02:02] [Running] Collecting httpx<1,>=0.23.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/httpx-0.28.1-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting packaging>=20.9 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/packaging-26.2-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting pyyaml>=5.1 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Collecting tqdm>=4.42.1 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/tqdm-4.67.3-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting typer (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/typer-0.25.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting typing-extensions>=4.1.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/typing_extensions-4.15.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting anyio (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/anyio-4.13.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting certifi (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/certifi-2026.4.22-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting httpcore==1.* (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/httpcore-1.0.9-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting idna (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/idna-3.13-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/h11-0.16.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting click>=8.2.1 (from typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/click-8.3.3-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting shellingham>=1.3.0 (from typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/shellingham-1.5.4-py2.py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting rich>=13.8.0 (from typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/rich-15.0.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting annotated-doc>=0.0.2 (from typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/annotated_doc-0.0.4-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting markdown-it-py>=2.2.0 (from rich>=13.8.0->typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/markdown_it_py-4.0.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting pygments<3.0.0,>=2.13.0 (from rich>=13.8.0->typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/pygments-2.20.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=13.8.0->typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/mdurl-0.1.2-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded tokenizers huggingface-hub filelock fsspec hf-xet httpx httpcore packaging pyyaml tqdm typing-extensions typer annotated-doc click rich shellingham anyio idna certifi h11 markdown-it-py pygments mdurl
+[2026-04-27 17:02:02] [Running] --- safetensors ---
+[2026-04-27 17:02:02] [Running] Collecting safetensors
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded safetensors
+[2026-04-27 17:02:02] [Running] --- numpy ---
+[2026-04-27 17:02:02] [Running] Collecting numpy
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded numpy
+[2026-04-27 17:02:02] [Running] --- scipy ---
+[2026-04-27 17:02:02] [Running] Collecting scipy
+[2026-04-27 17:02:02] [Running]   Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+[2026-04-27 17:02:02] [Running] Collecting numpy<2.7,>=1.26.4 (from scipy)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.3 MB)
+[2026-04-27 17:02:02] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.3/35.3 MB 11.4 MB/s eta 0:00:00
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded scipy numpy
+[2026-04-27 17:02:02] [Running] --- pyarrow ---
+[2026-04-27 17:02:02] [Running] Collecting pyarrow
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded pyarrow
+[2026-04-27 17:02:02] [Running] --- jinja2 ---
+[2026-04-27 17:02:02] [Running] Collecting jinja2
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/jinja2-3.1.6-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting MarkupSafe>=2.0 (from jinja2)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded jinja2 MarkupSafe
+[2026-04-27 17:02:02] [Running] --- huggingface-hub ---
+[2026-04-27 17:02:02] [Running] Collecting huggingface-hub
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/huggingface_hub-1.12.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting filelock>=3.10.0 (from huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/filelock-3.29.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting fsspec>=2023.5.0 (from huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/fsspec-2026.3.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+[2026-04-27 17:02:02] [Running] Collecting httpx<1,>=0.23.0 (from huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/httpx-0.28.1-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting packaging>=20.9 (from huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/packaging-26.2-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting pyyaml>=5.1 (from huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Collecting tqdm>=4.42.1 (from huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/tqdm-4.67.3-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting typer (from huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/typer-0.25.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting typing-extensions>=4.1.0 (from huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/typing_extensions-4.15.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting anyio (from httpx<1,>=0.23.0->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/anyio-4.13.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting certifi (from httpx<1,>=0.23.0->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/certifi-2026.4.22-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting httpcore==1.* (from httpx<1,>=0.23.0->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/httpcore-1.0.9-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting idna (from httpx<1,>=0.23.0->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/idna-3.13-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/h11-0.16.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting click>=8.2.1 (from typer->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/click-8.3.3-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting shellingham>=1.3.0 (from typer->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/shellingham-1.5.4-py2.py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting rich>=13.8.0 (from typer->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/rich-15.0.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting annotated-doc>=0.0.2 (from typer->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/annotated_doc-0.0.4-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting markdown-it-py>=2.2.0 (from rich>=13.8.0->typer->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/markdown_it_py-4.0.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting pygments<3.0.0,>=2.13.0 (from rich>=13.8.0->typer->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/pygments-2.20.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=13.8.0->typer->huggingface-hub)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/mdurl-0.1.2-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded huggingface-hub filelock fsspec hf-xet httpx httpcore packaging pyyaml tqdm typing-extensions typer annotated-doc click rich shellingham anyio idna certifi h11 markdown-it-py pygments mdurl
+[2026-04-27 17:02:02] [Running] --- tiktoken ---
+[2026-04-27 17:02:02] [Running] Collecting tiktoken
+[2026-04-27 17:02:02] [Running]   Downloading tiktoken-0.12.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (6.7 kB)
+[2026-04-27 17:02:02] [Running] Collecting regex>=2022.1.18 (from tiktoken)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Collecting requests>=2.26.0 (from tiktoken)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/requests-2.33.1-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting charset_normalizer<4,>=2 (from requests>=2.26.0->tiktoken)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Collecting idna<4,>=2.5 (from requests>=2.26.0->tiktoken)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/idna-3.13-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting urllib3<3,>=1.26 (from requests>=2.26.0->tiktoken)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/urllib3-2.6.3-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting certifi>=2023.5.7 (from requests>=2.26.0->tiktoken)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/certifi-2026.4.22-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Downloading tiktoken-0.12.0-cp311-cp311-manylinux_2_28_x86_64.whl (1.2 MB)
+[2026-04-27 17:02:02] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 2.9 MB/s eta 0:00:00
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/tiktoken-0.12.0-cp311-cp311-manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded tiktoken regex requests certifi charset_normalizer idna urllib3
+[2026-04-27 17:02:02] [Running] --- modelscope ---
+[2026-04-27 17:02:02] [Running] Collecting modelscope
+[2026-04-27 17:02:02] [Running]   Downloading modelscope-1.36.2-py3-none-any.whl.metadata (43 kB)
+[2026-04-27 17:02:02] [Running] Collecting filelock (from modelscope)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/filelock-3.29.0-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting packaging (from modelscope)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/packaging-26.2-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting requests>=2.25 (from modelscope)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/requests-2.33.1-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting setuptools (from modelscope)
+[2026-04-27 17:02:02] [Running]   Downloading setuptools-82.0.1-py3-none-any.whl.metadata (6.5 kB)
+[2026-04-27 17:02:02] [Running] Collecting tqdm>=4.64.0 (from modelscope)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/tqdm-4.67.3-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting urllib3>=1.26 (from modelscope)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/urllib3-2.6.3-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting charset_normalizer<4,>=2 (from requests>=2.25->modelscope)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+[2026-04-27 17:02:02] [Running] Collecting idna<4,>=2.5 (from requests>=2.25->modelscope)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/idna-3.13-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Collecting certifi>=2023.5.7 (from requests>=2.25->modelscope)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/certifi-2026.4.22-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Downloading modelscope-1.36.2-py3-none-any.whl (6.1 MB)
+[2026-04-27 17:02:02] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.1/6.1 MB 9.7 MB/s eta 0:00:00
+[2026-04-27 17:02:02] [Running] Downloading setuptools-82.0.1-py3-none-any.whl (1.0 MB)
+[2026-04-27 17:02:02] [Running]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.0/1.0 MB 5.4 MB/s eta 0:00:00
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/modelscope-1.36.2-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Saved /tmp/pip-wheels/setuptools-82.0.1-py3-none-any.whl
+[2026-04-27 17:02:02] [Running] Successfully downloaded modelscope requests tqdm urllib3 filelock packaging setuptools certifi charset_normalizer idna
+[2026-04-27 17:02:02] [Running] --- wandb ---
+[2026-04-27 17:02:02] [Running] Collecting wandb
+[2026-04-27 17:02:02] [Running]   Downloading wandb-0.26.1-py3-none-manylinux_2_28_x86_64.whl.metadata (11 kB)
+[2026-04-27 17:02:02] [Running] Collecting click>=8.0.1 (from wandb)
+[2026-04-27 17:02:02] [Running]   File was already downloaded /tmp/pip-wheels/click-8.3.3-py3-none-any.whl
+[2026-04-27 17:02:49] [Running] Downloading protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl.metadata (595 bytes)

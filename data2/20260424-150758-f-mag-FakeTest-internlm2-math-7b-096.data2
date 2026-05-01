@@ -1,0 +1,249 @@
+@{20260424-150758-f-mag-FakeTest-internlm2-math-7b-096.data2,
+  time = 2026-04-24T15:07:58.212745,
+  name = FakeTest-internlm2-math-7b,
+  submitter = magnus,
+  job_id = 64b7bffca1717b0b,
+  type = 时间线,
+  status = Failed,
+  source_abbr = mag,
+  seq = 096,
+  created_at = 2026-04-24T15:07:58.212745,
+  updated_at = 2026-04-27 16:22:26,
+  gpu_count = 3,
+  gpu_type = a100,
+}
+
+
+[2026-04-27 16:22:26] [Failed] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 16:22:26] [Failed] === [0/5] 检查输出目录 ===
+[2026-04-27 16:22:26] [Failed] 输出目录可用: /data/magnus/models/internlm2-sft-v1
+[2026-04-27 16:22:26] [Failed] === [1/5] 环境信息 ===
+[2026-04-27 16:22:26] [Failed] Fri Apr 24 23:08:05 2026       
+[2026-04-27 16:22:26] [Failed] +-----------------------------------------------------------------------------------------+
+[2026-04-27 16:22:26] [Failed] | NVIDIA-SMI 570.211.01             Driver Version: 570.211.01     CUDA Version: 12.8     |
+[2026-04-27 16:22:26] [Failed] |-----------------------------------------+------------------------+----------------------+
+[2026-04-27 16:22:26] [Failed] | GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+[2026-04-27 16:22:26] [Failed] | Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+[2026-04-27 16:22:26] [Failed] |                                         |                        |               MIG M. |
+[2026-04-27 16:22:26] [Failed] |=========================================+========================+======================|
+[2026-04-27 16:22:26] [Failed] |   0  NVIDIA A100 80GB PCIe          Off |   00000000:6C:00.0 Off |                    0 |
+[2026-04-27 16:22:26] [Failed] | N/A   61C    P0             82W /  300W |       0MiB /  81920MiB |      0%      Default |
+[2026-04-27 16:22:26] [Failed] |                                         |                        |             Disabled |
+[2026-04-27 16:22:26] [Failed] +-----------------------------------------+------------------------+----------------------+
+[2026-04-27 16:22:26] [Failed] |   1  NVIDIA A100 80GB PCIe          Off |   00000000:6D:00.0 Off |                    0 |
+[2026-04-27 16:22:26] [Failed] | N/A   63C    P0             91W /  300W |       0MiB /  81920MiB |      1%      Default |
+[2026-04-27 16:22:26] [Failed] |                                         |                        |             Disabled |
+[2026-04-27 16:22:26] [Failed] +-----------------------------------------+------------------------+----------------------+
+[2026-04-27 16:22:26] [Failed] |   2  NVIDIA A100 80GB PCIe          Off |   00000000:E5:00.0 Off |                    0 |
+[2026-04-27 16:22:26] [Failed] | N/A   64C    P0             86W /  300W |       0MiB /  81920MiB |      0%      Default |
+[2026-04-27 16:22:26] [Failed] |                                         |                        |             Disabled |
+[2026-04-27 16:22:26] [Failed] +-----------------------------------------+------------------------+----------------------+
+[2026-04-27 16:22:26] [Failed] |   3  NVIDIA A100 80GB PCIe          Off |   00000000:E8:00.0 Off |                    0 |
+[2026-04-27 16:22:26] [Failed] | N/A   54C    P0             75W /  300W |    5397MiB /  81920MiB |      0%      Default |
+[2026-04-27 16:22:26] [Failed] |                                         |                        |             Disabled |
+[2026-04-27 16:22:26] [Failed] +-----------------------------------------+------------------------+----------------------+
+[2026-04-27 16:22:26] [Failed]                                                                                          
+[2026-04-27 16:22:26] [Failed] +-----------------------------------------------------------------------------------------+
+[2026-04-27 16:22:26] [Failed] | Processes:                                                                              |
+[2026-04-27 16:22:26] [Failed] |  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+[2026-04-27 16:22:26] [Failed] |        ID   ID                                                               Usage      |
+[2026-04-27 16:22:26] [Failed] |=========================================================================================|
+[2026-04-27 16:22:26] [Failed] +-----------------------------------------------------------------------------------------+
+[2026-04-27 16:22:26] [Failed] Python 3.11.10
+[2026-04-27 16:22:26] [Failed] === [2/5] 检查依赖 ===
+[2026-04-27 16:22:26] [Failed]   [缺失] transformers>=4.45
+[2026-04-27 16:22:26] [Failed]   [缺失] datasets
+[2026-04-27 16:22:26] [Failed]   [缺失] accelerate
+[2026-04-27 16:22:26] [Failed]   [缺失] pandas
+[2026-04-27 16:22:26] [Failed]   [警告] magnus SDK 未找到，custody 上传将失败
+[2026-04-27 16:22:26] [Failed] 安装缺失依赖: transformers>=4.45 datasets accelerate pandas sentencepiece tiktoken protobuf
+[2026-04-27 16:22:26] [Failed] Collecting transformers>=4.45
+[2026-04-27 16:22:26] [Failed]   Downloading transformers-5.6.2-py3-none-any.whl.metadata (33 kB)
+[2026-04-27 16:22:26] [Failed] Collecting datasets
+[2026-04-27 16:22:26] [Failed]   Downloading datasets-4.8.4-py3-none-any.whl.metadata (19 kB)
+[2026-04-27 16:22:26] [Failed] Collecting accelerate
+[2026-04-27 16:22:26] [Failed]   Downloading accelerate-1.13.0-py3-none-any.whl.metadata (19 kB)
+[2026-04-27 16:22:26] [Failed] Collecting pandas
+[2026-04-27 16:22:26] [Failed]   Downloading pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+[2026-04-27 16:22:26] [Failed] Collecting sentencepiece
+[2026-04-27 16:22:26] [Failed]   Downloading sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (10 kB)
+[2026-04-27 16:22:26] [Failed] Collecting tiktoken
+[2026-04-27 16:22:26] [Failed]   Downloading tiktoken-0.12.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (6.7 kB)
+[2026-04-27 16:22:26] [Failed] Collecting protobuf
+[2026-04-27 16:22:26] [Failed]   Downloading protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl.metadata (595 bytes)
+[2026-04-27 16:22:26] [Failed] Collecting huggingface-hub<2.0,>=1.5.0 (from transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading huggingface_hub-1.12.0-py3-none-any.whl.metadata (14 kB)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: numpy>=1.17 in /opt/conda/lib/python3.11/site-packages (from transformers>=4.45) (2.1.2)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: packaging>=20.0 in /opt/conda/lib/python3.11/site-packages (from transformers>=4.45) (24.1)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: pyyaml>=5.1 in /opt/conda/lib/python3.11/site-packages (from transformers>=4.45) (6.0.2)
+[2026-04-27 16:22:26] [Failed] Collecting regex>=2025.10.22 (from transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+[2026-04-27 16:22:26] [Failed] Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+[2026-04-27 16:22:26] [Failed] Collecting typer (from transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading typer-0.24.2-py3-none-any.whl.metadata (15 kB)
+[2026-04-27 16:22:26] [Failed] Collecting safetensors>=0.4.3 (from transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: tqdm>=4.27 in /opt/conda/lib/python3.11/site-packages (from transformers>=4.45) (4.66.5)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: filelock in /opt/conda/lib/python3.11/site-packages (from datasets) (3.16.1)
+[2026-04-27 16:22:26] [Failed] Collecting pyarrow>=21.0.0 (from datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (3.0 kB)
+[2026-04-27 16:22:26] [Failed] Collecting dill<0.4.2,>=0.3.0 (from datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading dill-0.4.1-py3-none-any.whl.metadata (10 kB)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: requests>=2.32.2 in /opt/conda/lib/python3.11/site-packages (from datasets) (2.32.3)
+[2026-04-27 16:22:26] [Failed] Collecting httpx<1.0.0 (from datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+[2026-04-27 16:22:26] [Failed] Collecting xxhash (from datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading xxhash-3.6.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (13 kB)
+[2026-04-27 16:22:26] [Failed] Collecting multiprocess<0.70.20 (from datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading multiprocess-0.70.19-py311-none-any.whl.metadata (7.5 kB)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: fsspec<=2026.2.0,>=2023.1.0 in /opt/conda/lib/python3.11/site-packages (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets) (2024.10.0)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: psutil in /opt/conda/lib/python3.11/site-packages (from accelerate) (6.1.0)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: torch>=2.0.0 in /opt/conda/lib/python3.11/site-packages (from accelerate) (2.5.1+cu124)
+[2026-04-27 16:22:26] [Failed] Collecting python-dateutil>=2.8.2 (from pandas)
+[2026-04-27 16:22:26] [Failed]   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+[2026-04-27 16:22:26] [Failed] Collecting aiohttp!=4.0.0a0,!=4.0.0a1 (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.1 kB)
+[2026-04-27 16:22:26] [Failed] Collecting anyio (from httpx<1.0.0->datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading anyio-4.13.0-py3-none-any.whl.metadata (4.5 kB)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: certifi in /opt/conda/lib/python3.11/site-packages (from httpx<1.0.0->datasets) (2024.8.30)
+[2026-04-27 16:22:26] [Failed] Collecting httpcore==1.* (from httpx<1.0.0->datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: idna in /opt/conda/lib/python3.11/site-packages (from httpx<1.0.0->datasets) (3.10)
+[2026-04-27 16:22:26] [Failed] Collecting h11>=0.16 (from httpcore==1.*->httpx<1.0.0->datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+[2026-04-27 16:22:26] [Failed] Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub<2.0,>=1.5.0->transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.9 kB)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: typing-extensions>=4.1.0 in /opt/conda/lib/python3.11/site-packages (from huggingface-hub<2.0,>=1.5.0->transformers>=4.45) (4.12.2)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: six>=1.5 in /opt/conda/lib/python3.11/site-packages (from python-dateutil>=2.8.2->pandas) (1.16.0)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: charset-normalizer<4,>=2 in /opt/conda/lib/python3.11/site-packages (from requests>=2.32.2->datasets) (3.4.0)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/conda/lib/python3.11/site-packages (from requests>=2.32.2->datasets) (2.2.3)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: networkx in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (3.4.2)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: jinja2 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (3.1.4)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.4.127 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.127)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-cuda-runtime-cu12==12.4.127 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.127)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-cuda-cupti-cu12==12.4.127 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.127)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-cudnn-cu12==9.1.0.70 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (9.1.0.70)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-cublas-cu12==12.4.5.8 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.5.8)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-cufft-cu12==11.2.1.3 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (11.2.1.3)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-curand-cu12==10.3.5.147 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (10.3.5.147)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-cusolver-cu12==11.6.1.9 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (11.6.1.9)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-cusparse-cu12==12.3.1.170 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.3.1.170)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-nccl-cu12==2.21.5 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (2.21.5)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-nvtx-cu12==12.4.127 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.127)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: nvidia-nvjitlink-cu12==12.4.127 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (12.4.127)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: triton==3.1.0 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (3.1.0)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: sympy==1.13.1 in /opt/conda/lib/python3.11/site-packages (from torch>=2.0.0->accelerate) (1.13.1)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: mpmath<1.4,>=1.1.0 in /opt/conda/lib/python3.11/site-packages (from sympy==1.13.1->torch>=2.0.0->accelerate) (1.3.0)
+[2026-04-27 16:22:26] [Failed] Collecting click>=8.2.1 (from typer->transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading click-8.3.3-py3-none-any.whl.metadata (2.6 kB)
+[2026-04-27 16:22:26] [Failed] Collecting shellingham>=1.3.0 (from typer->transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading shellingham-1.5.4-py2.py3-none-any.whl.metadata (3.5 kB)
+[2026-04-27 16:22:26] [Failed] Collecting rich>=12.3.0 (from typer->transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+[2026-04-27 16:22:26] [Failed] Collecting annotated-doc>=0.0.2 (from typer->transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading annotated_doc-0.0.4-py3-none-any.whl.metadata (6.6 kB)
+[2026-04-27 16:22:26] [Failed] Collecting aiohappyeyeballs>=2.5.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading aiohappyeyeballs-2.6.1-py3-none-any.whl.metadata (5.9 kB)
+[2026-04-27 16:22:26] [Failed] Collecting aiosignal>=1.4.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: attrs>=17.3.0 in /opt/conda/lib/python3.11/site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets) (24.2.0)
+[2026-04-27 16:22:26] [Failed] Collecting frozenlist>=1.1.1 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (20 kB)
+[2026-04-27 16:22:26] [Failed] Collecting multidict<7.0,>=4.5 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (5.3 kB)
+[2026-04-27 16:22:26] [Failed] Collecting propcache>=0.2.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (13 kB)
+[2026-04-27 16:22:26] [Failed] Collecting yarl<2.0,>=1.17.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+[2026-04-27 16:22:26] [Failed]   Downloading yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+[2026-04-27 16:22:26] [Failed] Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer->transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading markdown_it_py-4.0.0-py3-none-any.whl.metadata (7.3 kB)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /opt/conda/lib/python3.11/site-packages (from rich>=12.3.0->typer->transformers>=4.45) (2.18.0)
+[2026-04-27 16:22:26] [Failed] Requirement already satisfied: MarkupSafe>=2.0 in /opt/conda/lib/python3.11/site-packages (from jinja2->torch>=2.0.0->accelerate) (3.0.2)
+[2026-04-27 16:22:26] [Failed] Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->transformers>=4.45)
+[2026-04-27 16:22:26] [Failed]   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+[2026-04-27 16:22:26] [Failed] Downloading transformers-5.6.2-py3-none-any.whl (10.4 MB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.4/10.4 MB 12.5 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading datasets-4.8.4-py3-none-any.whl (526 kB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 527.0/527.0 kB 2.2 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading accelerate-1.13.0-py3-none-any.whl (383 kB)
+[2026-04-27 16:22:26] [Failed] Downloading pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (11.3 MB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 11.3/11.3 MB 16.3 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (1.4 MB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 8.1 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading tiktoken-0.12.0-cp311-cp311-manylinux_2_28_x86_64.whl (1.2 MB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 6.4 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl (324 kB)
+[2026-04-27 16:22:26] [Failed] Downloading dill-0.4.1-py3-none-any.whl (120 kB)
+[2026-04-27 16:22:26] [Failed] Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+[2026-04-27 16:22:26] [Failed] Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+[2026-04-27 16:22:26] [Failed] Downloading huggingface_hub-1.12.0-py3-none-any.whl (646 kB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 646.8/646.8 kB 3.8 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading multiprocess-0.70.19-py311-none-any.whl (144 kB)
+[2026-04-27 16:22:26] [Failed] Downloading pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl (48.8 MB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 48.8/48.8 MB 13.1 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+[2026-04-27 16:22:26] [Failed] Downloading regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (799 kB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 799.8/799.8 kB 5.6 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (507 kB)
+[2026-04-27 16:22:26] [Failed] Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.3 MB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.3/3.3 MB 15.1 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading typer-0.24.2-py3-none-any.whl (55 kB)
+[2026-04-27 16:22:26] [Failed] Downloading xxhash-3.6.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (193 kB)
+[2026-04-27 16:22:26] [Failed] Downloading aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.8 MB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 12.3 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading annotated_doc-0.0.4-py3-none-any.whl (5.3 kB)
+[2026-04-27 16:22:26] [Failed] Downloading click-8.3.3-py3-none-any.whl (110 kB)
+[2026-04-27 16:22:26] [Failed] Downloading hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.2 MB)
+[2026-04-27 16:22:26] [Failed]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.2/4.2 MB 13.9 MB/s eta 0:00:00
+[2026-04-27 16:22:26] [Failed] Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+[2026-04-27 16:22:26] [Failed] Downloading shellingham-1.5.4-py2.py3-none-any.whl (9.8 kB)
+[2026-04-27 16:22:26] [Failed] Downloading anyio-4.13.0-py3-none-any.whl (114 kB)
+[2026-04-27 16:22:26] [Failed] Downloading aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
+[2026-04-27 16:22:26] [Failed] Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+[2026-04-27 16:22:26] [Failed] Downloading frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+[2026-04-27 16:22:26] [Failed] Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+[2026-04-27 16:22:26] [Failed] Downloading markdown_it_py-4.0.0-py3-none-any.whl (87 kB)
+[2026-04-27 16:22:26] [Failed] Downloading multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (246 kB)
+[2026-04-27 16:22:26] [Failed] Downloading propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (210 kB)
+[2026-04-27 16:22:26] [Failed] Downloading yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (102 kB)
+[2026-04-27 16:22:26] [Failed] Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+[2026-04-27 16:22:26] [Failed] Installing collected packages: xxhash, shellingham, sentencepiece, safetensors, regex, python-dateutil, pyarrow, protobuf, propcache, multidict, mdurl, hf-xet, h11, frozenlist, dill, click, anyio, annotated-doc, aiohappyeyeballs, yarl, tiktoken, pandas, multiprocess, markdown-it-py, httpcore, aiosignal, rich, httpx, aiohttp, typer, huggingface-hub, tokenizers, datasets, accelerate, transformers
+[2026-04-27 16:22:26] [Failed]   Attempting uninstall: click
+[2026-04-27 16:22:26] [Failed]     Found existing installation: click 8.1.7
+[2026-04-27 16:22:26] [Failed]     Uninstalling click-8.1.7:
+[2026-04-27 16:22:26] [Failed]       Successfully uninstalled click-8.1.7
+[2026-04-27 16:22:26] [Failed] Successfully installed accelerate-1.13.0 aiohappyeyeballs-2.6.1 aiohttp-3.13.5 aiosignal-1.4.0 annotated-doc-0.0.4 anyio-4.13.0 click-8.3.3 datasets-4.8.4 dill-0.4.1 frozenlist-1.8.0 h11-0.16.0 hf-xet-1.4.3 httpcore-1.0.9 httpx-0.28.1 huggingface-hub-1.12.0 markdown-it-py-4.0.0 mdurl-0.1.2 multidict-6.7.1 multiprocess-0.70.19 pandas-3.0.2 propcache-0.4.1 protobuf-7.34.1 pyarrow-24.0.0 python-dateutil-2.9.0.post0 regex-2026.4.4 rich-15.0.0 safetensors-0.7.0 sentencepiece-0.2.1 shellingham-1.5.4 tiktoken-0.12.0 tokenizers-0.22.2 transformers-5.6.2 typer-0.24.2 xxhash-3.6.0 yarl-1.23.0
+[2026-04-27 16:22:26] [Failed] [环境] torch 2.5.1+cu124 | CUDA 12.4 | GPU 3 张
+[2026-04-27 16:22:26] [Failed] === [3/5] 准备模型和数据 ===
+[2026-04-27 16:22:26] [Failed] === 加载模型 ===
+[2026-04-27 16:22:26] [Failed] [模型] 使用本地路径: /data/magnus/models/internlm2-math-7b
+[2026-04-27 16:22:26] [Failed] === 生成假数据（30条物理题）===
+[2026-04-27 16:22:26] [Failed] 假数据生成完成：train=30条，test=8条
+[2026-04-27 16:22:26] [Failed] === [4/5] 开始 SFT 训练 ===
+[2026-04-27 16:22:26] [Failed] [环境] 设备=cuda, GPU 数量=3
+[2026-04-27 16:22:26] [Failed] [配置] epochs=1, batch_size=2, lr=2e-05, max_length=256
+[2026-04-27 16:22:26] [Failed] [transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+[2026-04-27 16:22:26] [Failed] [transformers] Encountered exception while importing einops: No module named 'einops'
+[2026-04-27 16:22:26] [Failed] Traceback (most recent call last):
+[2026-04-27 16:22:26] [Failed]   File "/tmp/sft_train.py", line 301, in <module>
+[2026-04-27 16:22:26] [Failed]     train()
+[2026-04-27 16:22:26] [Failed]   File "/tmp/sft_train.py", line 182, in train
+[2026-04-27 16:22:26] [Failed]     model = AutoModelForCausalLM.from_pretrained(
+[2026-04-27 16:22:26] [Failed]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-04-27 16:22:26] [Failed]   File "/opt/conda/lib/python3.11/site-packages/transformers/models/auto/auto_factory.py", line 369, in from_pretrained
+[2026-04-27 16:22:26] [Failed]     model_class = get_class_from_dynamic_module(
+[2026-04-27 16:22:26] [Failed]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-04-27 16:22:26] [Failed]   File "/opt/conda/lib/python3.11/site-packages/transformers/dynamic_module_utils.py", line 572, in get_class_from_dynamic_module
+[2026-04-27 16:22:26] [Failed]     final_module = get_cached_module_file(
+[2026-04-27 16:22:26] [Failed]                    ^^^^^^^^^^^^^^^^^^^^^^^
+[2026-04-27 16:22:26] [Failed]   File "/opt/conda/lib/python3.11/site-packages/transformers/dynamic_module_utils.py", line 410, in get_cached_module_file
+[2026-04-27 16:22:26] [Failed]     modules_needed = check_imports(resolved_module_file)
+[2026-04-27 16:22:26] [Failed]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-04-27 16:22:26] [Failed]   File "/opt/conda/lib/python3.11/site-packages/transformers/dynamic_module_utils.py", line 258, in check_imports
+[2026-04-27 16:22:26] [Failed]     raise ImportError(
+[2026-04-27 16:22:26] [Failed] ImportError: This modeling file requires the following packages that were not found in your environment: einops. Run `pip install einops`
+[2026-04-27 16:22:26] [Failed] [FATAL] 训练异常退出，trap 将自动打包已保存的 checkpoint
+[2026-04-27 16:22:26] [Failed] 
+[2026-04-27 16:22:26] [Failed] === [退出] 上传训练日志 ===
+[2026-04-27 16:22:26] [Failed] [警告] 未找到训练日志: /data/magnus/models/internlm2-sft-v1/training_log.json

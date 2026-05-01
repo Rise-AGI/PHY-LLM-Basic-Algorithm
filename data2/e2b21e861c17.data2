@@ -1,0 +1,21 @@
+@{e2b21e861c17.data2,
+  time = 2026-04-24T14:14:44.061134,
+  name = DownloadModel-deepseek-math-7b-base,
+  submitter = magnus,
+  job_id = e2b21e861c175f4d,
+  type = 时间线,
+  status = Terminated,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-24T14:14:44.061134,
+  updated_at = 2026-05-01 09:05:06,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:06] [Terminated]
+  [任务开始] 2026-04-24T14:14:44.061134
+
+[2026-05-01 09:05:06] [Terminated]
+  [任务结束] Terminated 2026-05-01 09:05:06

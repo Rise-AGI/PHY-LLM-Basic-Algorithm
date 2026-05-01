@@ -1,0 +1,21 @@
+@{5c20f2c4a915.data2,
+  time = 2026-04-26T12:27:01.870163,
+  name = Warmup-SFT-Packages,
+  submitter = magnus,
+  job_id = 5c20f2c4a9151b80,
+  type = 时间线,
+  status = Terminated,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-26T12:27:01.870163,
+  updated_at = 2026-05-01 09:05:02,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:02] [Terminated]
+  [任务开始] 2026-04-26T12:27:01.870163
+
+[2026-05-01 09:05:02] [Terminated]
+  [任务结束] Terminated 2026-05-01 09:05:02

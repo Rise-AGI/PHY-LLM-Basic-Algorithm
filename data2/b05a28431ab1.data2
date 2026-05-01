@@ -1,0 +1,21 @@
+@{b05a28431ab1.data2,
+  time = 2026-04-28T14:51:29.795065,
+  name = Remove-Qwen2.5-72B,
+  submitter = remove_storage.py,
+  job_id = b05a28431ab14a94,
+  type = 时间线,
+  status = Success,
+  source_abbr = rem,
+  seq = 000,
+  created_at = 2026-04-28T14:51:29.795065,
+  updated_at = 2026-05-01 09:05:12,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:12] [Success]
+  [任务开始] 2026-04-28T14:51:29.795065
+
+[2026-05-01 09:05:12] [Success]
+  [任务结束] Success 2026-05-01 09:05:12

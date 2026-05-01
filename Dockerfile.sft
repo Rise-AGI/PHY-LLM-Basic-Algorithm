@@ -1,0 +1,33 @@
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+LABEL description="SFT Training base: pre-installed pip dependencies for Magnus cluster"
+
+# ── 预装 SFT 训练所需的所有 pip 包 ──────────────────────────────
+# 这样在容器启动时 pip install 耗时 = 0，不需要从 NFS 读取 .whl
+# --trusted-host: 代理/VPN 做 SSL 拦截时绕过 hash 校验
+RUN pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --trusted-host pypi.python.org --no-cache-dir \
+    transformers \
+    datasets \
+    accelerate \
+    einops \
+    sentencepiece \
+    protobuf \
+    tokenizers \
+    safetensors \
+    huggingface-hub \
+    modelscope \
+    wandb \
+    psutil \
+    click \
+    scikit-learn \
+    matplotlib \
+    tqdm \
+    pyarrow \
+    pandas \
+    scipy \
+    jinja2 \
+    requests \
+    peft \
+    bitsandbytes && \
+    # 验证关键包可导入
+    python3 -c "import transformers, datasets, accelerate, torch, peft, bitsandbytes; print(f'OK: transformers={transformers.__version__}, datasets={datasets.__version__}, accelerate={accelerate.__version__}, peft={peft.__version__}, bitsandbytes={bitsandbytes.__version__}, torch={torch.__version__}')"

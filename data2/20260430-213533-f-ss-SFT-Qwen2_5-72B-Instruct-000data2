@@ -1,0 +1,21 @@
+@{fc392309be68.data2,
+  time = 2026-04-30T21:35:33.756109,
+  name = SFT-Qwen2.5-72B-Instruct,
+  submitter = submit_sft.py,
+  job_id = fc392309be68bde7,
+  type = 时间线,
+  status = Failed,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-04-30T21:35:33.756109,
+  updated_at = 2026-05-01 09:05:04,
+  gpu_count = 4,
+  gpu_type = a100,
+}
+
+
+[2026-05-01 09:05:04] [Failed]
+  [任务开始] 2026-04-30T21:35:33.756109
+
+[2026-05-01 09:05:04] [Failed]
+  [任务结束] Failed 2026-05-01 09:05:04

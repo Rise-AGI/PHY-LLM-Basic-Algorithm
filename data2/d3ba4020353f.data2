@@ -1,0 +1,30 @@
+@{d3ba4020353f.data2,
+  time = 2026-04-30T22:20:27.074838,
+  name = SFT-deepseek-math-7b-base,
+  submitter = submit_sft.py,
+  job_id = d3ba4020353f3477,
+  type = 时间线,
+  status = Terminated,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-04-30T22:20:27.074838,
+  updated_at = 2026-04-30 22:21:40,
+  gpu_count = 6,
+  gpu_type = a100,
+}
+
+
+[2026-04-30 22:20] [Terminated]
+  Waiting for output stream...
+
+[2026-05-01 09:05:04] [Terminated]
+  [任务开始] 2026-04-30T22:20:27.074838
+
+[2026-05-01 09:05:04] [Terminated]
+  [任务结束] Terminated 2026-05-01 09:05:04
+
+[2026-05-01 09:05:15] [Terminated]
+  [任务开始] 2026-04-30T14:20:27.706880
+
+[2026-05-01 09:05:15] [Terminated]
+  [任务结束] Terminated 2026-05-01 09:05:15

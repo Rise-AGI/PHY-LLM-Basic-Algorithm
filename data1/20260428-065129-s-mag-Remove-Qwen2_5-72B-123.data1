@@ -1,0 +1,20 @@
+@{20260428-065129-s-mag-Remove-Qwen2_5-72B-123.data1,
+  time = 2026-04-28T06:51:29.191777,
+  name = Remove-Qwen2.5-72B,
+  submitter = magnus,
+  job_id = b05a28431ab14a94,
+  type = 日志,
+  status = Success,
+  source_abbr = mag,
+  seq = 123,
+  created_at = 2026-04-28T06:51:29.191777,
+  updated_at = 2026-04-28 14:53:04,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-04-28 14:53:04] [Remove-Qwen2.5-72B] [Success]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+=== 删除目标 ===
+路径: /data/magnus/models/Qwen2.5-72B
+[成功] 已删除: /data/magnus/models/Qwen2.5-72B (类型=目录, 大小=74G)

@@ -1,0 +1,21 @@
+@{fa91a775842a.data2,
+  time = 2026-04-28T20:16:54.237411,
+  name = SFT-Qwen2.5-72B-Instruct,
+  submitter = submit_sft.py,
+  job_id = fa91a775842ac247,
+  type = 时间线,
+  status = Terminated,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-04-28T20:16:54.237411,
+  updated_at = 2026-05-01 09:05:14,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+
+[2026-05-01 09:05:14] [Terminated]
+  [任务开始] 2026-04-28T20:16:54.237411
+
+[2026-05-01 09:05:14] [Terminated]
+  [任务结束] Terminated 2026-05-01 09:05:14

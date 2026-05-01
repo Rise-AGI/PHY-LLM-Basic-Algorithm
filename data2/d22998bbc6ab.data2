@@ -1,0 +1,21 @@
+@{d22998bbc6ab.data2,
+  time = 2026-04-26T17:23:47.269743,
+  name = PersistTest-Write,
+  submitter = magnus,
+  job_id = d22998bbc6abfc3f,
+  type = 时间线,
+  status = Success,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-26T17:23:47.269743,
+  updated_at = 2026-05-01 09:05:00,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:00] [Success]
+  [任务开始] 2026-04-26T17:23:47.269743
+
+[2026-05-01 09:05:00] [Success]
+  [任务结束] Success 2026-05-01 09:05:00

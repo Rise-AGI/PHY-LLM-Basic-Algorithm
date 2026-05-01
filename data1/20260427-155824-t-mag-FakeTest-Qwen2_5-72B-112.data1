@@ -1,0 +1,70 @@
+@{20260427-155824-t-mag-FakeTest-Qwen2_5-72B-112.data1,
+  time = 2026-04-27T15:58:24.350097,
+  name = FakeTest-Qwen2.5-72B,
+  submitter = magnus,
+  job_id = 6af655af75f882bd,
+  type = 日志,
+  status = Terminated,
+  source_abbr = mag,
+  seq = 112,
+  created_at = 2026-04-27T15:58:24.350097,
+  updated_at = 2026-04-27 23:59:52,
+  gpu_count = 3,
+  gpu_type = a100,
+}
+
+[2026-04-27 23:59:52] [FakeTest-Qwen2.5-72B] [Terminated]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 23:58:31] === [0/5] 检查输出目录 ===
+[2026-04-27 23:58:31] 输出目录可用: /data/magnus/models/Qwen2.5-72B-sft-v1
+[2026-04-27 23:58:31] === [1/5] 环境信息 ===
+Mon Apr 27 23:58:33 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.211.01             Driver Version: 570.211.01     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100 80GB PCIe          Off |   00000000:6C:00.0 Off |                    0 |
+| N/A   64C    P0             86W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA A100 80GB PCIe          Off |   00000000:6D:00.0 Off |                    0 |
+| N/A   67C    P0             97W /  300W |       0MiB /  81920MiB |      2%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   2  NVIDIA A100 80GB PCIe          Off |   00000000:E5:00.0 Off |                    0 |
+| N/A   67C    P0             90W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Python 3.11.10
+[2026-04-27 23:58:34] === [2/5] 检查依赖 ===
+  [缺失] transformers
+  [缺失] datasets
+  [缺失] accelerate
+  [缺失] pandas
+  [缺失] einops
+  [缺失] sentencepiece
+  [缺失] protobuf
+  [警告] magnus SDK 未找到
+安装缺失依赖: transformers datasets accelerate pandas einops sentencepiece protobuf
+Looking in indexes: https://pypi.tuna.tsinghua.edu.cn/simple
+Looking in links: /data/magnus/pip-cache/wheels
+Collecting transformers
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/5d/95/0b0218149b0d6f14df35f5b8f676fa83df4f19ed253c3cc447107ef86eca/transformers-5.6.2-py3-none-any.whl (10.4 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.4/10.4 MB 1.8 MB/s eta 0:00:00
+Collecting datasets
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/65/99/00f3196036501b53032c4b1ab8337a0b978dee832ed276dae3815df4e8b5/datasets-4.8.5-py3-none-any.whl (528 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 529.0/529.0 kB 51.4 kB/s eta 0:00:00
+Collecting accelerate
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/7e/46/02ac5e262d4af18054b3e922b2baedbb2a03289ee792162de60a865defc5/accelerate-1.13.0-py3-none-any.whl (383 kB)
+slurmstepd-zhustation: error: *** JOB 9302 ON zhustation CANCELLED AT 2026-04-27T23:59:20 ***

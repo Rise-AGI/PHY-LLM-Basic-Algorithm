@@ -1,0 +1,25 @@
+@{20260426-213506-s-mag-PersistTest-Read-068.data1,
+  time = 2026-04-26T21:35:06.334899,
+  name = PersistTest-Read,
+  submitter = magnus,
+  job_id = 6958ce9aa3850213,
+  type = 日志,
+  status = Success,
+  source_abbr = mag,
+  seq = 068,
+  created_at = 2026-04-26T21:35:06.334899,
+  updated_at = 2026-04-27 16:20:49,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-04-27 16:20:49] [PersistTest-Read] [Success]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+=== 检查标记文件 ===
+路径: /data/magnus/persist-test/hello.txt
+结果: ❌ 文件不存在 — 持久存储可能有问题！
+=== /data/ 顶层面板 ===
+total 0
+drwxr-xr-x 2 magnus magnus 40 Apr 27 05:35 .
+drwxr-xr-x 3 magnus magnus 60 Apr 27 05:35 ..
+---DONE---

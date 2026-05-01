@@ -1,0 +1,21 @@
+@{a25d3288e8ab.data2,
+  time = 2026-04-27T16:22:57.317880,
+  name = DownloadModel-Qwen2.5-Math-PRM-7B,
+  submitter = download_model_auto.py,
+  job_id = a25d3288e8abe44d,
+  type = 时间线,
+  status = Failed,
+  source_abbr = dma,
+  seq = 000,
+  created_at = 2026-04-27T16:22:57.317880,
+  updated_at = 2026-05-01 09:05:07,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:07] [Failed]
+  [任务开始] 2026-04-27T16:22:57.317880
+
+[2026-05-01 09:05:07] [Failed]
+  [任务结束] Failed 2026-05-01 09:05:07

@@ -1,0 +1,17 @@
+@{20260424-152222-f-mag-internlm2_sft_train-094.data1,
+  time = 2026-04-24T15:22:22.888513,
+  name = internlm2_sft_train,
+  submitter = magnus,
+  job_id = ebbc822eca05e6b4,
+  type = 日志,
+  status = Failed,
+  source_abbr = mag,
+  seq = 094,
+  created_at = 2026-04-24T15:22:22.888513,
+  updated_at = 2026-04-27 16:22:19,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-04-27 16:22:19] [internlm2_sft_train] [Failed]
+[System] Failed to clone repo: Failed to determine default branch

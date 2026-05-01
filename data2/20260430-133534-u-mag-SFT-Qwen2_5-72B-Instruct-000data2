@@ -1,0 +1,123 @@
+@{fc392309be68.data2,
+  time = 2026-04-30T13:35:34.379477,
+  name = SFT-Qwen2.5-72B-Instruct,
+  submitter = magnus,
+  job_id = fc392309be68bde7,
+  type = 时间线,
+  status = Running,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-30T13:35:34.379477,
+  updated_at = 2026-04-30 21:37:51,
+  gpu_count = 4,
+  gpu_type = a100,
+}
+
+
+[2026-04-30 21:36] [Running]
+  WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+  [2026-04-30 21:35:40] === [Warmup] 检查本地 pip 缓存 ====
+  [2026-04-30 21:35:40] [Warmup] 命中缓存: /data/magnus/pip-cache/wheels（80 个 wheel）
+  [2026-04-30 21:35:40] === [0/5] 检查输出目录 ===
+  [2026-04-30 21:35:40] 输出目录可用: /data/magnus/models/Qwen2.5-72B-Instruct-sft-v1
+  [2026-04-30 21:35:40] === [1/5] 环境信息 ===
+  Thu Apr 30 21:35:44 2026       
+  +-----------------------------------------------------------------------------------------+
+  | NVIDIA-SMI 570.211.01             Driver Version: 570.211.01     CUDA Version: 12.8     |
+  |-----------------------------------------+------------------------+----------------------+
+  | GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+  | Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+  |                                         |                        |               MIG M. |
+  |=========================================+========================+======================|
+  |   0  NVIDIA A100 80GB PCIe          Off |   00000000:E5:00.0 Off |                    0 |
+  | N/A   68C    P0             93W /  300W |       0MiB /  81920MiB |      0%      Default |
+  |                                         |                        |             Disabled |
+  +-----------------------------------------+------------------------+----------------------+
+  |   1  NVIDIA A100 80GB PCIe          Off |   00000000:E6:00.0 Off |                    0 |
+  | N/A   73C    P0            104W /  300W |       0MiB /  81920MiB |      0%      Default |
+  |                                         |                        |             Disabled |
+  +-----------------------------------------+------------------------+----------------------+
+  |   2  NVIDIA A100 80GB PCIe          Off |   00000000:E7:00.0 Off |                    0 |
+  | N/A   65C    P0             88W /  300W |       0MiB /  81920MiB |      0%      Default |
+  |                                         |                        |             Disabled |
+  +-----------------------------------------+------------------------+----------------------+
+  |   3  NVIDIA A100 80GB PCIe          Off |   00000000:E8:00.0 Off |                    0 |
+  | N/A   67C    P0             88W /  300W |       0MiB /  81920MiB |      2%      Default |
+  |                                         |                        |             Disabled |
+  +-----------------------------------------+------------------------+----------------------+
+                                                                                           
+  +-----------------------------------------------------------------------------------------+
+  | Processes:                                                                              |
+  |  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+  |        ID   ID                                                               Usage      |
+  |=========================================================================================|
+  |  No running processes found                                                             |
+  +-----------------------------------------------------------------------------------------+
+  Python 3.11.10
+  [2026-04-30 21:35:46] === [2/5] 检查依赖 ===
+    [就绪] transformers 5.7.0
+    [就绪] datasets 4.8.5
+    [就绪] accelerate 1.13.0
+    [就绪] pandas 3.0.2
+    [就绪] einops 0.8.2
+    [就绪] sentencepiece 0.2.1
+    [缺失] protobuf
+    [警告] magnus SDK 未找到，custody 上传将失败
+  安装缺失依赖: protobuf
+  Looking in links: /data/magnus/pip-cache/wheels, /data/magnus/pip-cache/wheels
+  Requirement already satisfied: protobuf in /opt/conda/lib/python3.11/site-packages (7.34.1)
+  [环境] torch 2.5.1+cu124 | CUDA 12.4 | GPU 4 张
+  [2026-04-30 21:36:30] === [3/5] 准备模型和数据 ===
+  [2026-04-30 21:36:30] === 加载模型 ===
+  [2026-04-30 21:36:30] [模型] 使用本地路径: /data/magnus/models/Qwen2.5-72B-Instruct
+  [2026-04-30 21:36:30] [模型] 模型文件列表:
+      663  /data/magnus/models/Qwen2.5-72B-Instruct/config.json
+        2  /data/magnus/models/Qwen2.5-72B-Instruct/configuration.json
+      242  /data/magnus/models/Qwen2.5-72B-Instruct/generation_config.json
+     3.6G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00001-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00002-of-00037.safetensors
+     3.6G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00003-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00004-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00005-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00006-of-00037.safetensors
+     3.6G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00007-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00008-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00009-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00010-of-00037.safetensors
+     3.6G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00011-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00012-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00013-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00014-of-00037.safetensors
+     3.6G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00015-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00016-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00017-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00018-of-00037.safetensors
+     3.6G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00019-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00020-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00021-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00022-of-00037.safetensors
+     3.6G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00023-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00024-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00025-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00026-of-00037.safetensors
+     3.6G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00027-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00028-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00029-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00030-of-00037.safetensors
+     3.6G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00031-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00032-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00033-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00034-of-00037.safetensors
+     3.6G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00035-of-00037.safetensors
+     3.8G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00036-of-00037.safetensors
+     3.3G  /data/magnus/models/Qwen2.5-72B-Instruct/model-00037-of-00037.safetensors
+      78K  /data/magnus/models/Qwen2.5-72B-Instruct/model.safetensors.index.json
+     6.8M  /data/magnus/models/Qwen2.5-72B-Instruct/tokenizer.json
+     7.2K  /data/magnus/models/Qwen2.5-72B-Instruct/tokenizer_config.json
+     2.7M  /data/magnus/models/Qwen2.5-72B-Instruct/vocab.json
+  [2026-04-30 21:36:30] [模型] 目录总大小: 136G
+  [2026-04-30 21:36:30] === [4/5] 开始 SFT 训练 ===
+  W0430 21:36:35.527000 129 site-packages/torch/distributed/run.py:793] 
+  W0430 21:36:35.527000 129 site-packages/torch/distributed/run.py:793] *****************************************
+  W0430 21:36:35.527000 129 site-packages/torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+  W0430 21:36:35.527000 129 site-packages/torch/distributed/run.py:793] *****************************************

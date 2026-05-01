@@ -1,0 +1,19 @@
+@{20260427-162010-f-mag-FakeTest-Qwen2_5-72B-115.data2,
+  time = 2026-04-27T16:20:10.252454,
+  name = FakeTest-Qwen2.5-72B,
+  submitter = magnus,
+  job_id = 5ed26634255e27c1,
+  type = 时间线,
+  status = Failed,
+  source_abbr = mag,
+  seq = 115,
+  created_at = 2026-04-27T16:20:10.252454,
+  updated_at = 2026-04-28 00:22:33,
+  gpu_count = 3,
+  gpu_type = a100,
+}
+
+
+[2026-04-28 00:20:33] [Pending] Waiting for output stream...
+[2026-04-28 00:21:10] [Pending] Waiting for output stream...
+[2026-04-28 00:22:05] [Pending] (运行中, 无新日志)

@@ -1,0 +1,72 @@
+@{20260426-135508-s-mag-Inspect-Storage-078.data2,
+  time = 2026-04-26T13:55:08.512348,
+  name = Inspect-Storage,
+  submitter = magnus,
+  job_id = e94f09b75cd9f621,
+  type = 时间线,
+  status = Success,
+  source_abbr = mag,
+  seq = 078,
+  created_at = 2026-04-26T13:55:08.512348,
+  updated_at = 2026-04-27 16:21:24,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-04-27 16:21:24] [Success] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13] ==========================================
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13]   集群存储检查
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13] ==========================================
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13] === 环境信息 ===
+[2026-04-27 16:21:24] [Success] HOSTNAME: zhustation
+[2026-04-27 16:21:24] [Success] USER: magnus
+[2026-04-27 16:21:24] [Success] PWD: /magnus/workspace/repository
+[2026-04-27 16:21:24] [Success] HOME: /magnus
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13] === 挂载点 ===
+[2026-04-27 16:21:24] [Success] tmpfs           252G     0  252G   0% /dev/shm
+[2026-04-27 16:21:24] [Success] /dev/sdb2       879G  592G  243G  71% /etc/hosts
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13] === 内存 / 临时存储 ===
+[2026-04-27 16:21:24] [Success] TMPDIR: 未设置
+[2026-04-27 16:21:24] [Success] TMP: 未设置
+[2026-04-27 16:21:24] [Success] total 4
+[2026-04-27 16:21:24] [Success] drwxrwxrwt  2 magnus magnus    0 Sep 11  2024 .
+[2026-04-27 16:21:24] [Success] drwxr-xr-x 21 magnus magnus 4096 Apr 26 21:55 ..
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13] === 目录检查 ===
+[2026-04-27 16:21:24] [Success] --- /data ---
+[2026-04-27 16:21:24] [Success]   存在 | 容量: 0
+[2026-04-27 16:21:24] [Success]   文件数: 0
+[2026-04-27 16:21:24] [Success]   目录数: 2
+[2026-04-27 16:21:24] [Success] total 0
+[2026-04-27 16:21:24] [Success] drwxr-xr-x 2 magnus magnus 40 Apr 26 21:55 magnus
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] --- /data/magnus ---
+[2026-04-27 16:21:24] [Success]   存在 | 容量: 0
+[2026-04-27 16:21:24] [Success]   文件数: 0
+[2026-04-27 16:21:24] [Success]   目录数: 1
+[2026-04-27 16:21:24] [Success] total 0
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] --- /data/magnus/pip-cache ---
+[2026-04-27 16:21:24] [Success]   [不存在]
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] --- /data/magnus/pip-cache/wheels ---
+[2026-04-27 16:21:24] [Success]   [不存在]
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] --- /data/magnus/models ---
+[2026-04-27 16:21:24] [Success]   [不存在]
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13] === /data/ 所有子目录 ===
+[2026-04-27 16:21:24] [Success] total 0
+[2026-04-27 16:21:24] [Success] drwxr-xr-x 2 magnus magnus 40 Apr 26 21:55 magnus
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success]   magnus  |  大小: 0  |  文件: 0
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13] === TOP 20 大文件 (/data) ===
+[2026-04-27 16:21:24] [Success] 
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13] ==========================================
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13]   检查完成
+[2026-04-27 16:21:24] [Success] [2026-04-26 21:55:13] ==========================================

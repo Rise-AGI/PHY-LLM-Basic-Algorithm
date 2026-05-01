@@ -1,0 +1,21 @@
+@{dafab5ac9e8f.data2,
+  time = 2026-04-28T19:27:33.420595,
+  name = Inspect-Storage,
+  submitter = inspect_storage.py,
+  job_id = dafab5ac9e8f3576,
+  type = 时间线,
+  status = Success,
+  source_abbr = is,
+  seq = 000,
+  created_at = 2026-04-28T19:27:33.420595,
+  updated_at = 2026-05-01 09:05:14,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:14] [Success]
+  [任务开始] 2026-04-28T19:27:33.420595
+
+[2026-05-01 09:05:14] [Success]
+  [任务结束] Success 2026-05-01 09:05:14

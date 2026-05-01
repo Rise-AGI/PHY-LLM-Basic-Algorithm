@@ -1,0 +1,31 @@
+@{20260427-154848-t-wp-Warmup-Pip-Cache-051.data1,
+  time = 2026-04-27T15:48:48.515488,
+  name = Warmup-Pip-Cache,
+  submitter = warmup_packages.py,
+  job_id = 21e2e3ab511a00cc,
+  type = 日志,
+  status = Terminated,
+  source_abbr = wp,
+  seq = 051,
+  created_at = 2026-04-27T15:48:48.515488,
+  updated_at = 2026-04-27 16:02:50,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-04-27 16:02:15] [Warmup-Pip-Cache] [Running]
+Saved /tmp/pip-wheels/accelerate-1.13.0-py3-none-any.whl
+Saved /tmp/pip-wheels/torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Saved /tmp/pip-wheels/cuda_toolkit-13.0.2-py2.py3-none-any.whl
+Saved /tmp/pip-wheels/nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl
+Saved /tmp/pip-wheels/nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl
+Saved /tmp/pip-wheels/nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl
+Saved /tmp/pip-wheels/nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /tmp/pip-wheels/triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Saved /tmp/pip-wheels/nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl
+Saved /tmp/pip-wheels/nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl
+Saved /tmp/pip-wheels/nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Saved /tmp/pip-wheels/nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /tmp/pip-wheels/nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /tmp/pip-wheels/nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /tmp/pip-wheels/nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl

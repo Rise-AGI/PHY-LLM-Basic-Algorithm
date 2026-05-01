@@ -1,0 +1,1738 @@
+@{deca3afd8de2.data1,
+  time = 2026-04-25T02:28:48.771710,
+  name = Warmup-SFT-Packages,
+  submitter = magnus,
+  job_id = deca3afd8de2a825,
+  type = 日志,
+  status = Success,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-25T02:28:48.771710,
+  updated_at = 2026-05-01 09:05:04,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-05-01 09:05:04] [Warmup-SFT-Packages] [Success]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+=== 预热 pip 包到 /data/magnus/pip-cache/wheels ===
+=== 逐一下载所有包（含传递依赖）===
+--- transformers ---
+Collecting transformers
+  Downloading transformers-5.6.2-py3-none-any.whl.metadata (33 kB)
+Collecting huggingface-hub<2.0,>=1.5.0 (from transformers)
+  Downloading huggingface_hub-1.12.0-py3-none-any.whl.metadata (14 kB)
+Collecting numpy>=1.17 (from transformers)
+  Downloading numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+Collecting packaging>=20.0 (from transformers)
+  Downloading packaging-26.2-py3-none-any.whl.metadata (3.5 kB)
+Collecting pyyaml>=5.1 (from transformers)
+  Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Collecting regex>=2025.10.22 (from transformers)
+  Downloading regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers)
+  Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+Collecting typer (from transformers)
+  Downloading typer-0.24.2-py3-none-any.whl.metadata (15 kB)
+Collecting safetensors>=0.4.3 (from transformers)
+  Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+Collecting tqdm>=4.27 (from transformers)
+  Downloading tqdm-4.67.3-py3-none-any.whl.metadata (57 kB)
+Collecting filelock>=3.10.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+  Downloading filelock-3.29.0-py3-none-any.whl.metadata (2.0 kB)
+Collecting fsspec>=2023.5.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+  Downloading fsspec-2026.3.0-py3-none-any.whl.metadata (10 kB)
+Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub<2.0,>=1.5.0->transformers)
+  Downloading hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.9 kB)
+Collecting httpx<1,>=0.23.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+  Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+Collecting typing-extensions>=4.1.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+  Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting click>=8.2.1 (from typer->transformers)
+  Downloading click-8.3.3-py3-none-any.whl.metadata (2.6 kB)
+Collecting shellingham>=1.3.0 (from typer->transformers)
+  Downloading shellingham-1.5.4-py2.py3-none-any.whl.metadata (3.5 kB)
+Collecting rich>=12.3.0 (from typer->transformers)
+  Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+Collecting annotated-doc>=0.0.2 (from typer->transformers)
+  Downloading annotated_doc-0.0.4-py3-none-any.whl.metadata (6.6 kB)
+Collecting anyio (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+  Downloading anyio-4.13.0-py3-none-any.whl.metadata (4.5 kB)
+Collecting certifi (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+  Downloading certifi-2026.4.22-py3-none-any.whl.metadata (2.5 kB)
+Collecting httpcore==1.* (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+  Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+Collecting idna (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+  Downloading idna-3.13-py3-none-any.whl.metadata (8.0 kB)
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+  Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer->transformers)
+  Downloading markdown_it_py-4.0.0-py3-none-any.whl.metadata (7.3 kB)
+Collecting pygments<3.0.0,>=2.13.0 (from rich>=12.3.0->typer->transformers)
+  Downloading pygments-2.20.0-py3-none-any.whl.metadata (2.5 kB)
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->transformers)
+  Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+Downloading transformers-5.6.2-py3-none-any.whl (10.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.4/10.4 MB 9.1 MB/s eta 0:00:00
+Downloading huggingface_hub-1.12.0-py3-none-any.whl (646 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 646.8/646.8 kB 3.5 MB/s eta 0:00:00
+Downloading numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.9 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.9/16.9 MB 14.9 MB/s eta 0:00:00
+Downloading packaging-26.2-py3-none-any.whl (100 kB)
+Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 806.6/806.6 kB 4.1 MB/s eta 0:00:00
+Downloading regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (799 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 799.8/799.8 kB 2.4 MB/s eta 0:00:00
+Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (507 kB)
+Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.3/3.3 MB 9.7 MB/s eta 0:00:00
+Downloading tqdm-4.67.3-py3-none-any.whl (78 kB)
+Downloading typer-0.24.2-py3-none-any.whl (55 kB)
+Downloading annotated_doc-0.0.4-py3-none-any.whl (5.3 kB)
+Downloading click-8.3.3-py3-none-any.whl (110 kB)
+Downloading filelock-3.29.0-py3-none-any.whl (39 kB)
+Downloading fsspec-2026.3.0-py3-none-any.whl (202 kB)
+Downloading hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.2/4.2 MB 9.4 MB/s eta 0:00:00
+Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+Downloading shellingham-1.5.4-py2.py3-none-any.whl (9.8 kB)
+Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+Downloading markdown_it_py-4.0.0-py3-none-any.whl (87 kB)
+Downloading pygments-2.20.0-py3-none-any.whl (1.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 4.0 MB/s eta 0:00:00
+Downloading anyio-4.13.0-py3-none-any.whl (114 kB)
+Downloading idna-3.13-py3-none-any.whl (68 kB)
+Downloading certifi-2026.4.22-py3-none-any.whl (135 kB)
+Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+Saved /data/magnus/pip-cache/wheels/transformers-5.6.2-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/huggingface_hub-1.12.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/tqdm-4.67.3-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/typer-0.24.2-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/fsspec-2026.3.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/httpx-0.28.1-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/httpcore-1.0.9-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/rich-15.0.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/shellingham-1.5.4-py2.py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/markdown_it_py-4.0.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/pygments-2.20.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/mdurl-0.1.2-py3-none-any.whl
+Successfully downloaded transformers huggingface-hub numpy packaging pyyaml regex safetensors tokenizers tqdm typer annotated-doc click filelock fsspec hf-xet httpx httpcore rich shellingham typing-extensions markdown-it-py pygments anyio idna certifi h11 mdurl
+--- accelerate ---
+Collecting accelerate
+  Downloading accelerate-1.13.0-py3-none-any.whl.metadata (19 kB)
+Collecting numpy>=1.17 (from accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting packaging>=20.0 (from accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting psutil (from accelerate)
+  Downloading psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl.metadata (22 kB)
+Collecting pyyaml (from accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting torch>=2.0.0 (from accelerate)
+  Downloading torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (29 kB)
+Collecting huggingface_hub>=0.21.0 (from accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/huggingface_hub-1.12.0-py3-none-any.whl
+Collecting safetensors>=0.4.3 (from accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Collecting filelock>=3.10.0 (from huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting fsspec>=2023.5.0 (from huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/fsspec-2026.3.0-py3-none-any.whl
+Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting httpx<1,>=0.23.0 (from huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpx-0.28.1-py3-none-any.whl
+Collecting tqdm>=4.42.1 (from huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/tqdm-4.67.3-py3-none-any.whl
+Collecting typer (from huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/typer-0.24.2-py3-none-any.whl
+Collecting typing-extensions>=4.1.0 (from huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting setuptools<82 (from torch>=2.0.0->accelerate)
+  Downloading setuptools-81.0.0-py3-none-any.whl.metadata (6.6 kB)
+Collecting sympy>=1.13.3 (from torch>=2.0.0->accelerate)
+  Downloading sympy-1.14.0-py3-none-any.whl.metadata (12 kB)
+Collecting networkx>=2.5.1 (from torch>=2.0.0->accelerate)
+  Downloading networkx-3.6.1-py3-none-any.whl.metadata (6.8 kB)
+Collecting jinja2 (from torch>=2.0.0->accelerate)
+  Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+Collecting cuda-toolkit==13.0.2 (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading cuda_toolkit-13.0.2-py2.py3-none-any.whl.metadata (9.4 kB)
+Collecting cuda-bindings<14,>=13.0.3 (from torch>=2.0.0->accelerate)
+  Downloading cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (2.3 kB)
+Collecting nvidia-cudnn-cu13==9.19.0.56 (from torch>=2.0.0->accelerate)
+  Downloading nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl.metadata (1.9 kB)
+Collecting nvidia-cusparselt-cu13==0.8.0 (from torch>=2.0.0->accelerate)
+  Downloading nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl.metadata (12 kB)
+Collecting nvidia-nccl-cu13==2.28.9 (from torch>=2.0.0->accelerate)
+  Downloading nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl.metadata (2.0 kB)
+Collecting nvidia-nvshmem-cu13==3.4.5 (from torch>=2.0.0->accelerate)
+  Downloading nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.1 kB)
+Collecting triton==3.6.0 (from torch>=2.0.0->accelerate)
+  Downloading triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cublas==13.1.0.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cuda-runtime==13.0.96.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cufft==12.0.0.61.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.8 kB)
+Collecting nvidia-cufile==1.15.1.6.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cuda-cupti==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-curand==10.4.0.35.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cusolver==12.0.4.66.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl.metadata (1.8 kB)
+Collecting nvidia-cusparse==12.6.3.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.8 kB)
+Collecting nvidia-nvjitlink==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cuda-nvrtc==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-nvtx==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate)
+  Downloading nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl.metadata (1.8 kB)
+Collecting cuda-pathfinder~=1.1 (from cuda-bindings<14,>=13.0.3->torch>=2.0.0->accelerate)
+  Downloading cuda_pathfinder-1.5.3-py3-none-any.whl.metadata (1.9 kB)
+Collecting anyio (from httpx<1,>=0.23.0->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl
+Collecting certifi (from httpx<1,>=0.23.0->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Collecting httpcore==1.* (from httpx<1,>=0.23.0->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpcore-1.0.9-py3-none-any.whl
+Collecting idna (from httpx<1,>=0.23.0->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl
+Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch>=2.0.0->accelerate)
+  Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+Collecting MarkupSafe>=2.0 (from jinja2->torch>=2.0.0->accelerate)
+  Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Collecting click>=8.2.1 (from typer->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting shellingham>=1.3.0 (from typer->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/shellingham-1.5.4-py2.py3-none-any.whl
+Collecting rich>=12.3.0 (from typer->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/rich-15.0.0-py3-none-any.whl
+Collecting annotated-doc>=0.0.2 (from typer->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl
+Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/markdown_it_py-4.0.0-py3-none-any.whl
+Collecting pygments<3.0.0,>=2.13.0 (from rich>=12.3.0->typer->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/pygments-2.20.0-py3-none-any.whl
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->huggingface_hub>=0.21.0->accelerate)
+  File was already downloaded /data/magnus/pip-cache/wheels/mdurl-0.1.2-py3-none-any.whl
+Downloading accelerate-1.13.0-py3-none-any.whl (383 kB)
+Downloading torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl (530.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 530.6/530.6 MB 2.1 MB/s eta 0:00:00
+Downloading cuda_toolkit-13.0.2-py2.py3-none-any.whl (2.4 kB)
+Downloading nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl (366.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 366.1/366.1 MB 9.2 MB/s eta 0:00:00
+Downloading nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl (169.9 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 169.9/169.9 MB 14.2 MB/s eta 0:00:00
+Downloading nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl (196.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 196.5/196.5 MB 15.9 MB/s eta 0:00:00
+Downloading nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (60.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 60.4/60.4 MB 15.3 MB/s eta 0:00:00
+Downloading triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (188.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 188.2/188.2 MB 12.6 MB/s eta 0:00:00
+Downloading nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl (423.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 423.1/423.1 MB 245.8 kB/s eta 0:00:00
+Downloading nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl (10.7 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.7/10.7 MB 11.7 MB/s eta 0:00:00
+Downloading nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (90.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 90.2/90.2 MB 14.2 MB/s eta 0:00:00
+Downloading nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (2.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 6.8 MB/s eta 0:00:00
+Downloading nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (214.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 214.1/214.1 MB 13.4 MB/s eta 0:00:00
+Downloading nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 1.9 MB/s eta 0:00:00
+Downloading nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl (59.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 59.5/59.5 MB 15.4 MB/s eta 0:00:00
+Downloading nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl (200.9 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 200.9/200.9 MB 12.9 MB/s eta 0:00:00
+Downloading nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (145.9 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 145.9/145.9 MB 13.9 MB/s eta 0:00:00
+Downloading nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (40.7 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 40.7/40.7 MB 13.3 MB/s eta 0:00:00
+Downloading nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl (148 kB)
+Downloading psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl (155 kB)
+Downloading cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (6.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.3/6.3 MB 13.9 MB/s eta 0:00:00
+Downloading networkx-3.6.1-py3-none-any.whl (2.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 10.9 MB/s eta 0:00:00
+Downloading setuptools-81.0.0-py3-none-any.whl (1.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.1/1.1 MB 4.7 MB/s eta 0:00:00
+Downloading sympy-1.14.0-py3-none-any.whl (6.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.3/6.3 MB 13.1 MB/s eta 0:00:00
+Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+Downloading cuda_pathfinder-1.5.3-py3-none-any.whl (49 kB)
+Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+Downloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 536.2/536.2 kB 1.3 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/accelerate-1.13.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/cuda_toolkit-13.0.2-py2.py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/networkx-3.6.1-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/setuptools-81.0.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/sympy-1.14.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/jinja2-3.1.6-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/cuda_pathfinder-1.5.3-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/mpmath-1.3.0-py3-none-any.whl
+Successfully downloaded accelerate huggingface_hub numpy packaging pyyaml safetensors torch cuda-toolkit nvidia-cudnn-cu13 nvidia-cusparselt-cu13 nvidia-nccl-cu13 nvidia-nvshmem-cu13 triton nvidia-cublas nvidia-cuda-cupti nvidia-cuda-nvrtc nvidia-cuda-runtime nvidia-cufft nvidia-cufile nvidia-curand nvidia-cusolver nvidia-cusparse nvidia-nvjitlink nvidia-nvtx psutil cuda-bindings filelock fsspec hf-xet httpx httpcore networkx setuptools sympy tqdm typing-extensions jinja2 typer annotated-doc click cuda-pathfinder MarkupSafe mpmath rich shellingham anyio idna certifi h11 markdown-it-py pygments mdurl
+--- datasets ---
+Collecting datasets
+  Downloading datasets-4.8.4-py3-none-any.whl.metadata (19 kB)
+Collecting filelock (from datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting numpy>=1.17 (from datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting pyarrow>=21.0.0 (from datasets)
+  Downloading pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (3.0 kB)
+Collecting dill<0.4.2,>=0.3.0 (from datasets)
+  Downloading dill-0.4.1-py3-none-any.whl.metadata (10 kB)
+Collecting pandas (from datasets)
+  Downloading pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+Collecting requests>=2.32.2 (from datasets)
+  Downloading requests-2.33.1-py3-none-any.whl.metadata (4.8 kB)
+Collecting httpx<1.0.0 (from datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpx-0.28.1-py3-none-any.whl
+Collecting tqdm>=4.66.3 (from datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/tqdm-4.67.3-py3-none-any.whl
+Collecting xxhash (from datasets)
+  Downloading xxhash-3.6.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (13 kB)
+Collecting multiprocess<0.70.20 (from datasets)
+  Downloading multiprocess-0.70.19-py311-none-any.whl.metadata (7.5 kB)
+Collecting fsspec<=2026.2.0,>=2023.1.0 (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+  Downloading fsspec-2026.2.0-py3-none-any.whl.metadata (10 kB)
+Collecting huggingface-hub<2.0,>=0.25.0 (from datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/huggingface_hub-1.12.0-py3-none-any.whl
+Collecting packaging (from datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting pyyaml>=5.1 (from datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting aiohttp!=4.0.0a0,!=4.0.0a1 (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+  Downloading aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.1 kB)
+Collecting anyio (from httpx<1.0.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl
+Collecting certifi (from httpx<1.0.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Collecting httpcore==1.* (from httpx<1.0.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpcore-1.0.9-py3-none-any.whl
+Collecting idna (from httpx<1.0.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1.0.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl
+Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub<2.0,>=0.25.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting typer (from huggingface-hub<2.0,>=0.25.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/typer-0.24.2-py3-none-any.whl
+Collecting typing-extensions>=4.1.0 (from huggingface-hub<2.0,>=0.25.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting charset_normalizer<4,>=2 (from requests>=2.32.2->datasets)
+  Downloading charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+Collecting urllib3<3,>=1.26 (from requests>=2.32.2->datasets)
+  Downloading urllib3-2.6.3-py3-none-any.whl.metadata (6.9 kB)
+Collecting python-dateutil>=2.8.2 (from pandas->datasets)
+  Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Collecting aiohappyeyeballs>=2.5.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+  Downloading aiohappyeyeballs-2.6.1-py3-none-any.whl.metadata (5.9 kB)
+Collecting aiosignal>=1.4.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+  Downloading aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+Collecting attrs>=17.3.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+  Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+Collecting frozenlist>=1.1.1 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+  Downloading frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (20 kB)
+Collecting multidict<7.0,>=4.5 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+  Downloading multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (5.3 kB)
+Collecting propcache>=0.2.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+  Downloading propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (13 kB)
+Collecting yarl<2.0,>=1.17.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets)
+  Downloading yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+Collecting six>=1.5 (from python-dateutil>=2.8.2->pandas->datasets)
+  Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Collecting click>=8.2.1 (from typer->huggingface-hub<2.0,>=0.25.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting shellingham>=1.3.0 (from typer->huggingface-hub<2.0,>=0.25.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/shellingham-1.5.4-py2.py3-none-any.whl
+Collecting rich>=12.3.0 (from typer->huggingface-hub<2.0,>=0.25.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/rich-15.0.0-py3-none-any.whl
+Collecting annotated-doc>=0.0.2 (from typer->huggingface-hub<2.0,>=0.25.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl
+Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer->huggingface-hub<2.0,>=0.25.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/markdown_it_py-4.0.0-py3-none-any.whl
+Collecting pygments<3.0.0,>=2.13.0 (from rich>=12.3.0->typer->huggingface-hub<2.0,>=0.25.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/pygments-2.20.0-py3-none-any.whl
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->huggingface-hub<2.0,>=0.25.0->datasets)
+  File was already downloaded /data/magnus/pip-cache/wheels/mdurl-0.1.2-py3-none-any.whl
+Downloading datasets-4.8.4-py3-none-any.whl (526 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 527.0/527.0 kB 1.5 MB/s eta 0:00:00
+Downloading dill-0.4.1-py3-none-any.whl (120 kB)
+Downloading fsspec-2026.2.0-py3-none-any.whl (202 kB)
+Downloading multiprocess-0.70.19-py311-none-any.whl (144 kB)
+Downloading pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl (48.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 48.8/48.8 MB 12.8 MB/s eta 0:00:00
+Downloading requests-2.33.1-py3-none-any.whl (64 kB)
+Downloading pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (11.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 11.3/11.3 MB 13.5 MB/s eta 0:00:00
+Downloading xxhash-3.6.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (193 kB)
+Downloading aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 6.3 MB/s eta 0:00:00
+Downloading charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (214 kB)
+Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Downloading urllib3-2.6.3-py3-none-any.whl (131 kB)
+Downloading aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
+Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+Downloading frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+Downloading multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (246 kB)
+Downloading propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (210 kB)
+Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Downloading yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (102 kB)
+Saved /data/magnus/pip-cache/wheels/datasets-4.8.4-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/dill-0.4.1-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/fsspec-2026.2.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/multiprocess-0.70.19-py311-none-any.whl
+Saved /data/magnus/pip-cache/wheels/pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/requests-2.33.1-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/xxhash-3.6.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/urllib3-2.6.3-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/aiohappyeyeballs-2.6.1-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/aiosignal-1.4.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/attrs-26.1.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/six-1.17.0-py2.py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded datasets dill fsspec httpx httpcore huggingface-hub filelock multiprocess numpy packaging pyarrow pyyaml requests tqdm pandas xxhash aiohttp certifi charset_normalizer hf-xet idna python-dateutil typing-extensions urllib3 anyio typer aiohappyeyeballs aiosignal annotated-doc attrs click frozenlist h11 multidict propcache rich shellingham six yarl markdown-it-py pygments mdurl
+--- tokenizers ---
+Collecting tokenizers
+  File was already downloaded /data/magnus/pip-cache/wheels/tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Collecting huggingface-hub<2.0,>=0.16.4 (from tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/huggingface_hub-1.12.0-py3-none-any.whl
+Collecting filelock>=3.10.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting fsspec>=2023.5.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/fsspec-2026.3.0-py3-none-any.whl
+Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting httpx<1,>=0.23.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpx-0.28.1-py3-none-any.whl
+Collecting packaging>=20.9 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting pyyaml>=5.1 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting tqdm>=4.42.1 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/tqdm-4.67.3-py3-none-any.whl
+Collecting typer (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/typer-0.24.2-py3-none-any.whl
+Collecting typing-extensions>=4.1.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting anyio (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl
+Collecting certifi (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Collecting httpcore==1.* (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpcore-1.0.9-py3-none-any.whl
+Collecting idna (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl
+Collecting click>=8.2.1 (from typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting shellingham>=1.3.0 (from typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/shellingham-1.5.4-py2.py3-none-any.whl
+Collecting rich>=12.3.0 (from typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/rich-15.0.0-py3-none-any.whl
+Collecting annotated-doc>=0.0.2 (from typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl
+Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/markdown_it_py-4.0.0-py3-none-any.whl
+Collecting pygments<3.0.0,>=2.13.0 (from rich>=12.3.0->typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/pygments-2.20.0-py3-none-any.whl
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->huggingface-hub<2.0,>=0.16.4->tokenizers)
+  File was already downloaded /data/magnus/pip-cache/wheels/mdurl-0.1.2-py3-none-any.whl
+Successfully downloaded tokenizers huggingface-hub filelock fsspec hf-xet httpx httpcore packaging pyyaml tqdm typing-extensions typer annotated-doc click rich shellingham anyio idna certifi h11 markdown-it-py pygments mdurl
+--- safetensors ---
+Collecting safetensors
+  File was already downloaded /data/magnus/pip-cache/wheels/safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Successfully downloaded safetensors
+--- peft ---
+Collecting peft
+  Downloading peft-0.19.1-py3-none-any.whl.metadata (15 kB)
+Collecting numpy>=1.17 (from peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting packaging>=20.0 (from peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting psutil (from peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl
+Collecting pyyaml (from peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting torch>=1.13.0 (from peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Collecting transformers (from peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/transformers-5.6.2-py3-none-any.whl
+Collecting tqdm (from peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/tqdm-4.67.3-py3-none-any.whl
+Collecting accelerate>=0.21.0 (from peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/accelerate-1.13.0-py3-none-any.whl
+Collecting safetensors (from peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Collecting huggingface_hub>=0.25.0 (from peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/huggingface_hub-1.12.0-py3-none-any.whl
+Collecting filelock>=3.10.0 (from huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting fsspec>=2023.5.0 (from huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/fsspec-2026.3.0-py3-none-any.whl
+Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting httpx<1,>=0.23.0 (from huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpx-0.28.1-py3-none-any.whl
+Collecting typer (from huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/typer-0.24.2-py3-none-any.whl
+Collecting typing-extensions>=4.1.0 (from huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting setuptools<82 (from torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/setuptools-81.0.0-py3-none-any.whl
+Collecting sympy>=1.13.3 (from torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/sympy-1.14.0-py3-none-any.whl
+Collecting networkx>=2.5.1 (from torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/networkx-3.6.1-py3-none-any.whl
+Collecting jinja2 (from torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/jinja2-3.1.6-py3-none-any.whl
+Collecting cuda-toolkit==13.0.2 (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_toolkit-13.0.2-py2.py3-none-any.whl
+Collecting cuda-bindings<14,>=13.0.3 (from torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting nvidia-cudnn-cu13==9.19.0.56 (from torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusparselt-cu13==0.8.0 (from torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl
+Collecting nvidia-nccl-cu13==2.28.9 (from torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl
+Collecting nvidia-nvshmem-cu13==3.4.5 (from torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting triton==3.6.0 (from torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting nvidia-cublas==13.1.0.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cuda-runtime==13.0.96.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cufft==12.0.0.61.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cufile==1.15.1.6.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cuda-cupti==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl
+Collecting nvidia-curand==10.4.0.35.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusolver==12.0.4.66.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusparse==12.6.3.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-nvjitlink==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Collecting nvidia-cuda-nvrtc==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Collecting nvidia-nvtx==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl
+Collecting regex>=2025.10.22 (from transformers->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Collecting cuda-pathfinder~=1.1 (from cuda-bindings<14,>=13.0.3->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_pathfinder-1.5.3-py3-none-any.whl
+Collecting anyio (from httpx<1,>=0.23.0->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl
+Collecting certifi (from httpx<1,>=0.23.0->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Collecting httpcore==1.* (from httpx<1,>=0.23.0->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpcore-1.0.9-py3-none-any.whl
+Collecting idna (from httpx<1,>=0.23.0->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl
+Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/mpmath-1.3.0-py3-none-any.whl
+Collecting MarkupSafe>=2.0 (from jinja2->torch>=1.13.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting click>=8.2.1 (from typer->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting shellingham>=1.3.0 (from typer->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/shellingham-1.5.4-py2.py3-none-any.whl
+Collecting rich>=12.3.0 (from typer->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/rich-15.0.0-py3-none-any.whl
+Collecting annotated-doc>=0.0.2 (from typer->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl
+Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/markdown_it_py-4.0.0-py3-none-any.whl
+Collecting pygments<3.0.0,>=2.13.0 (from rich>=12.3.0->typer->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/pygments-2.20.0-py3-none-any.whl
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->huggingface_hub>=0.25.0->peft)
+  File was already downloaded /data/magnus/pip-cache/wheels/mdurl-0.1.2-py3-none-any.whl
+Downloading peft-0.19.1-py3-none-any.whl (680 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 680.7/680.7 kB 1.3 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/peft-0.19.1-py3-none-any.whl
+Successfully downloaded peft accelerate huggingface_hub numpy packaging pyyaml safetensors torch cuda-toolkit nvidia-cudnn-cu13 nvidia-cusparselt-cu13 nvidia-nccl-cu13 nvidia-nvshmem-cu13 triton nvidia-cublas nvidia-cuda-cupti nvidia-cuda-nvrtc nvidia-cuda-runtime nvidia-cufft nvidia-cufile nvidia-curand nvidia-cusolver nvidia-cusparse nvidia-nvjitlink nvidia-nvtx tqdm psutil transformers cuda-bindings filelock fsspec hf-xet httpx httpcore networkx regex setuptools sympy tokenizers typing-extensions jinja2 typer annotated-doc click cuda-pathfinder MarkupSafe mpmath rich shellingham anyio idna certifi h11 markdown-it-py pygments mdurl
+--- trl ---
+Collecting trl
+  Downloading trl-1.2.0-py3-none-any.whl.metadata (11 kB)
+Collecting accelerate>=1.4.0 (from trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/accelerate-1.13.0-py3-none-any.whl
+Collecting datasets>=4.7.0 (from trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/datasets-4.8.4-py3-none-any.whl
+Collecting jinja2 (from trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/jinja2-3.1.6-py3-none-any.whl
+Collecting packaging>20.0 (from trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting transformers>=4.56.2 (from trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/transformers-5.6.2-py3-none-any.whl
+Collecting numpy>=1.17 (from accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting psutil (from accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl
+Collecting pyyaml (from accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting torch>=2.0.0 (from accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Collecting huggingface_hub>=0.21.0 (from accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/huggingface_hub-1.12.0-py3-none-any.whl
+Collecting safetensors>=0.4.3 (from accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Collecting filelock (from datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting pyarrow>=21.0.0 (from datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Collecting dill<0.4.2,>=0.3.0 (from datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/dill-0.4.1-py3-none-any.whl
+Collecting pandas (from datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting requests>=2.32.2 (from datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/requests-2.33.1-py3-none-any.whl
+Collecting httpx<1.0.0 (from datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpx-0.28.1-py3-none-any.whl
+Collecting tqdm>=4.66.3 (from datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/tqdm-4.67.3-py3-none-any.whl
+Collecting xxhash (from datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/xxhash-3.6.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting multiprocess<0.70.20 (from datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/multiprocess-0.70.19-py311-none-any.whl
+Collecting fsspec<=2026.2.0,>=2023.1.0 (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/fsspec-2026.2.0-py3-none-any.whl
+Collecting regex>=2025.10.22 (from transformers>=4.56.2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers>=4.56.2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Collecting typer (from transformers>=4.56.2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/typer-0.24.2-py3-none-any.whl
+Collecting MarkupSafe>=2.0 (from jinja2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting aiohttp!=4.0.0a0,!=4.0.0a1 (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting anyio (from httpx<1.0.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl
+Collecting certifi (from httpx<1.0.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Collecting httpcore==1.* (from httpx<1.0.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpcore-1.0.9-py3-none-any.whl
+Collecting idna (from httpx<1.0.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1.0.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl
+Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface_hub>=0.21.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting typing-extensions>=4.1.0 (from huggingface_hub>=0.21.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting charset_normalizer<4,>=2 (from requests>=2.32.2->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting urllib3<3,>=1.26 (from requests>=2.32.2->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/urllib3-2.6.3-py3-none-any.whl
+Collecting setuptools<82 (from torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/setuptools-81.0.0-py3-none-any.whl
+Collecting sympy>=1.13.3 (from torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/sympy-1.14.0-py3-none-any.whl
+Collecting networkx>=2.5.1 (from torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/networkx-3.6.1-py3-none-any.whl
+Collecting cuda-toolkit==13.0.2 (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_toolkit-13.0.2-py2.py3-none-any.whl
+Collecting cuda-bindings<14,>=13.0.3 (from torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting nvidia-cudnn-cu13==9.19.0.56 (from torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusparselt-cu13==0.8.0 (from torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl
+Collecting nvidia-nccl-cu13==2.28.9 (from torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl
+Collecting nvidia-nvshmem-cu13==3.4.5 (from torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting triton==3.6.0 (from torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting nvidia-cublas==13.1.0.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cuda-runtime==13.0.96.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cufft==12.0.0.61.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cufile==1.15.1.6.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cuda-cupti==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl
+Collecting nvidia-curand==10.4.0.35.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusolver==12.0.4.66.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusparse==12.6.3.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-nvjitlink==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Collecting nvidia-cuda-nvrtc==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Collecting nvidia-nvtx==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl
+Collecting python-dateutil>=2.8.2 (from pandas->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+Collecting click>=8.2.1 (from typer->transformers>=4.56.2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting shellingham>=1.3.0 (from typer->transformers>=4.56.2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/shellingham-1.5.4-py2.py3-none-any.whl
+Collecting rich>=12.3.0 (from typer->transformers>=4.56.2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/rich-15.0.0-py3-none-any.whl
+Collecting annotated-doc>=0.0.2 (from typer->transformers>=4.56.2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl
+Collecting aiohappyeyeballs>=2.5.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/aiohappyeyeballs-2.6.1-py3-none-any.whl
+Collecting aiosignal>=1.4.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/aiosignal-1.4.0-py3-none-any.whl
+Collecting attrs>=17.3.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/attrs-26.1.0-py3-none-any.whl
+Collecting frozenlist>=1.1.1 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
+Collecting multidict<7.0,>=4.5 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting propcache>=0.2.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting yarl<2.0,>=1.17.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting cuda-pathfinder~=1.1 (from cuda-bindings<14,>=13.0.3->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_pathfinder-1.5.3-py3-none-any.whl
+Collecting six>=1.5 (from python-dateutil>=2.8.2->pandas->datasets>=4.7.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/six-1.17.0-py2.py3-none-any.whl
+Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer->transformers>=4.56.2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/markdown_it_py-4.0.0-py3-none-any.whl
+Collecting pygments<3.0.0,>=2.13.0 (from rich>=12.3.0->typer->transformers>=4.56.2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/pygments-2.20.0-py3-none-any.whl
+Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch>=2.0.0->accelerate>=1.4.0->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/mpmath-1.3.0-py3-none-any.whl
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->transformers>=4.56.2->trl)
+  File was already downloaded /data/magnus/pip-cache/wheels/mdurl-0.1.2-py3-none-any.whl
+Downloading trl-1.2.0-py3-none-any.whl (697 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 697.4/697.4 kB 1.6 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/trl-1.2.0-py3-none-any.whl
+Successfully downloaded trl accelerate datasets packaging transformers jinja2 dill fsspec httpx httpcore huggingface_hub filelock MarkupSafe multiprocess numpy pyarrow pyyaml regex requests safetensors tokenizers torch cuda-toolkit nvidia-cudnn-cu13 nvidia-cusparselt-cu13 nvidia-nccl-cu13 nvidia-nvshmem-cu13 triton nvidia-cublas nvidia-cuda-cupti nvidia-cuda-nvrtc nvidia-cuda-runtime nvidia-cufft nvidia-cufile nvidia-curand nvidia-cusolver nvidia-cusparse nvidia-nvjitlink nvidia-nvtx tqdm pandas psutil typer xxhash aiohttp annotated-doc certifi charset_normalizer click cuda-bindings hf-xet idna networkx python-dateutil rich setuptools shellingham sympy typing-extensions urllib3 anyio aiohappyeyeballs aiosignal attrs cuda-pathfinder frozenlist h11 markdown-it-py mpmath multidict propcache pygments six yarl mdurl
+--- bitsandbytes ---
+Collecting bitsandbytes
+  Downloading bitsandbytes-0.49.2-py3-none-manylinux_2_24_x86_64.whl.metadata (10 kB)
+Collecting torch<3,>=2.3 (from bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Collecting numpy>=1.17 (from bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting packaging>=20.9 (from bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting filelock (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting typing-extensions>=4.10.0 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting setuptools<82 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/setuptools-81.0.0-py3-none-any.whl
+Collecting sympy>=1.13.3 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/sympy-1.14.0-py3-none-any.whl
+Collecting networkx>=2.5.1 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/networkx-3.6.1-py3-none-any.whl
+Collecting jinja2 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/jinja2-3.1.6-py3-none-any.whl
+Collecting fsspec>=0.8.5 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/fsspec-2026.3.0-py3-none-any.whl
+Collecting cuda-toolkit==13.0.2 (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_toolkit-13.0.2-py2.py3-none-any.whl
+Collecting cuda-bindings<14,>=13.0.3 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting nvidia-cudnn-cu13==9.19.0.56 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusparselt-cu13==0.8.0 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl
+Collecting nvidia-nccl-cu13==2.28.9 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl
+Collecting nvidia-nvshmem-cu13==3.4.5 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting triton==3.6.0 (from torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting nvidia-cublas==13.1.0.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cuda-runtime==13.0.96.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cufft==12.0.0.61.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cufile==1.15.1.6.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cuda-cupti==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl
+Collecting nvidia-curand==10.4.0.35.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusolver==12.0.4.66.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusparse==12.6.3.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-nvjitlink==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Collecting nvidia-cuda-nvrtc==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Collecting nvidia-nvtx==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl
+Collecting cuda-pathfinder~=1.1 (from cuda-bindings<14,>=13.0.3->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_pathfinder-1.5.3-py3-none-any.whl
+Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/mpmath-1.3.0-py3-none-any.whl
+Collecting MarkupSafe>=2.0 (from jinja2->torch<3,>=2.3->bitsandbytes)
+  File was already downloaded /data/magnus/pip-cache/wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Downloading bitsandbytes-0.49.2-py3-none-manylinux_2_24_x86_64.whl (60.7 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 60.7/60.7 MB 15.1 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/bitsandbytes-0.49.2-py3-none-manylinux_2_24_x86_64.whl
+Successfully downloaded bitsandbytes numpy packaging torch cuda-toolkit nvidia-cudnn-cu13 nvidia-cusparselt-cu13 nvidia-nccl-cu13 nvidia-nvshmem-cu13 triton nvidia-cublas nvidia-cuda-cupti nvidia-cuda-nvrtc nvidia-cuda-runtime nvidia-cufft nvidia-cufile nvidia-curand nvidia-cusolver nvidia-cusparse nvidia-nvjitlink nvidia-nvtx cuda-bindings fsspec networkx setuptools sympy typing-extensions filelock jinja2 cuda-pathfinder MarkupSafe mpmath
+--- pandas ---
+Collecting pandas
+  File was already downloaded /data/magnus/pip-cache/wheels/pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting numpy>=1.26.0 (from pandas)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting python-dateutil>=2.8.2 (from pandas)
+  File was already downloaded /data/magnus/pip-cache/wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+Collecting six>=1.5 (from python-dateutil>=2.8.2->pandas)
+  File was already downloaded /data/magnus/pip-cache/wheels/six-1.17.0-py2.py3-none-any.whl
+Successfully downloaded pandas numpy python-dateutil six
+--- numpy ---
+Collecting numpy
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded numpy
+--- scipy ---
+Collecting scipy
+  Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+Collecting numpy<2.7,>=1.26.4 (from scipy)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.3/35.3 MB 14.9 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded scipy numpy
+--- pyarrow ---
+Collecting pyarrow
+  File was already downloaded /data/magnus/pip-cache/wheels/pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Successfully downloaded pyarrow
+--- jinja2 ---
+Collecting jinja2
+  File was already downloaded /data/magnus/pip-cache/wheels/jinja2-3.1.6-py3-none-any.whl
+Collecting MarkupSafe>=2.0 (from jinja2)
+  File was already downloaded /data/magnus/pip-cache/wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded jinja2 MarkupSafe
+--- protobuf ---
+Collecting protobuf
+  Downloading protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl.metadata (595 bytes)
+Downloading protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl (324 kB)
+Saved /data/magnus/pip-cache/wheels/protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl
+Successfully downloaded protobuf
+--- sentencepiece ---
+Collecting sentencepiece
+  Downloading sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (10 kB)
+Downloading sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (1.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 3.1 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded sentencepiece
+--- tiktoken ---
+Collecting tiktoken
+  Downloading tiktoken-0.12.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (6.7 kB)
+Collecting regex>=2022.1.18 (from tiktoken)
+  File was already downloaded /data/magnus/pip-cache/wheels/regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting requests>=2.26.0 (from tiktoken)
+  File was already downloaded /data/magnus/pip-cache/wheels/requests-2.33.1-py3-none-any.whl
+Collecting charset_normalizer<4,>=2 (from requests>=2.26.0->tiktoken)
+  File was already downloaded /data/magnus/pip-cache/wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting idna<4,>=2.5 (from requests>=2.26.0->tiktoken)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting urllib3<3,>=1.26 (from requests>=2.26.0->tiktoken)
+  File was already downloaded /data/magnus/pip-cache/wheels/urllib3-2.6.3-py3-none-any.whl
+Collecting certifi>=2023.5.7 (from requests>=2.26.0->tiktoken)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Downloading tiktoken-0.12.0-cp311-cp311-manylinux_2_28_x86_64.whl (1.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 3.6 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/tiktoken-0.12.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Successfully downloaded tiktoken regex requests certifi charset_normalizer idna urllib3
+--- huggingface-hub ---
+Collecting huggingface-hub
+  File was already downloaded /data/magnus/pip-cache/wheels/huggingface_hub-1.12.0-py3-none-any.whl
+Collecting filelock>=3.10.0 (from huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting fsspec>=2023.5.0 (from huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/fsspec-2026.3.0-py3-none-any.whl
+Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting httpx<1,>=0.23.0 (from huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpx-0.28.1-py3-none-any.whl
+Collecting packaging>=20.9 (from huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting pyyaml>=5.1 (from huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting tqdm>=4.42.1 (from huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/tqdm-4.67.3-py3-none-any.whl
+Collecting typer (from huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/typer-0.24.2-py3-none-any.whl
+Collecting typing-extensions>=4.1.0 (from huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting anyio (from httpx<1,>=0.23.0->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl
+Collecting certifi (from httpx<1,>=0.23.0->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Collecting httpcore==1.* (from httpx<1,>=0.23.0->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpcore-1.0.9-py3-none-any.whl
+Collecting idna (from httpx<1,>=0.23.0->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl
+Collecting click>=8.2.1 (from typer->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting shellingham>=1.3.0 (from typer->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/shellingham-1.5.4-py2.py3-none-any.whl
+Collecting rich>=12.3.0 (from typer->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/rich-15.0.0-py3-none-any.whl
+Collecting annotated-doc>=0.0.2 (from typer->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl
+Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/markdown_it_py-4.0.0-py3-none-any.whl
+Collecting pygments<3.0.0,>=2.13.0 (from rich>=12.3.0->typer->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/pygments-2.20.0-py3-none-any.whl
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->huggingface-hub)
+  File was already downloaded /data/magnus/pip-cache/wheels/mdurl-0.1.2-py3-none-any.whl
+Successfully downloaded huggingface-hub filelock fsspec hf-xet httpx httpcore packaging pyyaml tqdm typing-extensions typer annotated-doc click rich shellingham anyio idna certifi h11 markdown-it-py pygments mdurl
+--- modelscope ---
+Collecting modelscope
+  Downloading modelscope-1.36.2-py3-none-any.whl.metadata (43 kB)
+Collecting filelock (from modelscope)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting packaging (from modelscope)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting requests>=2.25 (from modelscope)
+  File was already downloaded /data/magnus/pip-cache/wheels/requests-2.33.1-py3-none-any.whl
+Collecting setuptools (from modelscope)
+  Downloading setuptools-82.0.1-py3-none-any.whl.metadata (6.5 kB)
+Collecting tqdm>=4.64.0 (from modelscope)
+  File was already downloaded /data/magnus/pip-cache/wheels/tqdm-4.67.3-py3-none-any.whl
+Collecting urllib3>=1.26 (from modelscope)
+  File was already downloaded /data/magnus/pip-cache/wheels/urllib3-2.6.3-py3-none-any.whl
+Collecting charset_normalizer<4,>=2 (from requests>=2.25->modelscope)
+  File was already downloaded /data/magnus/pip-cache/wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting idna<4,>=2.5 (from requests>=2.25->modelscope)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting certifi>=2023.5.7 (from requests>=2.25->modelscope)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Downloading modelscope-1.36.2-py3-none-any.whl (6.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.1/6.1 MB 7.6 MB/s eta 0:00:00
+Downloading setuptools-82.0.1-py3-none-any.whl (1.0 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.0/1.0 MB 3.9 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/modelscope-1.36.2-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/setuptools-82.0.1-py3-none-any.whl
+Successfully downloaded modelscope requests tqdm urllib3 filelock packaging setuptools certifi charset_normalizer idna
+--- einops ---
+Collecting einops
+  Downloading einops-0.8.2-py3-none-any.whl.metadata (13 kB)
+Downloading einops-0.8.2-py3-none-any.whl (65 kB)
+Saved /data/magnus/pip-cache/wheels/einops-0.8.2-py3-none-any.whl
+Successfully downloaded einops
+--- wandb ---
+Collecting wandb
+  Downloading wandb-0.26.1-py3-none-manylinux_2_28_x86_64.whl.metadata (11 kB)
+Collecting click>=8.0.1 (from wandb)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting gitpython!=3.1.29,>=1.0.0 (from wandb)
+  Downloading gitpython-3.1.47-py3-none-any.whl.metadata (14 kB)
+Collecting packaging (from wandb)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting platformdirs (from wandb)
+  Downloading platformdirs-4.9.6-py3-none-any.whl.metadata (4.7 kB)
+Collecting protobuf!=5.28.0,!=5.29.0,<8,>4.21.0 (from wandb)
+  File was already downloaded /data/magnus/pip-cache/wheels/protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl
+Collecting pydantic<3 (from wandb)
+  Downloading pydantic-2.13.3-py3-none-any.whl.metadata (108 kB)
+Collecting pyyaml (from wandb)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting requests<3,>=2.0.0 (from wandb)
+  File was already downloaded /data/magnus/pip-cache/wheels/requests-2.33.1-py3-none-any.whl
+Collecting sentry-sdk>=2.0.0 (from wandb)
+  Downloading sentry_sdk-2.58.0-py2.py3-none-any.whl.metadata (10 kB)
+Collecting typing-extensions<5,>=4.8 (from wandb)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting gitdb<5,>=4.0.1 (from gitpython!=3.1.29,>=1.0.0->wandb)
+  Downloading gitdb-4.0.12-py3-none-any.whl.metadata (1.2 kB)
+Collecting annotated-types>=0.6.0 (from pydantic<3->wandb)
+  Downloading annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+Collecting pydantic-core==2.46.3 (from pydantic<3->wandb)
+  Downloading pydantic_core-2.46.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+Collecting typing-inspection>=0.4.2 (from pydantic<3->wandb)
+  Downloading typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+Collecting charset_normalizer<4,>=2 (from requests<3,>=2.0.0->wandb)
+  File was already downloaded /data/magnus/pip-cache/wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting idna<4,>=2.5 (from requests<3,>=2.0.0->wandb)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting urllib3<3,>=1.26 (from requests<3,>=2.0.0->wandb)
+  File was already downloaded /data/magnus/pip-cache/wheels/urllib3-2.6.3-py3-none-any.whl
+Collecting certifi>=2023.5.7 (from requests<3,>=2.0.0->wandb)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Collecting smmap<6,>=3.0.1 (from gitdb<5,>=4.0.1->gitpython!=3.1.29,>=1.0.0->wandb)
+  Downloading smmap-5.0.3-py3-none-any.whl.metadata (4.6 kB)
+Downloading wandb-0.26.1-py3-none-manylinux_2_28_x86_64.whl (27.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 27.2/27.2 MB 16.6 MB/s eta 0:00:00
+Downloading gitpython-3.1.47-py3-none-any.whl (209 kB)
+Downloading pydantic-2.13.3-py3-none-any.whl (471 kB)
+Downloading pydantic_core-2.46.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 6.5 MB/s eta 0:00:00
+Downloading sentry_sdk-2.58.0-py2.py3-none-any.whl (460 kB)
+Downloading platformdirs-4.9.6-py3-none-any.whl (21 kB)
+Downloading annotated_types-0.7.0-py3-none-any.whl (13 kB)
+Downloading gitdb-4.0.12-py3-none-any.whl (62 kB)
+Downloading typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+Downloading smmap-5.0.3-py3-none-any.whl (24 kB)
+Saved /data/magnus/pip-cache/wheels/wandb-0.26.1-py3-none-manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/gitpython-3.1.47-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/pydantic-2.13.3-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/pydantic_core-2.46.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/sentry_sdk-2.58.0-py2.py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/platformdirs-4.9.6-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/annotated_types-0.7.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/gitdb-4.0.12-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/typing_inspection-0.4.2-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/smmap-5.0.3-py3-none-any.whl
+Successfully downloaded wandb click gitpython protobuf pydantic pydantic-core requests sentry-sdk typing-extensions packaging platformdirs pyyaml annotated-types certifi charset_normalizer gitdb idna typing-inspection urllib3 smmap
+--- tenacity ---
+Collecting tenacity
+  Downloading tenacity-9.1.4-py3-none-any.whl.metadata (1.2 kB)
+Downloading tenacity-9.1.4-py3-none-any.whl (28 kB)
+Saved /data/magnus/pip-cache/wheels/tenacity-9.1.4-py3-none-any.whl
+Successfully downloaded tenacity
+--- psutil ---
+Collecting psutil
+  File was already downloaded /data/magnus/pip-cache/wheels/psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded psutil
+--- pyyaml ---
+Collecting pyyaml
+  File was already downloaded /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded pyyaml
+--- click ---
+Collecting click
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Successfully downloaded click
+--- fire ---
+Collecting fire
+  Downloading fire-0.7.1-py3-none-any.whl.metadata (5.8 kB)
+Collecting termcolor (from fire)
+  Downloading termcolor-3.3.0-py3-none-any.whl.metadata (6.5 kB)
+Downloading fire-0.7.1-py3-none-any.whl (115 kB)
+Downloading termcolor-3.3.0-py3-none-any.whl (7.7 kB)
+Saved /data/magnus/pip-cache/wheels/fire-0.7.1-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/termcolor-3.3.0-py3-none-any.whl
+Successfully downloaded fire termcolor
+--- scikit-learn ---
+Collecting scikit-learn
+  Downloading scikit_learn-1.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (11 kB)
+Collecting numpy>=1.24.1 (from scikit-learn)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting scipy>=1.10.0 (from scikit-learn)
+  File was already downloaded /data/magnus/pip-cache/wheels/scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting joblib>=1.3.0 (from scikit-learn)
+  Downloading joblib-1.5.3-py3-none-any.whl.metadata (5.5 kB)
+Collecting threadpoolctl>=3.2.0 (from scikit-learn)
+  Downloading threadpoolctl-3.6.0-py3-none-any.whl.metadata (13 kB)
+Downloading scikit_learn-1.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (9.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9.1/9.1 MB 12.6 MB/s eta 0:00:00
+Downloading joblib-1.5.3-py3-none-any.whl (309 kB)
+Downloading threadpoolctl-3.6.0-py3-none-any.whl (18 kB)
+Saved /data/magnus/pip-cache/wheels/scikit_learn-1.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/joblib-1.5.3-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/threadpoolctl-3.6.0-py3-none-any.whl
+Successfully downloaded scikit-learn joblib numpy scipy threadpoolctl
+--- matplotlib ---
+Collecting matplotlib
+  Downloading matplotlib-3.10.9-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (52 kB)
+Collecting contourpy>=1.0.1 (from matplotlib)
+  Downloading contourpy-1.3.3-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (5.5 kB)
+Collecting cycler>=0.10 (from matplotlib)
+  Downloading cycler-0.12.1-py3-none-any.whl.metadata (3.8 kB)
+Collecting fonttools>=4.22.0 (from matplotlib)
+  Downloading fonttools-4.62.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (117 kB)
+Collecting kiwisolver>=1.3.1 (from matplotlib)
+  Downloading kiwisolver-1.5.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.1 kB)
+Collecting numpy>=1.23 (from matplotlib)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting packaging>=20.0 (from matplotlib)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting pillow>=8 (from matplotlib)
+  Downloading pillow-12.2.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (8.8 kB)
+Collecting pyparsing>=3 (from matplotlib)
+  Downloading pyparsing-3.3.2-py3-none-any.whl.metadata (5.8 kB)
+Collecting python-dateutil>=2.7 (from matplotlib)
+  File was already downloaded /data/magnus/pip-cache/wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+Collecting six>=1.5 (from python-dateutil>=2.7->matplotlib)
+  File was already downloaded /data/magnus/pip-cache/wheels/six-1.17.0-py2.py3-none-any.whl
+Downloading matplotlib-3.10.9-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (8.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8.8/8.8 MB 10.0 MB/s eta 0:00:00
+Downloading contourpy-1.3.3-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (355 kB)
+Downloading cycler-0.12.1-py3-none-any.whl (8.3 kB)
+Downloading fonttools-4.62.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.1/5.1 MB 13.2 MB/s eta 0:00:00
+Downloading kiwisolver-1.5.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 8.8 MB/s eta 0:00:00
+Downloading pillow-12.2.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (7.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 7.1/7.1 MB 12.8 MB/s eta 0:00:00
+Downloading pyparsing-3.3.2-py3-none-any.whl (122 kB)
+Saved /data/magnus/pip-cache/wheels/matplotlib-3.10.9-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/contourpy-1.3.3-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/cycler-0.12.1-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/fonttools-4.62.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/kiwisolver-1.5.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/pillow-12.2.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/pyparsing-3.3.2-py3-none-any.whl
+Successfully downloaded matplotlib contourpy cycler fonttools kiwisolver numpy packaging pillow pyparsing python-dateutil six
+--- seaborn ---
+Collecting seaborn
+  Downloading seaborn-0.13.2-py3-none-any.whl.metadata (5.4 kB)
+Collecting numpy!=1.24.0,>=1.20 (from seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting pandas>=1.2 (from seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting matplotlib!=3.6.1,>=3.4 (from seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/matplotlib-3.10.9-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting contourpy>=1.0.1 (from matplotlib!=3.6.1,>=3.4->seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/contourpy-1.3.3-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting cycler>=0.10 (from matplotlib!=3.6.1,>=3.4->seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/cycler-0.12.1-py3-none-any.whl
+Collecting fonttools>=4.22.0 (from matplotlib!=3.6.1,>=3.4->seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/fonttools-4.62.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting kiwisolver>=1.3.1 (from matplotlib!=3.6.1,>=3.4->seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/kiwisolver-1.5.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting packaging>=20.0 (from matplotlib!=3.6.1,>=3.4->seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting pillow>=8 (from matplotlib!=3.6.1,>=3.4->seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/pillow-12.2.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting pyparsing>=3 (from matplotlib!=3.6.1,>=3.4->seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyparsing-3.3.2-py3-none-any.whl
+Collecting python-dateutil>=2.7 (from matplotlib!=3.6.1,>=3.4->seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+Collecting six>=1.5 (from python-dateutil>=2.7->matplotlib!=3.6.1,>=3.4->seaborn)
+  File was already downloaded /data/magnus/pip-cache/wheels/six-1.17.0-py2.py3-none-any.whl
+Downloading seaborn-0.13.2-py3-none-any.whl (294 kB)
+Saved /data/magnus/pip-cache/wheels/seaborn-0.13.2-py3-none-any.whl
+Successfully downloaded seaborn matplotlib numpy pandas contourpy cycler fonttools kiwisolver packaging pillow pyparsing python-dateutil six
+--- opencv-python ---
+Collecting opencv-python
+  Downloading opencv_python-4.13.0.92-cp37-abi3-manylinux_2_28_x86_64.whl.metadata (19 kB)
+Collecting numpy>=2 (from opencv-python)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Downloading opencv_python-4.13.0.92-cp37-abi3-manylinux_2_28_x86_64.whl (72.9 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 72.9/72.9 MB 12.2 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/opencv_python-4.13.0.92-cp37-abi3-manylinux_2_28_x86_64.whl
+Successfully downloaded opencv-python numpy
+--- pillow ---
+Collecting pillow
+  File was already downloaded /data/magnus/pip-cache/wheels/pillow-12.2.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded pillow
+--- ffmpeg-python ---
+Collecting ffmpeg-python
+  Downloading ffmpeg_python-0.2.0-py3-none-any.whl.metadata (1.7 kB)
+Collecting future (from ffmpeg-python)
+  Downloading future-1.0.0-py3-none-any.whl.metadata (4.0 kB)
+Downloading ffmpeg_python-0.2.0-py3-none-any.whl (25 kB)
+Downloading future-1.0.0-py3-none-any.whl (491 kB)
+Saved /data/magnus/pip-cache/wheels/ffmpeg_python-0.2.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/future-1.0.0-py3-none-any.whl
+Successfully downloaded ffmpeg-python future
+--- gradio ---
+Collecting gradio
+  Downloading gradio-6.13.0-py3-none-any.whl.metadata (17 kB)
+Collecting anyio<5.0,>=3.0 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl
+Collecting brotli>=1.1.0 (from gradio)
+  Downloading brotli-1.2.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (6.1 kB)
+Collecting fastapi<1.0,>=0.115.2 (from gradio)
+  Downloading fastapi-0.136.1-py3-none-any.whl.metadata (28 kB)
+Collecting gradio-client==2.5.0 (from gradio)
+  Downloading gradio_client-2.5.0-py3-none-any.whl.metadata (7.1 kB)
+Collecting groovy~=0.1 (from gradio)
+  Downloading groovy-0.1.2-py3-none-any.whl.metadata (6.1 kB)
+Collecting hf-gradio<1.0,>=0.4.1 (from gradio)
+  Downloading hf_gradio-0.4.1-py3-none-any.whl.metadata (428 bytes)
+Collecting httpx<1.0,>=0.24.1 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpx-0.28.1-py3-none-any.whl
+Collecting huggingface-hub<2.0,>=0.33.5 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/huggingface_hub-1.12.0-py3-none-any.whl
+Collecting jinja2<4.0 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/jinja2-3.1.6-py3-none-any.whl
+Collecting markupsafe<4.0,>=2.0 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting numpy<3.0,>=1.0 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting orjson~=3.0 (from gradio)
+  Downloading orjson-3.11.8-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (41 kB)
+Collecting packaging (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting pandas<4.0,>=1.0 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting pillow<13.0,>=8.0 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/pillow-12.2.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting pydantic<=3.0,>=2.0 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/pydantic-2.13.3-py3-none-any.whl
+Collecting pydub<1.0 (from gradio)
+  Downloading pydub-0.25.1-py2.py3-none-any.whl.metadata (1.4 kB)
+Collecting python-multipart<1.0,>=0.0.18 (from gradio)
+  Downloading python_multipart-0.0.26-py3-none-any.whl.metadata (2.1 kB)
+Collecting pytz>=2017.2 (from gradio)
+  Downloading pytz-2026.1.post1-py2.py3-none-any.whl.metadata (22 kB)
+Collecting pyyaml<7.0,>=5.0 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting safehttpx<0.2.0,>=0.1.7 (from gradio)
+  Downloading safehttpx-0.1.7-py3-none-any.whl.metadata (4.2 kB)
+Collecting semantic-version~=2.0 (from gradio)
+  Downloading semantic_version-2.10.0-py2.py3-none-any.whl.metadata (9.7 kB)
+Collecting starlette<2.0,>=0.40.0 (from gradio)
+  Downloading starlette-1.0.0-py3-none-any.whl.metadata (6.3 kB)
+Collecting tomlkit<0.15.0,>=0.12.0 (from gradio)
+  Downloading tomlkit-0.14.0-py3-none-any.whl.metadata (2.8 kB)
+Collecting typer<1.0,>=0.12 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/typer-0.24.2-py3-none-any.whl
+Collecting typing-extensions~=4.0 (from gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting uvicorn>=0.14.0 (from gradio)
+  Downloading uvicorn-0.46.0-py3-none-any.whl.metadata (6.7 kB)
+Collecting fsspec (from gradio-client==2.5.0->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/fsspec-2026.3.0-py3-none-any.whl
+Collecting idna>=2.8 (from anyio<5.0,>=3.0->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting typing-inspection>=0.4.2 (from fastapi<1.0,>=0.115.2->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_inspection-0.4.2-py3-none-any.whl
+Collecting annotated-doc>=0.0.2 (from fastapi<1.0,>=0.115.2->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl
+Collecting certifi (from httpx<1.0,>=0.24.1->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Collecting httpcore==1.* (from httpx<1.0,>=0.24.1->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpcore-1.0.9-py3-none-any.whl
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1.0,>=0.24.1->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl
+Collecting filelock>=3.10.0 (from huggingface-hub<2.0,>=0.33.5->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub<2.0,>=0.33.5->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting tqdm>=4.42.1 (from huggingface-hub<2.0,>=0.33.5->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/tqdm-4.67.3-py3-none-any.whl
+Collecting python-dateutil>=2.8.2 (from pandas<4.0,>=1.0->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+Collecting annotated-types>=0.6.0 (from pydantic<=3.0,>=2.0->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_types-0.7.0-py3-none-any.whl
+Collecting pydantic-core==2.46.3 (from pydantic<=3.0,>=2.0->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/pydantic_core-2.46.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Collecting click>=8.2.1 (from typer<1.0,>=0.12->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting shellingham>=1.3.0 (from typer<1.0,>=0.12->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/shellingham-1.5.4-py2.py3-none-any.whl
+Collecting rich>=12.3.0 (from typer<1.0,>=0.12->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/rich-15.0.0-py3-none-any.whl
+Collecting six>=1.5 (from python-dateutil>=2.8.2->pandas<4.0,>=1.0->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/six-1.17.0-py2.py3-none-any.whl
+Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer<1.0,>=0.12->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/markdown_it_py-4.0.0-py3-none-any.whl
+Collecting pygments<3.0.0,>=2.13.0 (from rich>=12.3.0->typer<1.0,>=0.12->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/pygments-2.20.0-py3-none-any.whl
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer<1.0,>=0.12->gradio)
+  File was already downloaded /data/magnus/pip-cache/wheels/mdurl-0.1.2-py3-none-any.whl
+Downloading gradio-6.13.0-py3-none-any.whl (19.7 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 19.7/19.7 MB 15.9 MB/s eta 0:00:00
+Downloading gradio_client-2.5.0-py3-none-any.whl (59 kB)
+Downloading brotli-1.2.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 9.4 MB/s eta 0:00:00
+Downloading fastapi-0.136.1-py3-none-any.whl (117 kB)
+Downloading groovy-0.1.2-py3-none-any.whl (14 kB)
+Downloading hf_gradio-0.4.1-py3-none-any.whl (4.5 kB)
+Downloading orjson-3.11.8-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (133 kB)
+Downloading pydub-0.25.1-py2.py3-none-any.whl (32 kB)
+Downloading python_multipart-0.0.26-py3-none-any.whl (28 kB)
+Downloading pytz-2026.1.post1-py2.py3-none-any.whl (510 kB)
+Downloading safehttpx-0.1.7-py3-none-any.whl (9.0 kB)
+Downloading semantic_version-2.10.0-py2.py3-none-any.whl (15 kB)
+Downloading starlette-1.0.0-py3-none-any.whl (72 kB)
+Downloading tomlkit-0.14.0-py3-none-any.whl (39 kB)
+Downloading uvicorn-0.46.0-py3-none-any.whl (70 kB)
+Saved /data/magnus/pip-cache/wheels/gradio-6.13.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/gradio_client-2.5.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/brotli-1.2.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/fastapi-0.136.1-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/groovy-0.1.2-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/hf_gradio-0.4.1-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/orjson-3.11.8-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/pydub-0.25.1-py2.py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/python_multipart-0.0.26-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/pytz-2026.1.post1-py2.py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/safehttpx-0.1.7-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/semantic_version-2.10.0-py2.py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/starlette-1.0.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/tomlkit-0.14.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/uvicorn-0.46.0-py3-none-any.whl
+Successfully downloaded gradio gradio-client anyio brotli fastapi groovy hf-gradio httpx httpcore huggingface-hub jinja2 markupsafe numpy orjson packaging pandas pillow pydantic pydantic-core pydub python-multipart pytz pyyaml safehttpx semantic-version starlette tomlkit typer typing-extensions uvicorn annotated-doc annotated-types click filelock fsspec h11 hf-xet idna python-dateutil rich shellingham tqdm typing-inspection certifi markdown-it-py pygments six mdurl
+--- streamlit ---
+Collecting streamlit
+  Downloading streamlit-1.56.0-py3-none-any.whl.metadata (9.8 kB)
+Collecting altair!=5.4.0,!=5.4.1,<7,>=4.0 (from streamlit)
+  Downloading altair-6.1.0-py3-none-any.whl.metadata (11 kB)
+Collecting blinker<2,>=1.5.0 (from streamlit)
+  Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+Collecting cachetools<8,>=5.5 (from streamlit)
+  Downloading cachetools-7.0.6-py3-none-any.whl.metadata (5.9 kB)
+Collecting click<9,>=7.0 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting gitpython!=3.1.19,<4,>=3.0.7 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/gitpython-3.1.47-py3-none-any.whl
+Collecting numpy<3,>=1.23 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting packaging>=20 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting pandas<4,>=1.4.0 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting pillow<13,>=7.1.0 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/pillow-12.2.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting pydeck<1,>=0.8.0b4 (from streamlit)
+  Downloading pydeck-0.9.2-py2.py3-none-any.whl.metadata (4.2 kB)
+Collecting protobuf<8,>=3.20 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/protobuf-7.34.1-cp310-abi3-manylinux2014_x86_64.whl
+Collecting pyarrow>=7.0 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Collecting requests<3,>=2.27 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/requests-2.33.1-py3-none-any.whl
+Collecting tenacity<10,>=8.1.0 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/tenacity-9.1.4-py3-none-any.whl
+Collecting toml<2,>=0.10.1 (from streamlit)
+  Downloading toml-0.10.2-py2.py3-none-any.whl.metadata (7.1 kB)
+Collecting tornado!=6.5.0,<7,>=6.0.3 (from streamlit)
+  Downloading tornado-6.5.5-cp39-abi3-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (2.8 kB)
+Collecting typing-extensions<5,>=4.10.0 (from streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting watchdog<7,>=2.1.5 (from streamlit)
+  Downloading watchdog-6.0.0-py3-none-manylinux2014_x86_64.whl.metadata (44 kB)
+Collecting jinja2 (from altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/jinja2-3.1.6-py3-none-any.whl
+Collecting jsonschema>=3.0 (from altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit)
+  Downloading jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+Collecting narwhals>=2.4.0 (from altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit)
+  Downloading narwhals-2.20.0-py3-none-any.whl.metadata (15 kB)
+Collecting gitdb<5,>=4.0.1 (from gitpython!=3.1.19,<4,>=3.0.7->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/gitdb-4.0.12-py3-none-any.whl
+Collecting python-dateutil>=2.8.2 (from pandas<4,>=1.4.0->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+Collecting charset_normalizer<4,>=2 (from requests<3,>=2.27->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting idna<4,>=2.5 (from requests<3,>=2.27->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting urllib3<3,>=1.26 (from requests<3,>=2.27->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/urllib3-2.6.3-py3-none-any.whl
+Collecting certifi>=2023.5.7 (from requests<3,>=2.27->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Collecting smmap<6,>=3.0.1 (from gitdb<5,>=4.0.1->gitpython!=3.1.19,<4,>=3.0.7->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/smmap-5.0.3-py3-none-any.whl
+Collecting MarkupSafe>=2.0 (from jinja2->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting attrs>=22.2.0 (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/attrs-26.1.0-py3-none-any.whl
+Collecting jsonschema-specifications>=2023.03.6 (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit)
+  Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+Collecting referencing>=0.28.4 (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit)
+  Downloading referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+Collecting rpds-py>=0.25.0 (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit)
+  Downloading rpds_py-0.30.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+Collecting six>=1.5 (from python-dateutil>=2.8.2->pandas<4,>=1.4.0->streamlit)
+  File was already downloaded /data/magnus/pip-cache/wheels/six-1.17.0-py2.py3-none-any.whl
+Downloading streamlit-1.56.0-py3-none-any.whl (9.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9.1/9.1 MB 11.4 MB/s eta 0:00:00
+Downloading altair-6.1.0-py3-none-any.whl (796 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 797.0/797.0 kB 3.9 MB/s eta 0:00:00
+Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+Downloading cachetools-7.0.6-py3-none-any.whl (13 kB)
+Downloading pydeck-0.9.2-py2.py3-none-any.whl (11.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 11.3/11.3 MB 13.0 MB/s eta 0:00:00
+Downloading toml-0.10.2-py2.py3-none-any.whl (16 kB)
+Downloading tornado-6.5.5-cp39-abi3-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (447 kB)
+Downloading watchdog-6.0.0-py3-none-manylinux2014_x86_64.whl (79 kB)
+Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+Downloading narwhals-2.20.0-py3-none-any.whl (449 kB)
+Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+Downloading rpds_py-0.30.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (390 kB)
+Saved /data/magnus/pip-cache/wheels/streamlit-1.56.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/altair-6.1.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/blinker-1.9.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/cachetools-7.0.6-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/pydeck-0.9.2-py2.py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/toml-0.10.2-py2.py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/tornado-6.5.5-cp39-abi3-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/watchdog-6.0.0-py3-none-manylinux2014_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/jsonschema-4.26.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/narwhals-2.20.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/jsonschema_specifications-2025.9.1-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/referencing-0.37.0-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/rpds_py-0.30.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Successfully downloaded streamlit altair blinker cachetools click gitpython numpy packaging pandas pillow protobuf pyarrow pydeck requests tenacity toml tornado typing-extensions watchdog certifi charset_normalizer gitdb idna jinja2 jsonschema narwhals python-dateutil urllib3 attrs jsonschema-specifications MarkupSafe referencing rpds-py six smmap
+--- fastapi ---
+Collecting fastapi
+  File was already downloaded /data/magnus/pip-cache/wheels/fastapi-0.136.1-py3-none-any.whl
+Collecting starlette>=0.46.0 (from fastapi)
+  File was already downloaded /data/magnus/pip-cache/wheels/starlette-1.0.0-py3-none-any.whl
+Collecting pydantic>=2.9.0 (from fastapi)
+  File was already downloaded /data/magnus/pip-cache/wheels/pydantic-2.13.3-py3-none-any.whl
+Collecting typing-extensions>=4.8.0 (from fastapi)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting typing-inspection>=0.4.2 (from fastapi)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_inspection-0.4.2-py3-none-any.whl
+Collecting annotated-doc>=0.0.2 (from fastapi)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl
+Collecting annotated-types>=0.6.0 (from pydantic>=2.9.0->fastapi)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_types-0.7.0-py3-none-any.whl
+Collecting pydantic-core==2.46.3 (from pydantic>=2.9.0->fastapi)
+  File was already downloaded /data/magnus/pip-cache/wheels/pydantic_core-2.46.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Collecting anyio<5,>=3.6.2 (from starlette>=0.46.0->fastapi)
+  File was already downloaded /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl
+Collecting idna>=2.8 (from anyio<5,>=3.6.2->starlette>=0.46.0->fastapi)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Successfully downloaded fastapi annotated-doc pydantic pydantic-core starlette typing-extensions typing-inspection annotated-types anyio idna
+--- uvicorn ---
+Collecting uvicorn
+  File was already downloaded /data/magnus/pip-cache/wheels/uvicorn-0.46.0-py3-none-any.whl
+Collecting click>=7.0 (from uvicorn)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting h11>=0.8 (from uvicorn)
+  File was already downloaded /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl
+Successfully downloaded uvicorn click h11
+--- requests ---
+Collecting requests
+  File was already downloaded /data/magnus/pip-cache/wheels/requests-2.33.1-py3-none-any.whl
+Collecting charset_normalizer<4,>=2 (from requests)
+  File was already downloaded /data/magnus/pip-cache/wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting idna<4,>=2.5 (from requests)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting urllib3<3,>=1.26 (from requests)
+  File was already downloaded /data/magnus/pip-cache/wheels/urllib3-2.6.3-py3-none-any.whl
+Collecting certifi>=2023.5.7 (from requests)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Successfully downloaded requests certifi charset_normalizer idna urllib3
+--- urllib3 ---
+Collecting urllib3
+  File was already downloaded /data/magnus/pip-cache/wheels/urllib3-2.6.3-py3-none-any.whl
+Successfully downloaded urllib3
+--- charset-normalizer ---
+Collecting charset-normalizer
+  File was already downloaded /data/magnus/pip-cache/wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded charset-normalizer
+--- idna ---
+Collecting idna
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Successfully downloaded idna
+--- certifi ---
+Collecting certifi
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Successfully downloaded certifi
+--- torchao ---
+Collecting torchao
+  Downloading torchao-0.17.0-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (20 kB)
+Downloading torchao-0.17.0-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (3.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.2/3.2 MB 6.1 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/torchao-0.17.0-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded torchao
+--- auto-gptq ---
+Collecting auto-gptq
+  Downloading auto_gptq-0.7.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (18 kB)
+Collecting accelerate>=0.26.0 (from auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/accelerate-1.13.0-py3-none-any.whl
+Collecting datasets (from auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/datasets-4.8.4-py3-none-any.whl
+Collecting sentencepiece (from auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting numpy (from auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting rouge (from auto-gptq)
+  Downloading rouge-1.0.1-py3-none-any.whl.metadata (4.1 kB)
+Collecting gekko (from auto-gptq)
+  Downloading gekko-1.3.2-py3-none-any.whl.metadata (3.2 kB)
+Collecting torch>=1.13.0 (from auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Collecting safetensors (from auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Collecting transformers>=4.31.0 (from auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/transformers-5.6.2-py3-none-any.whl
+Collecting peft>=0.5.0 (from auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/peft-0.19.1-py3-none-any.whl
+Collecting tqdm (from auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/tqdm-4.67.3-py3-none-any.whl
+Collecting packaging>=20.0 (from accelerate>=0.26.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/packaging-26.2-py3-none-any.whl
+Collecting psutil (from accelerate>=0.26.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl
+Collecting pyyaml (from accelerate>=0.26.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting huggingface_hub>=0.21.0 (from accelerate>=0.26.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/huggingface_hub-1.12.0-py3-none-any.whl
+Collecting filelock (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting typing-extensions>=4.10.0 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting setuptools<82 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/setuptools-81.0.0-py3-none-any.whl
+Collecting sympy>=1.13.3 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/sympy-1.14.0-py3-none-any.whl
+Collecting networkx>=2.5.1 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/networkx-3.6.1-py3-none-any.whl
+Collecting jinja2 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/jinja2-3.1.6-py3-none-any.whl
+Collecting fsspec>=0.8.5 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/fsspec-2026.3.0-py3-none-any.whl
+Collecting cuda-toolkit==13.0.2 (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_toolkit-13.0.2-py2.py3-none-any.whl
+Collecting cuda-bindings<14,>=13.0.3 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting nvidia-cudnn-cu13==9.19.0.56 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusparselt-cu13==0.8.0 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl
+Collecting nvidia-nccl-cu13==2.28.9 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl
+Collecting nvidia-nvshmem-cu13==3.4.5 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting triton==3.6.0 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting nvidia-cublas==13.1.0.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cuda-runtime==13.0.96.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cufft==12.0.0.61.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cufile==1.15.1.6.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cuda-cupti==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl
+Collecting nvidia-curand==10.4.0.35.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusolver==12.0.4.66.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusparse==12.6.3.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-nvjitlink==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Collecting nvidia-cuda-nvrtc==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Collecting nvidia-nvtx==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl
+Collecting regex>=2025.10.22 (from transformers>=4.31.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers>=4.31.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Collecting typer (from transformers>=4.31.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/typer-0.24.2-py3-none-any.whl
+Collecting pyarrow>=21.0.0 (from datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Collecting dill<0.4.2,>=0.3.0 (from datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/dill-0.4.1-py3-none-any.whl
+Collecting pandas (from datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/pandas-3.0.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting requests>=2.32.2 (from datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/requests-2.33.1-py3-none-any.whl
+Collecting httpx<1.0.0 (from datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpx-0.28.1-py3-none-any.whl
+Collecting xxhash (from datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/xxhash-3.6.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting multiprocess<0.70.20 (from datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/multiprocess-0.70.19-py311-none-any.whl
+Collecting fsspec>=0.8.5 (from torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/fsspec-2026.2.0-py3-none-any.whl
+Collecting six (from rouge->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/six-1.17.0-py2.py3-none-any.whl
+Collecting cuda-pathfinder~=1.1 (from cuda-bindings<14,>=13.0.3->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_pathfinder-1.5.3-py3-none-any.whl
+Collecting aiohttp!=4.0.0a0,!=4.0.0a1 (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/aiohttp-3.13.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting anyio (from httpx<1.0.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/anyio-4.13.0-py3-none-any.whl
+Collecting certifi (from httpx<1.0.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/certifi-2026.4.22-py3-none-any.whl
+Collecting httpcore==1.* (from httpx<1.0.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/httpcore-1.0.9-py3-none-any.whl
+Collecting idna (from httpx<1.0.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/idna-3.13-py3-none-any.whl
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1.0.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/h11-0.16.0-py3-none-any.whl
+Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface_hub>=0.21.0->accelerate>=0.26.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting charset_normalizer<4,>=2 (from requests>=2.32.2->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/charset_normalizer-3.4.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting urllib3<3,>=1.26 (from requests>=2.32.2->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/urllib3-2.6.3-py3-none-any.whl
+Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/mpmath-1.3.0-py3-none-any.whl
+Collecting MarkupSafe>=2.0 (from jinja2->torch>=1.13.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting python-dateutil>=2.8.2 (from pandas->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+Collecting click>=8.2.1 (from typer->transformers>=4.31.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/click-8.3.3-py3-none-any.whl
+Collecting shellingham>=1.3.0 (from typer->transformers>=4.31.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/shellingham-1.5.4-py2.py3-none-any.whl
+Collecting rich>=12.3.0 (from typer->transformers>=4.31.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/rich-15.0.0-py3-none-any.whl
+Collecting annotated-doc>=0.0.2 (from typer->transformers>=4.31.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/annotated_doc-0.0.4-py3-none-any.whl
+Collecting aiohappyeyeballs>=2.5.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/aiohappyeyeballs-2.6.1-py3-none-any.whl
+Collecting aiosignal>=1.4.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/aiosignal-1.4.0-py3-none-any.whl
+Collecting attrs>=17.3.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/attrs-26.1.0-py3-none-any.whl
+Collecting frozenlist>=1.1.1 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
+Collecting multidict<7.0,>=4.5 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting propcache>=0.2.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting yarl<2.0,>=1.17.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer->transformers>=4.31.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/markdown_it_py-4.0.0-py3-none-any.whl
+Collecting pygments<3.0.0,>=2.13.0 (from rich>=12.3.0->typer->transformers>=4.31.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/pygments-2.20.0-py3-none-any.whl
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->transformers>=4.31.0->auto-gptq)
+  File was already downloaded /data/magnus/pip-cache/wheels/mdurl-0.1.2-py3-none-any.whl
+Downloading auto_gptq-0.7.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (23.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 23.5/23.5 MB 13.2 MB/s eta 0:00:00
+Downloading gekko-1.3.2-py3-none-any.whl (13.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13.2/13.2 MB 13.9 MB/s eta 0:00:00
+Downloading rouge-1.0.1-py3-none-any.whl (13 kB)
+Saved /data/magnus/pip-cache/wheels/auto_gptq-0.7.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+Saved /data/magnus/pip-cache/wheels/gekko-1.3.2-py3-none-any.whl
+Saved /data/magnus/pip-cache/wheels/rouge-1.0.1-py3-none-any.whl
+Successfully downloaded auto-gptq accelerate numpy peft safetensors torch cuda-toolkit nvidia-cudnn-cu13 nvidia-cusparselt-cu13 nvidia-nccl-cu13 nvidia-nvshmem-cu13 triton nvidia-cublas nvidia-cuda-cupti nvidia-cuda-nvrtc nvidia-cuda-runtime nvidia-cufft nvidia-cufile nvidia-curand nvidia-cusolver nvidia-cusparse nvidia-nvjitlink nvidia-nvtx transformers tqdm datasets gekko rouge sentencepiece cuda-bindings dill fsspec httpx httpcore huggingface_hub filelock multiprocess networkx packaging pyarrow pyyaml regex requests setuptools sympy tokenizers typing-extensions jinja2 pandas psutil six typer xxhash aiohttp annotated-doc certifi charset_normalizer click cuda-pathfinder hf-xet idna MarkupSafe mpmath python-dateutil rich shellingham urllib3 anyio aiohappyeyeballs aiosignal attrs frozenlist h11 markdown-it-py multidict propcache pygments yarl mdurl
+--- xformers ---
+Collecting xformers
+  Downloading xformers-0.0.35-py39-none-manylinux_2_28_x86_64.whl.metadata (1.2 kB)
+Collecting torch>=2.10 (from xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/torch-2.11.0-cp311-cp311-manylinux_2_28_x86_64.whl
+Collecting numpy (from xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting filelock (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/filelock-3.29.0-py3-none-any.whl
+Collecting typing-extensions>=4.10.0 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/typing_extensions-4.15.0-py3-none-any.whl
+Collecting setuptools<82 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/setuptools-81.0.0-py3-none-any.whl
+Collecting sympy>=1.13.3 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/sympy-1.14.0-py3-none-any.whl
+Collecting networkx>=2.5.1 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/networkx-3.6.1-py3-none-any.whl
+Collecting jinja2 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/jinja2-3.1.6-py3-none-any.whl
+Collecting fsspec>=0.8.5 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/fsspec-2026.3.0-py3-none-any.whl
+Collecting cuda-toolkit==13.0.2 (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_toolkit-13.0.2-py2.py3-none-any.whl
+Collecting cuda-bindings<14,>=13.0.3 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_bindings-13.2.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Collecting nvidia-cudnn-cu13==9.19.0.56 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cudnn_cu13-9.19.0.56-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusparselt-cu13==0.8.0 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusparselt_cu13-0.8.0-py3-none-manylinux2014_x86_64.whl
+Collecting nvidia-nccl-cu13==2.28.9 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nccl_cu13-2.28.9-py3-none-manylinux_2_18_x86_64.whl
+Collecting nvidia-nvshmem-cu13==3.4.5 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvshmem_cu13-3.4.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting triton==3.6.0 (from torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/triton-3.6.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Collecting nvidia-cublas==13.1.0.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cublas-13.1.0.3-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cuda-runtime==13.0.96.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_runtime-13.0.96-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cufft==12.0.0.61.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cufft-12.0.0.61-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cufile==1.15.1.6.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cufile-1.15.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-cuda-cupti==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_cupti-13.0.85-py3-none-manylinux_2_25_x86_64.whl
+Collecting nvidia-curand==10.4.0.35.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_curand-10.4.0.35-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusolver==12.0.4.66.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_x86_64.whl
+Collecting nvidia-cusparse==12.6.3.3.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+Collecting nvidia-nvjitlink==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvjitlink-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Collecting nvidia-cuda-nvrtc==13.0.88.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_cuda_nvrtc-13.0.88-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl
+Collecting nvidia-nvtx==13.0.85.* (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == "Linux"->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl
+Collecting cuda-pathfinder~=1.1 (from cuda-bindings<14,>=13.0.3->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/cuda_pathfinder-1.5.3-py3-none-any.whl
+Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/mpmath-1.3.0-py3-none-any.whl
+Collecting MarkupSafe>=2.0 (from jinja2->torch>=2.10->xformers)
+  File was already downloaded /data/magnus/pip-cache/wheels/markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+Downloading xformers-0.0.35-py39-none-manylinux_2_28_x86_64.whl (3.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.3/3.3 MB 7.3 MB/s eta 0:00:00
+Saved /data/magnus/pip-cache/wheels/xformers-0.0.35-py39-none-manylinux_2_28_x86_64.whl
+Successfully downloaded xformers torch cuda-toolkit nvidia-cudnn-cu13 nvidia-cusparselt-cu13 nvidia-nccl-cu13 nvidia-nvshmem-cu13 triton nvidia-cublas nvidia-cuda-cupti nvidia-cuda-nvrtc nvidia-cuda-runtime nvidia-cufft nvidia-cufile nvidia-curand nvidia-cusolver nvidia-cusparse nvidia-nvjitlink nvidia-nvtx numpy cuda-bindings fsspec networkx setuptools sympy typing-extensions filelock jinja2 cuda-pathfinder MarkupSafe mpmath
+--- flash-attn ---
+Collecting flash-attn
+  Downloading flash_attn-2.8.3.tar.gz (8.4 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8.4/8.4 MB 10.1 MB/s eta 0:00:00
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'error'
+[跳过] flash-attn: 无法获取
+=== 缓存文件统计 ===
+文件数: 145
+3.0G	/data/magnus/pip-cache/wheels
+=== 预热完成 ===

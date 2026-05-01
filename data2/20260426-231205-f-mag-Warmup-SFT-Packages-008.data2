@@ -1,0 +1,17 @@
+@{20260426-231205-f-mag-Warmup-SFT-Packages-008.data2,
+  time = 2026-04-26T23:12:05.320781,
+  name = Warmup-SFT-Packages,
+  submitter = magnus,
+  job_id = 3c6046c6f5356e56,
+  type = 时间线,
+  status = Failed,
+  source_abbr = mag,
+  seq = 008,
+  created_at = 2026-04-26T23:12:05.320781,
+  updated_at = 2026-04-27 15:31:19,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-04-27 15:31:19] [Failed] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted

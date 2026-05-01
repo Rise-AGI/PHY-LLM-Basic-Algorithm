@@ -1,0 +1,194 @@
+@{3da26346ea14.data1,
+  time = 2026-05-01T09:01:06.010674,
+  name = SFT-deepseek-math-7b-base,
+  submitter = submit_sft.py,
+  job_id = 3da26346ea14938a,
+  type = 日志,
+  status = Failed,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-05-01T09:01:06.010674,
+  updated_at = 2026-05-01 09:05:06,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+[2026-05-01 09:05:06] [SFT-deepseek-math-7b-base] [Failed]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-05-01 09:01:13] === [Warmup] 检查本地 pip 缓存 ====
+[2026-05-01 09:01:13] [Warmup] 命中缓存: /data/magnus/pip-cache/wheels（80 个 wheel）
+[2026-05-01 09:01:13] === [0/5] 检查输出目录 ===
+[2026-05-01 09:01:13] 输出目录可用: /data/magnus/models/deepseek-math-7b-base-sft-v1
+[2026-05-01 09:01:13] === [1/5] 环境信息 ===
+Fri May  1 09:01:16 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.211.01             Driver Version: 570.211.01     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100 80GB PCIe          Off |   00000000:E5:00.0 Off |                    0 |
+| N/A   68C    P0             96W /  300W |       0MiB /  81920MiB |      1%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA A100 80GB PCIe          Off |   00000000:E6:00.0 Off |                    0 |
+| N/A   72C    P0            103W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Python 3.11.10
+[2026-05-01 09:01:16] === [2/5] 检查依赖 ===
+  [就绪] transformers 5.7.0
+  [就绪] datasets 4.8.5
+  [就绪] accelerate 1.13.0
+  [就绪] pandas 3.0.2
+  [就绪] einops 0.8.2
+  [就绪] sentencepiece 0.2.1
+  [就绪] google.protobuf 
+  [警告] magnus SDK 未找到，custody 上传将失败
+所有依赖已就绪，跳过 pip install
+[环境] torch 2.5.1+cu124 | CUDA 12.4 | GPU 2 张
+[2026-05-01 09:01:52] === [3/5] 准备模型和数据 ===
+[2026-05-01 09:01:52] === 加载模型 ===
+[2026-05-01 09:01:52] [模型] 使用本地路径: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:01:52] [模型] 模型文件列表:
+    594  /data/magnus/models/deepseek-math-7b-base/config.json
+     79  /data/magnus/models/deepseek-math-7b-base/configuration.json
+    121  /data/magnus/models/deepseek-math-7b-base/generation_config.json
+   9.3G  /data/magnus/models/deepseek-math-7b-base/pytorch_model-00001-of-00002.bin
+   3.6G  /data/magnus/models/deepseek-math-7b-base/pytorch_model-00002-of-00002.bin
+    22K  /data/magnus/models/deepseek-math-7b-base/pytorch_model.bin.index.json
+   4.4M  /data/magnus/models/deepseek-math-7b-base/tokenizer.json
+    655  /data/magnus/models/deepseek-math-7b-base/tokenizer_config.json
+[2026-05-01 09:01:52] [模型] 目录总大小: 13G
+[2026-05-01 09:01:52] === [4/5] 开始 SFT 训练 ===
+[2026-05-01 09:01:52] [诊断] launcher=torchrun --nproc_per_node=2
+[2026-05-01 09:01:52] [诊断] ACTUAL_MODEL_PATH=/data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:01:52] [诊断] TRAIN_DATA_PATH=/data/magnus/training_data/train.json
+[2026-05-01 09:01:52] [诊断] TEST_DATA_PATH=/data/magnus/training_data/test.json
+[2026-05-01 09:01:52] [诊断] CUDA_VISIBLE_DEVICES=0,1
+[诊断] torch=2.5.1+cu124, cuda=True, gpu_count=2
+[诊断] sft_train.py 语法检查通过
+[诊断] transformers 核心导入 OK
+W0501 09:02:23.364000 254 site-packages/torch/distributed/run.py:793] 
+W0501 09:02:23.364000 254 site-packages/torch/distributed/run.py:793] *****************************************
+W0501 09:02:23.364000 254 site-packages/torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0501 09:02:23.364000 254 site-packages/torch/distributed/run.py:793] *****************************************
+[W501 09:02:49.721648039 CUDAAllocatorConfig.h:28] Warning: expandable_segments not supported on this platform (function operator())
+[W501 09:02:49.761417268 CUDAAllocatorConfig.h:28] Warning: expandable_segments not supported on this platform (function operator())
+[2026-05-01 09:02:49] [环境] 设备=cuda:0, GPU 数量=2, rank=0
+[2026-05-01 09:02:49] [配置] epochs=3, batch_size=1, grad_accum=4, lr=2e-05, max_length=512
+[2026-05-01 09:02:49] [1/8] 加载 tokenizer: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:02:49] [环境] 设备=cuda:1, GPU 数量=2, rank=1
+[2026-05-01 09:02:49] [配置] epochs=3, batch_size=1, grad_accum=4, lr=2e-05, max_length=512
+[2026-05-01 09:02:49] [1/8] 加载 tokenizer: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:02:50] [1/8] tokenizer 加载完成 (0.5s) | vocab_size=100000 | pad_token_id=100001
+[2026-05-01 09:02:50] [2/8] 加载 config: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:02:50] [1/8] tokenizer 加载完成 (0.6s) | vocab_size=100000 | pad_token_id=100001
+[2026-05-01 09:02:50] [2/8] 加载 config: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:02:50] [2/8] config 加载完成 (0.0s) | model_type=llama
+[2026-05-01 09:02:50] [3/8] 开始加载模型权重到内存 (dtype=torch.bfloat16)...
+[2026-05-01 09:02:50] [3/8] 提示: 72B 模型 ~144GB，从 /data NFS 读取预计 30-60 分钟，请耐心等待
+[2026-05-01 09:02:50] [3/8] 模型路径: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:02:50] [3/8] 模型文件: 2 个, 总计 ~13.8GB
+[2026-05-01 09:02:50]           pytorch_model-00001-of-00002.bin  9.97GB
+[2026-05-01 09:02:50]           pytorch_model-00002-of-00002.bin  3.85GB
+[2026-05-01 09:02:50] [2/8] config 加载完成 (0.0s) | model_type=llama
+[2026-05-01 09:02:50] [3/8] 开始加载模型权重到内存 (dtype=torch.bfloat16)...
+[2026-05-01 09:02:50] [3/8] 提示: 72B 模型 ~144GB，从 /data NFS 读取预计 30-60 分钟，请耐心等待
+[2026-05-01 09:02:50] [3/8] 模型路径: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:02:50] [3/8] 模型文件: 2 个, 总计 ~13.8GB
+[2026-05-01 09:02:50]           pytorch_model-00001-of-00002.bin  9.97GB
+[2026-05-01 09:02:50]           pytorch_model-00002-of-00002.bin  3.85GB
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/tmp/sft_train.py", line 446, in <module>
+[rank0]:     train()
+[rank0]:   File "/tmp/sft_train.py", line 262, in train
+[rank0]:     model = AutoModelForCausalLM.from_pretrained(
+[rank0]:             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/conda/lib/python3.11/site-packages/transformers/models/auto/auto_factory.py", line 394, in from_pretrained
+[rank0]:     return model_class.from_pretrained(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/conda/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4245, in from_pretrained
+[rank0]:     loading_info, disk_offload_index = cls._load_pretrained_model(model, state_dict, checkpoint_files, load_config)
+[rank0]:                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/conda/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4371, in _load_pretrained_model
+[rank0]:     merged_state_dict.update(load_state_dict(ckpt_file, disable_mmap=load_config.disable_mmap))
+[rank0]:                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/conda/lib/python3.11/site-packages/transformers/modeling_utils.py", line 374, in load_state_dict
+[rank0]:     check_torch_load_is_safe()
+[rank0]:   File "/opt/conda/lib/python3.11/site-packages/transformers/utils/import_utils.py", line 1357, in check_torch_load_is_safe
+[rank0]:     raise ValueError(
+[rank0]: ValueError: Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the function. This version restriction does not apply when loading files with safetensors.
+[rank0]: See the vulnerability report here https://nvd.nist.gov/vuln/detail/CVE-2025-32434
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/tmp/sft_train.py", line 446, in <module>
+[rank1]:     train()
+[rank1]:   File "/tmp/sft_train.py", line 262, in train
+[rank1]:     model = AutoModelForCausalLM.from_pretrained(
+[rank1]:             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/opt/conda/lib/python3.11/site-packages/transformers/models/auto/auto_factory.py", line 394, in from_pretrained
+[rank1]:     return model_class.from_pretrained(
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/opt/conda/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4245, in from_pretrained
+[rank1]:     loading_info, disk_offload_index = cls._load_pretrained_model(model, state_dict, checkpoint_files, load_config)
+[rank1]:                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/opt/conda/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4371, in _load_pretrained_model
+[rank1]:     merged_state_dict.update(load_state_dict(ckpt_file, disable_mmap=load_config.disable_mmap))
+[rank1]:                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/opt/conda/lib/python3.11/site-packages/transformers/modeling_utils.py", line 374, in load_state_dict
+[rank1]:     check_torch_load_is_safe()
+[rank1]:   File "/opt/conda/lib/python3.11/site-packages/transformers/utils/import_utils.py", line 1357, in check_torch_load_is_safe
+[rank1]:     raise ValueError(
+[rank1]: ValueError: Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the function. This version restriction does not apply when loading files with safetensors.
+[rank1]: See the vulnerability report here https://nvd.nist.gov/vuln/detail/CVE-2025-32434
+[rank0]:[W501 09:02:52.522789825 ProcessGroupNCCL.cpp:1250] Warning: WARNING: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group to ensure that any pending NCCL operations have finished in this process. In rare cases this process can exit before this point and block the progress of another member of the process group. This constraint has always been present,  but this warning has only been added since PyTorch 2.4 (function operator())
+W0501 09:02:54.379000 254 site-packages/torch/distributed/elastic/multiprocessing/api.py:897] Sending process 296 closing signal SIGTERM
+E0501 09:02:56.347000 254 site-packages/torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 295) of binary: /opt/conda/bin/python3.11
+Traceback (most recent call last):
+  File "/opt/conda/bin/torchrun", line 8, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/distributed/run.py", line 919, in main
+    run(args)
+  File "/opt/conda/lib/python3.11/site-packages/torch/distributed/run.py", line 910, in run
+    elastic_launch(
+  File "/opt/conda/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/tmp/sft_train.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-05-01_09:02:54
+  host      : localhost
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 295)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+[2026-05-01 09:02:56] [FATAL] 训练异常退出 (exit_code=1)
+[2026-05-01 09:02:56] [FATAL] torchrun 日志目录: /tmp/torchrun_logs_15
+[2026-05-01 09:02:56] [FATAL] === 各 rank 日志 ===
+[2026-05-01 09:02:56] [FATAL] trap 将自动打包已保存的 checkpoint
+[2026-05-01 09:02:56] 
+[2026-05-01 09:02:56] === [退出] 上传训练日志 ===
+[2026-05-01 09:02:56] [警告] 未找到训练日志: /data/magnus/models/deepseek-math-7b-base-sft-v1/training_log.json

@@ -1,0 +1,105 @@
+@{20260424-154026-f-mag-FakeTest-internlm2-math-7b-093.data2,
+  time = 2026-04-24T15:40:26.205753,
+  name = FakeTest-internlm2-math-7b,
+  submitter = magnus,
+  job_id = da82c59062a85120,
+  type = 时间线,
+  status = Failed,
+  source_abbr = mag,
+  seq = 093,
+  created_at = 2026-04-24T15:40:26.205753,
+  updated_at = 2026-04-27 16:22:16,
+  gpu_count = 3,
+  gpu_type = a100,
+}
+
+
+[2026-04-27 16:22:16] [Failed] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 16:22:16] [Failed] === [0/5] 检查输出目录 ===
+[2026-04-27 16:22:16] [Failed] 输出目录可用: /data/magnus/models/internlm2-math-7b-sft-v1
+[2026-04-27 16:22:16] [Failed] === [1/5] 环境信息 ===
+[2026-04-27 16:22:16] [Failed] Fri Apr 24 23:40:34 2026       
+[2026-04-27 16:22:16] [Failed] +-----------------------------------------------------------------------------------------+
+[2026-04-27 16:22:16] [Failed] | NVIDIA-SMI 570.211.01             Driver Version: 570.211.01     CUDA Version: 12.8     |
+[2026-04-27 16:22:16] [Failed] |-----------------------------------------+------------------------+----------------------+
+[2026-04-27 16:22:16] [Failed] | GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+[2026-04-27 16:22:16] [Failed] | Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+[2026-04-27 16:22:16] [Failed] |                                         |                        |               MIG M. |
+[2026-04-27 16:22:16] [Failed] |=========================================+========================+======================|
+[2026-04-27 16:22:16] [Failed] |   0  NVIDIA A100 80GB PCIe          Off |   00000000:6C:00.0 Off |                    0 |
+[2026-04-27 16:22:16] [Failed] | N/A   52C    P0             73W /  300W |       0MiB /  81920MiB |      0%      Default |
+[2026-04-27 16:22:16] [Failed] |                                         |                        |             Disabled |
+[2026-04-27 16:22:16] [Failed] +-----------------------------------------+------------------------+----------------------+
+[2026-04-27 16:22:16] [Failed] |   1  NVIDIA A100 80GB PCIe          Off |   00000000:6D:00.0 Off |                    0 |
+[2026-04-27 16:22:16] [Failed] | N/A   53C    P0             82W /  300W |       0MiB /  81920MiB |      0%      Default |
+[2026-04-27 16:22:16] [Failed] |                                         |                        |             Disabled |
+[2026-04-27 16:22:16] [Failed] +-----------------------------------------+------------------------+----------------------+
+[2026-04-27 16:22:16] [Failed] |   2  NVIDIA A100 80GB PCIe          Off |   00000000:E5:00.0 Off |                    0 |
+[2026-04-27 16:22:16] [Failed] | N/A   54C    P0             76W /  300W |       0MiB /  81920MiB |      2%      Default |
+[2026-04-27 16:22:16] [Failed] |                                         |                        |             Disabled |
+[2026-04-27 16:22:16] [Failed] +-----------------------------------------+------------------------+----------------------+
+[2026-04-27 16:22:16] [Failed] |   3  NVIDIA A100 80GB PCIe          Off |   00000000:E8:00.0 Off |                    0 |
+[2026-04-27 16:22:16] [Failed] | N/A   76C    P0            266W /  300W |   48649MiB /  81920MiB |     64%      Default |
+[2026-04-27 16:22:16] [Failed] |                                         |                        |             Disabled |
+[2026-04-27 16:22:16] [Failed] +-----------------------------------------+------------------------+----------------------+
+[2026-04-27 16:22:16] [Failed]                                                                                          
+[2026-04-27 16:22:16] [Failed] +-----------------------------------------------------------------------------------------+
+[2026-04-27 16:22:16] [Failed] | Processes:                                                                              |
+[2026-04-27 16:22:16] [Failed] |  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+[2026-04-27 16:22:16] [Failed] |        ID   ID                                                               Usage      |
+[2026-04-27 16:22:16] [Failed] |=========================================================================================|
+[2026-04-27 16:22:16] [Failed] +-----------------------------------------------------------------------------------------+
+[2026-04-27 16:22:16] [Failed] Python 3.11.10
+[2026-04-27 16:22:16] [Failed] === [2/5] 检查依赖 ===
+[2026-04-27 16:22:16] [Failed]   [缺失] transformers>=4.45
+[2026-04-27 16:22:16] [Failed]   [缺失] datasets
+[2026-04-27 16:22:16] [Failed]   [缺失] accelerate
+[2026-04-27 16:22:16] [Failed]   [缺失] pandas
+[2026-04-27 16:22:16] [Failed]   [缺失] einops
+[2026-04-27 16:22:16] [Failed]   [缺失] sentencepiece
+[2026-04-27 16:22:16] [Failed]   [缺失] protobuf
+[2026-04-27 16:22:16] [Failed]   [警告] magnus SDK 未找到，custody 上传将失败
+[2026-04-27 16:22:16] [Failed] 安装缺失依赖: transformers>=4.45 datasets accelerate pandas einops sentencepiece protobuf
+[2026-04-27 16:22:16] [Failed] [环境] torch 2.5.1+cu124 | CUDA 12.4 | GPU 3 张
+[2026-04-27 16:22:16] [Failed] === [3/5] 准备模型和数据 ===
+[2026-04-27 16:22:16] [Failed] === 加载模型 ===
+[2026-04-27 16:22:16] [Failed] [模型] 使用本地路径: /data/magnus/models/internlm2-math-7b
+[2026-04-27 16:22:16] [Failed] === 生成假数据（30条通用测试题）===
+[2026-04-27 16:22:16] [Failed] 假数据生成完成：train=30条，test=8条
+[2026-04-27 16:22:16] [Failed] === [4/5] 开始 SFT 训练 ===
+[2026-04-27 16:22:16] [Failed] [环境] 设备=cuda, GPU 数量=3
+[2026-04-27 16:22:16] [Failed] [配置] epochs=1, batch_size=2, lr=2e-05, max_length=256
+[2026-04-27 16:22:16] [Failed] [transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+[2026-04-27 16:22:16] [Failed] Traceback (most recent call last):
+[2026-04-27 16:22:16] [Failed]   File "/tmp/sft_train.py", line 317, in <module>
+[2026-04-27 16:22:16] [Failed]     train()
+[2026-04-27 16:22:16] [Failed]   File "/tmp/sft_train.py", line 198, in train
+[2026-04-27 16:22:16] [Failed]     model = AutoModelForCausalLM.from_pretrained(
+[2026-04-27 16:22:16] [Failed]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-04-27 16:22:16] [Failed]   File "/opt/conda/lib/python3.11/site-packages/transformers/models/auto/auto_factory.py", line 380, in from_pretrained
+[2026-04-27 16:22:16] [Failed]     return model_class.from_pretrained(
+[2026-04-27 16:22:16] [Failed]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-04-27 16:22:16] [Failed]   File "/opt/conda/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4166, in from_pretrained
+[2026-04-27 16:22:16] [Failed]     model = cls(config, *model_args, **model_kwargs)
+[2026-04-27 16:22:16] [Failed]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-04-27 16:22:16] [Failed]   File "/magnus/.cache/huggingface/modules/transformers_modules/internlm2_hyphen_math_hyphen_7b/modeling_internlm2.py", line 1138, in __init__
+[2026-04-27 16:22:16] [Failed]     self.model = InternLM2Model(config)
+[2026-04-27 16:22:16] [Failed]                  ^^^^^^^^^^^^^^^^^^^^^^
+[2026-04-27 16:22:16] [Failed]   File "/magnus/.cache/huggingface/modules/transformers_modules/internlm2_hyphen_math_hyphen_7b/modeling_internlm2.py", line 918, in __init__
+[2026-04-27 16:22:16] [Failed]     [InternLM2DecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+[2026-04-27 16:22:16] [Failed]   File "/magnus/.cache/huggingface/modules/transformers_modules/internlm2_hyphen_math_hyphen_7b/modeling_internlm2.py", line 918, in <listcomp>
+[2026-04-27 16:22:16] [Failed]     [InternLM2DecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+[2026-04-27 16:22:16] [Failed]      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-04-27 16:22:16] [Failed]   File "/magnus/.cache/huggingface/modules/transformers_modules/internlm2_hyphen_math_hyphen_7b/modeling_internlm2.py", line 707, in __init__
+[2026-04-27 16:22:16] [Failed]     self.attention = INTERNLM2_ATTENTION_CLASSES[config.attn_implementation](config=config, layer_idx=layer_idx)
+[2026-04-27 16:22:16] [Failed]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-04-27 16:22:16] [Failed]   File "/magnus/.cache/huggingface/modules/transformers_modules/internlm2_hyphen_math_hyphen_7b/modeling_internlm2.py", line 263, in __init__
+[2026-04-27 16:22:16] [Failed]     self._init_rope()
+[2026-04-27 16:22:16] [Failed]   File "/magnus/.cache/huggingface/modules/transformers_modules/internlm2_hyphen_math_hyphen_7b/modeling_internlm2.py", line 273, in _init_rope
+[2026-04-27 16:22:16] [Failed]     scaling_type = self.config.rope_scaling["type"]
+[2026-04-27 16:22:16] [Failed]                    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+[2026-04-27 16:22:16] [Failed] KeyError: 'type'
+[2026-04-27 16:22:16] [Failed] [FATAL] 训练异常退出，trap 将自动打包已保存的 checkpoint
+[2026-04-27 16:22:16] [Failed] 
+[2026-04-27 16:22:16] [Failed] === [退出] 上传训练日志 ===
+[2026-04-27 16:22:16] [Failed] [警告] 未找到训练日志: /data/magnus/models/internlm2-math-7b-sft-v1/training_log.json

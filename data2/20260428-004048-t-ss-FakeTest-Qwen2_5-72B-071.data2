@@ -1,0 +1,21 @@
+@{20260428-004048-t-ss-FakeTest-Qwen2_5-72B-071.data2,
+  time = 2026-04-28T00:40:48.901699,
+  name = FakeTest-Qwen2.5-72B,
+  submitter = submit_sft.py,
+  job_id = dd3e1cefa2141ef4,
+  type = 时间线,
+  status = Terminated,
+  source_abbr = ss,
+  seq = 071,
+  created_at = 2026-04-28T00:40:48.901699,
+  updated_at = 2026-04-28 00:44:49,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+
+[2026-04-28 00:41:21] [Pending] Waiting for output stream...
+[2026-04-28 00:42:48] [Pending] Waiting for output stream...
+[2026-04-28 00:42:59] [Pending] (运行中, 无新日志)
+[2026-04-28 00:44:21] [Pending] (运行中, 无新日志)
+[2026-04-28 00:44:30] [Pending] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted

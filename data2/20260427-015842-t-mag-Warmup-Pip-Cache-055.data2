@@ -1,0 +1,98 @@
+@{20260427-015842-t-mag-Warmup-Pip-Cache-055.data2,
+  time = 2026-04-27T01:58:42.935987,
+  name = Warmup-Pip-Cache,
+  submitter = magnus,
+  job_id = 4536d874834ce361,
+  type = 时间线,
+  status = Terminated,
+  source_abbr = mag,
+  seq = 055,
+  created_at = 2026-04-27T01:58:42.935987,
+  updated_at = 2026-04-27 16:20:15,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-04-27 16:20:15] [Terminated] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 16:20:15] [Terminated] === 当前用户 ===
+[2026-04-27 16:20:15] [Terminated] magnus
+[2026-04-27 16:20:15] [Terminated] 缓存目录: /data/magnus/pip-cache/wheels
+[2026-04-27 16:20:15] [Terminated] === 开始下载 wheel 包到 /tmp/pip-wheels ===
+[2026-04-27 16:20:15] [Terminated] --- transformers ---
+[2026-04-27 16:20:15] [Terminated] Collecting transformers
+[2026-04-27 16:20:15] [Terminated]   Downloading transformers-5.6.2-py3-none-any.whl.metadata (33 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting huggingface-hub<2.0,>=1.5.0 (from transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading huggingface_hub-1.12.0-py3-none-any.whl.metadata (14 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting numpy>=1.17 (from transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting packaging>=20.0 (from transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading packaging-26.2-py3-none-any.whl.metadata (3.5 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting pyyaml>=5.1 (from transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting regex>=2025.10.22 (from transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting typer (from transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading typer-0.25.0-py3-none-any.whl.metadata (15 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting safetensors>=0.4.3 (from transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting tqdm>=4.27 (from transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading tqdm-4.67.3-py3-none-any.whl.metadata (57 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting filelock>=3.10.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading filelock-3.29.0-py3-none-any.whl.metadata (2.0 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting fsspec>=2023.5.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading fsspec-2026.3.0-py3-none-any.whl.metadata (10 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting hf-xet<2.0.0,>=1.4.3 (from huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.9 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting httpx<1,>=0.23.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting typing-extensions>=4.1.0 (from huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting click>=8.2.1 (from typer->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading click-8.3.3-py3-none-any.whl.metadata (2.6 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting shellingham>=1.3.0 (from typer->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading shellingham-1.5.4-py2.py3-none-any.whl.metadata (3.5 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting rich>=13.8.0 (from typer->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting annotated-doc>=0.0.2 (from typer->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading annotated_doc-0.0.4-py3-none-any.whl.metadata (6.6 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting anyio (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading anyio-4.13.0-py3-none-any.whl.metadata (4.5 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting certifi (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading certifi-2026.4.22-py3-none-any.whl.metadata (2.5 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting httpcore==1.* (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting idna (from httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading idna-3.13-py3-none-any.whl.metadata (8.0 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->huggingface-hub<2.0,>=1.5.0->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting markdown-it-py>=2.2.0 (from rich>=13.8.0->typer->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading markdown_it_py-4.0.0-py3-none-any.whl.metadata (7.3 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting pygments<3.0.0,>=2.13.0 (from rich>=13.8.0->typer->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading pygments-2.20.0-py3-none-any.whl.metadata (2.5 kB)
+[2026-04-27 16:20:15] [Terminated] Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=13.8.0->typer->transformers)
+[2026-04-27 16:20:15] [Terminated]   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+[2026-04-27 16:20:15] [Terminated] Downloading transformers-5.6.2-py3-none-any.whl (10.4 MB)
+[2026-04-27 16:20:15] [Terminated]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.4/10.4 MB 140.1 kB/s eta 0:00:00
+[2026-04-27 16:20:15] [Terminated] Downloading huggingface_hub-1.12.0-py3-none-any.whl (646 kB)
+[2026-04-27 16:20:15] [Terminated]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 646.8/646.8 kB 130.3 kB/s eta 0:00:00
+[2026-04-27 16:20:15] [Terminated] Downloading numpy-2.4.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.9 MB)
+[2026-04-27 16:20:15] [Terminated]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.9/16.9 MB 179.9 kB/s eta 0:00:00
+[2026-04-27 16:20:15] [Terminated] Downloading packaging-26.2-py3-none-any.whl (100 kB)
+[2026-04-27 16:20:15] [Terminated] Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+[2026-04-27 16:20:15] [Terminated]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 806.6/806.6 kB 186.8 kB/s eta 0:00:00
+[2026-04-27 16:20:15] [Terminated] Downloading regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (799 kB)
+[2026-04-27 16:20:15] [Terminated]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 799.8/799.8 kB 119.8 kB/s eta 0:00:00
+[2026-04-27 16:20:15] [Terminated] Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (507 kB)
+[2026-04-27 16:20:15] [Terminated] Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.3 MB)
+[2026-04-27 16:20:15] [Terminated]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.3/3.3 MB 176.1 kB/s eta 0:00:00
+[2026-04-27 16:20:15] [Terminated] Downloading tqdm-4.67.3-py3-none-any.whl (78 kB)
+[2026-04-27 16:20:15] [Terminated] Downloading typer-0.25.0-py3-none-any.whl (55 kB)
+[2026-04-27 16:20:15] [Terminated] Downloading annotated_doc-0.0.4-py3-none-any.whl (5.3 kB)
+[2026-04-27 16:20:15] [Terminated] Downloading click-8.3.3-py3-none-any.whl (110 kB)
+[2026-04-27 16:20:15] [Terminated] Downloading filelock-3.29.0-py3-none-any.whl (39 kB)
+[2026-04-27 16:20:15] [Terminated] Downloading fsspec-2026.3.0-py3-none-any.whl (202 kB)
+[2026-04-27 16:20:15] [Terminated] Downloading hf_xet-1.4.3-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.2 MB)
+[2026-04-27 16:20:15] [Terminated] slurmstepd-zhustation: error: *** JOB 9176 ON zhustation CANCELLED AT 2026-04-27T10:03:10 ***

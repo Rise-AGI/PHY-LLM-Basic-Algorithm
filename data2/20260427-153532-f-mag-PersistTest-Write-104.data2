@@ -1,0 +1,19 @@
+@{20260427-153532-f-mag-PersistTest-Write-104.data2,
+  time = 2026-04-27T15:35:32.331383,
+  name = PersistTest-Write,
+  submitter = magnus,
+  job_id = 1d0d8dabde2c000c,
+  type = 时间线,
+  status = Failed,
+  source_abbr = mag,
+  seq = 104,
+  created_at = 2026-04-27T15:35:32.331383,
+  updated_at = 2026-04-27 23:35:57,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-04-27 23:35:46] [Failed] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 23:35:57] [Failed] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 23:35:57] [Failed] mkdir: cannot create directory '/home/magnus': Permission denied

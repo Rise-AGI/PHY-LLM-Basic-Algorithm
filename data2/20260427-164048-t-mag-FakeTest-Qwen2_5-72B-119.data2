@@ -1,0 +1,21 @@
+@{20260427-164048-t-mag-FakeTest-Qwen2_5-72B-119.data2,
+  time = 2026-04-27T16:40:48.536705,
+  name = FakeTest-Qwen2.5-72B,
+  submitter = magnus,
+  job_id = dd3e1cefa2141ef4,
+  type = 时间线,
+  status = Terminated,
+  source_abbr = mag,
+  seq = 119,
+  created_at = 2026-04-27T16:40:48.536705,
+  updated_at = 2026-04-28 00:44:46,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+
+[2026-04-28 00:41:21] [Pending] Waiting for output stream...
+[2026-04-28 00:42:48] [Pending] Waiting for output stream...
+[2026-04-28 00:42:59] [Pending] (运行中, 无新日志)
+[2026-04-28 00:44:21] [Pending] (运行中, 无新日志)
+[2026-04-28 00:44:30] [Pending] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted

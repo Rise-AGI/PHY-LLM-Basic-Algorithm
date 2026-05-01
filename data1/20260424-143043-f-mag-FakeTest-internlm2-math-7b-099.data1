@@ -1,0 +1,132 @@
+@{20260424-143043-f-mag-FakeTest-internlm2-math-7b-099.data1,
+  time = 2026-04-24T14:30:43.567017,
+  name = FakeTest-internlm2-math-7b,
+  submitter = magnus,
+  job_id = 198b2cce9c7ccc75,
+  type = 日志,
+  status = Failed,
+  source_abbr = mag,
+  seq = 099,
+  created_at = 2026-04-24T14:30:43.567017,
+  updated_at = 2026-04-27 16:22:36,
+  gpu_count = 5,
+  gpu_type = a100,
+}
+
+[2026-04-27 16:22:36] [FakeTest-internlm2-math-7b] [Failed]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+=== [0/5] 检查输出目录 ===
+输出目录可用: /data/magnus/models/internlm2-math-7b-V1
+=== [1/5] 环境信息 ===
+Fri Apr 24 22:30:50 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.211.01             Driver Version: 570.211.01     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100 80GB PCIe          Off |   00000000:6C:00.0 Off |                    0 |
+| N/A   63C    P0             84W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA A100 80GB PCIe          Off |   00000000:6D:00.0 Off |                    0 |
+| N/A   64C    P0             93W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   2  NVIDIA A100 80GB PCIe          Off |   00000000:E5:00.0 Off |                    0 |
+| N/A   65C    P0             89W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   3  NVIDIA A100 80GB PCIe          Off |   00000000:E6:00.0 Off |                    0 |
+| N/A   69C    P0             98W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   4  NVIDIA A100 80GB PCIe          Off |   00000000:E7:00.0 Off |                    0 |
+| N/A   62C    P0             86W /  300W |       0MiB /  81920MiB |      1%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Python 3.11.10
+=== [2/5] 检查依赖 ===
+  [缺失] transformers>=4.45
+  [缺失] datasets
+  [缺失] accelerate
+  [缺失] pandas
+  [警告] magnus SDK 未找到，custody 上传将失败
+安装缺失依赖: transformers>=4.45 datasets accelerate pandas
+[环境] torch 2.5.1+cu124 | CUDA 12.4 | GPU 5 张
+=== [3/5] 准备模型和数据 ===
+=== 加载模型 ===
+[模型] 使用本地路径: /data/magnus/models/internlm2-math-7b
+=== 生成假数据（30条物理题）===
+假数据生成完成：train=30条，test=8条
+=== [4/5] 开始 SFT 训练 ===
+[环境] 设备=cuda, GPU 数量=5
+[配置] epochs=1, batch_size=2, lr=2e-05, max_length=256
+[transformers] Could not extract SentencePiece model from /data/magnus/models/internlm2-math-7b/tokenizer.model using sentencepiece library due to 
+SentencePieceExtractor requires the SentencePiece library but it was not found in your environment. Check out the instructions on the
+installation page of its repo: https://github.com/google/sentencepiece#installation and follow the ones
+that match your environment. Please note that you may need to restart your runtime after installation.
+. Falling back to TikToken extractor.
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/site-packages/transformers/tokenization_utils_tokenizers.py", line 217, in convert_to_native_format
+    extractor = SentencePieceExtractor(vocab_file)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/transformers/convert_slow_tokenizer.py", line 152, in __init__
+    requires_backends(self, "sentencepiece")
+  File "/opt/conda/lib/python3.11/site-packages/transformers/utils/import_utils.py", line 2026, in requires_backends
+    raise ImportError("".join(failed))
+ImportError: 
+SentencePieceExtractor requires the SentencePiece library but it was not found in your environment. Check out the instructions on the
+installation page of its repo: https://github.com/google/sentencepiece#installation and follow the ones
+that match your environment. Please note that you may need to restart your runtime after installation.
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/site-packages/transformers/convert_slow_tokenizer.py", line 1920, in extract_vocab_merges_from_model
+    from tiktoken.load import load_tiktoken_bpe
+ModuleNotFoundError: No module named 'tiktoken'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/tmp/sft_train.py", line 306, in <module>
+    train()
+  File "/tmp/sft_train.py", line 178, in train
+    tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/transformers/models/auto/tokenization_auto.py", line 799, in from_pretrained
+    return tokenizer_class.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/transformers/tokenization_utils_base.py", line 1740, in from_pretrained
+    return cls._from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/transformers/tokenization_utils_base.py", line 1927, in _from_pretrained
+    init_kwargs = cls.convert_to_native_format(**init_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/transformers/tokenization_utils_tokenizers.py", line 283, in convert_to_native_format
+    local_kwargs["tokenizer_object"] = converter.converted()
+                                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/transformers/convert_slow_tokenizer.py", line 1957, in converted
+    tokenizer = self.tokenizer()
+                ^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/transformers/convert_slow_tokenizer.py", line 1950, in tokenizer
+    vocab_scores, merges = self.extract_vocab_merges_from_model(self.vocab_file)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.11/site-packages/transformers/convert_slow_tokenizer.py", line 1922, in extract_vocab_merges_from_model
+    raise ValueError(
+ValueError: `tiktoken` is required to read a `tiktoken` file. Install it with `pip install tiktoken`.
+[FATAL] 训练异常退出，trap 将自动打包已保存的 checkpoint
+
+=== [退出] 上传训练日志 ===
+[警告] 未找到训练日志: /data/magnus/models/internlm2-math-7b-V1/training_log.json

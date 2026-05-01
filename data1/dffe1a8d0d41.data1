@@ -1,0 +1,36 @@
+@{dffe1a8d0d41.data1,
+  time = 2026-04-24T15:09:08.638876,
+  name = FakeTest-internlm2-math-7b,
+  submitter = magnus,
+  job_id = dffe1a8d0d41c914,
+  type = 日志,
+  status = Terminated,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-24T15:09:08.638876,
+  updated_at = 2026-05-01 09:05:05,
+  gpu_count = 1,
+  gpu_type = a100,
+}
+
+[2026-05-01 09:05:05] [FakeTest-internlm2-math-7b] [Terminated]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+=== [0/5] 检查输出目录 ===
+输出目录可用: /data/magnus/models/internlm2-sft-v1
+=== [1/5] 环境信息 ===
+Fri Apr 24 23:09:15 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.211.01             Driver Version: 570.211.01     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+slurmstepd-zhustation: error: *** JOB 9035 ON zhustation CANCELLED AT 2026-04-24T23:09:15 ***
+|   0  NVIDIA A100 80GB PCIe          Off |   00000000:6C:00.0 Off |                    0 |
+| N/A   62C    P0             83W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
+=== [退出] 上传训练日志 ===
+[警告] 未找到训练日志: /data/magnus/models/internlm2-sft-v1/training_log.json

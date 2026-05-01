@@ -1,0 +1,21 @@
+@{fb3483e385b1.data2,
+  time = 2026-04-27T23:56:14.996875,
+  name = PersistTest-Read,
+  submitter = warmup_test.py,
+  job_id = fb3483e385b165f5,
+  type = 时间线,
+  status = Success,
+  source_abbr = wt,
+  seq = 000,
+  created_at = 2026-04-27T23:56:14.996875,
+  updated_at = 2026-05-01 09:05:09,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:09] [Success]
+  [任务开始] 2026-04-27T23:56:14.996875
+
+[2026-05-01 09:05:09] [Success]
+  [任务结束] Success 2026-05-01 09:05:09

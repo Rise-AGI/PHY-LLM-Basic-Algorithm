@@ -1,0 +1,17 @@
+@{adcdd8f09068.data1,
+  time = 2026-04-28T16:13:08.318423,
+  name = SFT-Qwen2.5-72B-Instruct,
+  submitter = magnus,
+  job_id = adcdd8f09068a703,
+  type = 日志,
+  status = Pending,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-28T16:13:08.318423,
+  updated_at = 2026-04-29 00:14:17,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+[2026-04-29 00:14:17] [SFT-Qwen2.5-72B-Instruct] [Pending]
+Waiting for output stream...

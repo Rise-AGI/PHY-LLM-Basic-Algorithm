@@ -1,0 +1,21 @@
+@{25743213d9fb.data2,
+  time = 2026-04-28T00:47:50.078604,
+  name = FakeTest-Qwen2.5-72B,
+  submitter = submit_sft.py,
+  job_id = 25743213d9fb76fa,
+  type = 时间线,
+  status = Failed,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-04-28T00:47:50.078604,
+  updated_at = 2026-05-01 09:05:10,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+
+[2026-05-01 09:05:10] [Failed]
+  [任务开始] 2026-04-28T00:47:50.078604
+
+[2026-05-01 09:05:10] [Failed]
+  [任务结束] Failed 2026-05-01 09:05:10

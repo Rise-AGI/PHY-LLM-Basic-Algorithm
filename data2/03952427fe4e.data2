@@ -1,0 +1,21 @@
+@{03952427fe4e.data2,
+  time = 2026-04-27T16:52:44.090629,
+  name = Warmup-Pip-Cache,
+  submitter = warmup_packages.py,
+  job_id = 03952427fe4efe14,
+  type = 时间线,
+  status = Failed,
+  source_abbr = wp,
+  seq = 000,
+  created_at = 2026-04-27T16:52:44.090629,
+  updated_at = 2026-05-01 09:05:08,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:05:08] [Failed]
+  [任务开始] 2026-04-27T16:52:44.090629
+
+[2026-05-01 09:05:08] [Failed]
+  [任务结束] Failed 2026-05-01 09:05:08

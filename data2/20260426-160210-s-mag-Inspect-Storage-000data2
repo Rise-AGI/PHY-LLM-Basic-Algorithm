@@ -1,0 +1,16 @@
+@{a818a1033629.data2,
+  time = 2026-04-26T16:02:10.108442,
+  name = Inspect-Storage,
+  submitter = magnus,
+  job_id = a818a10336296fba,
+  type = 时间线,
+  status = Success,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-26T16:02:10.108442,
+  updated_at = 2026-04-27 15:32:08,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-04-27 15:32:08] [Success] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted

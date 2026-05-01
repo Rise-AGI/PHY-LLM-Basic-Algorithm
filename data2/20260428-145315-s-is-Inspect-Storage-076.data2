@@ -1,0 +1,17 @@
+@{20260428-145315-s-is-Inspect-Storage-076.data2,
+  time = 2026-04-28T14:53:15.640358,
+  name = Inspect-Storage,
+  submitter = inspect_storage.py,
+  job_id = 2ed2186554c83178,
+  type = 时间线,
+  status = Success,
+  source_abbr = is,
+  seq = 076,
+  created_at = 2026-04-28T14:53:15.640358,
+  updated_at = 2026-04-28 14:54:20,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-04-28 14:54:20] [Success] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted

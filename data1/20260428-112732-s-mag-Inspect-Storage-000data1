@@ -1,0 +1,157 @@
+@{dafab5ac9e8f.data1,
+  time = 2026-04-28T11:27:32.829795,
+  name = Inspect-Storage,
+  submitter = magnus,
+  job_id = dafab5ac9e8f3576,
+  type = 日志,
+  status = Success,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-28T11:27:32.829795,
+  updated_at = 2026-04-28 19:29:20,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-04-28 19:29:20] [Inspect-Storage] [Success]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+user: magnus
+
+========== pip cache (/data/magnus/pip-cache/wheels) ==========
+path: /data/magnus/pip-cache/wheels
+wheels: 80
+size:   208M
+sentinel: 2026-04-27T23:37:55+08:00
+
+--- wheel list (first 20) ---
+  certifi-2026.4.22-py3-none-any.whl
+  pygments-2.20.0-py3-none-any.whl
+  threadpoolctl-3.6.0-py3-none-any.whl
+  regex-2026.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+  scikit_learn-1.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+  gitpython-3.1.47-py3-none-any.whl
+  modelscope-1.36.2-py3-none-any.whl
+  multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+  sentencepiece-0.2.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+  urllib3-2.6.3-py3-none-any.whl
+  dill-0.4.1-py3-none-any.whl
+  six-1.17.0-py2.py3-none-any.whl
+  pyarrow-24.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+  setuptools-82.0.1-py3-none-any.whl
+  platformdirs-4.9.6-py3-none-any.whl
+  python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+  fsspec-2026.3.0-py3-none-any.whl
+  h11-0.16.0-py3-none-any.whl
+  multiprocess-0.70.19-py311-none-any.whl
+  httpx-0.28.1-py3-none-any.whl
+  ... 80 total
+
+========== model storage (/data/magnus/models) ==========
+path: /data/magnus/models
+
+--- model: /data/magnus/models/Qwen2.5-1.5B ---
+-rw-r--r-- 1 magnus magnus 2.9G Apr 18 01:33 /data/magnus/models/Qwen2.5-1.5B/model.safetensors
+  files: 10
+  size:  2.9G
+  [OK] model.safetensors (38528 bytes header)
+
+--- model: /data/magnus/models/deepseek-math-7b-base ---
+  files: 10
+  size:  13G
+
+--- model: /data/magnus/models/Qwen2.5-72B-Instruct ---
+-rw-r--r-- 1 magnus magnus 3.6G Apr 28 18:54 /data/magnus/models/Qwen2.5-72B-Instruct/model-00001-of-00037.safetensors
+-rw-r--r-- 1 magnus magnus 3.8G Apr 28 18:55 /data/magnus/models/Qwen2.5-72B-Instruct/model-00002-of-00037.safetensors
+-rw-r--r-- 1 magnus magnus 3.6G Apr 28 18:56 /data/magnus/models/Qwen2.5-72B-Instruct/model-00003-of-00037.safetensors
+-rw-r--r-- 1 magnus magnus 3.8G Apr 28 18:56 /data/magnus/models/Qwen2.5-72B-Instruct/model-00004-of-00037.safetensors
+-rw-r--r-- 1 magnus magnus 3.8G Apr 28 18:57 /data/magnus/models/Qwen2.5-72B-Instruct/model-00005-of-00037.safetensors
+-rw-r--r-- 1 magnus magnus 3.8G Apr 28 18:58 /data/magnus/models/Qwen2.5-72B-Instruct/model-00006-of-00037.safetensors
+-rw-r--r-- 1 magnus magnus 3.6G Apr 28 18:58 /data/magnus/models/Qwen2.5-72B-Instruct/model-00007-of-00037.safetensors
+-rw-r--r-- 1 magnus magnus 3.8G Apr 28 18:59 /data/magnus/models/Qwen2.5-72B-Instruct/model-00008-of-00037.safetensors
+-rw-r--r-- 1 magnus magnus 3.8G Apr 28 19:00 /data/magnus/models/Qwen2.5-72B-Instruct/model-00009-of-00037.safetensors
+-rw-r--r-- 1 magnus magnus 3.8G Apr 28 19:01 /data/magnus/models/Qwen2.5-72B-Instruct/model-00010-of-00037.safetensors
+  ... 37 safetensors files total
+  files: 47
+  size:  136G
+  [OK] model-00031-of-00037.safetensors (3720 bytes header)
+  [OK] model-00035-of-00037.safetensors (3720 bytes header)
+  [OK] model-00005-of-00037.safetensors (2880 bytes header)
+  [OK] model-00003-of-00037.safetensors (3688 bytes header)
+  [OK] model-00014-of-00037.safetensors (3016 bytes header)
+  [OK] model-00027-of-00037.safetensors (3720 bytes header)
+  [OK] model-00016-of-00037.safetensors (2904 bytes header)
+  [OK] model-00001-of-00037.safetensors (1392 bytes header)
+  [OK] model-00010-of-00037.safetensors (3016 bytes header)
+  [OK] model-00030-of-00037.safetensors (3016 bytes header)
+  [OK] model-00021-of-00037.safetensors (2904 bytes header)
+  [OK] model-00012-of-00037.safetensors (2904 bytes header)
+  [OK] model-00020-of-00037.safetensors (2904 bytes header)
+  [OK] model-00019-of-00037.safetensors (3720 bytes header)
+  [OK] model-00032-of-00037.safetensors (2904 bytes header)
+  [OK] model-00015-of-00037.safetensors (3720 bytes header)
+  [OK] model-00026-of-00037.safetensors (3016 bytes header)
+  [OK] model-00028-of-00037.safetensors (2904 bytes header)
+  [OK] model-00007-of-00037.safetensors (3720 bytes header)
+  [OK] model-00033-of-00037.safetensors (2904 bytes header)
+  [OK] model-00022-of-00037.safetensors (3016 bytes header)
+  [OK] model-00036-of-00037.safetensors (2904 bytes header)
+  [OK] model-00011-of-00037.safetensors (3720 bytes header)
+  [OK] model-00037-of-00037.safetensors (448 bytes header)
+  [OK] model-00024-of-00037.safetensors (2904 bytes header)
+  [OK] model-00017-of-00037.safetensors (2904 bytes header)
+  [OK] model-00029-of-00037.safetensors (2904 bytes header)
+  [OK] model-00018-of-00037.safetensors (3016 bytes header)
+  [OK] model-00009-of-00037.safetensors (2904 bytes header)
+  [OK] model-00025-of-00037.safetensors (2904 bytes header)
+  [OK] model-00002-of-00037.safetensors (2992 bytes header)
+  [OK] model-00034-of-00037.safetensors (3016 bytes header)
+  [OK] model-00023-of-00037.safetensors (3720 bytes header)
+  [OK] model-00013-of-00037.safetensors (2904 bytes header)
+  [OK] model-00006-of-00037.safetensors (3008 bytes header)
+  [OK] model-00008-of-00037.safetensors (2904 bytes header)
+  [OK] model-00004-of-00037.safetensors (2880 bytes header)
+
+--- model: /data/magnus/models/internlm2-math-7b ---
+-rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00001-of-00008.safetensors
+-rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00002-of-00008.safetensors
+-rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00003-of-00008.safetensors
+-rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00004-of-00008.safetensors
+-rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00005-of-00008.safetensors
+-rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00006-of-00008.safetensors
+-rw-r--r-- 1 magnus magnus 1.9G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00007-of-00008.safetensors
+-rw-r--r-- 1 magnus magnus 1.7G Apr 24 22:13 /data/magnus/models/internlm2-math-7b/model-00008-of-00008.safetensors
+  files: 20
+  size:  15G
+  [OK] model-00006-of-00008.safetensors (3744 bytes header)
+  [OK] model-00007-of-00008.safetensors (3424 bytes header)
+  [OK] model-00003-of-00008.safetensors (3408 bytes header)
+  [OK] model-00004-of-00008.safetensors (3744 bytes header)
+  [OK] model-00005-of-00008.safetensors (3424 bytes header)
+  [OK] model-00002-of-00008.safetensors (3712 bytes header)
+  [OK] model-00001-of-00008.safetensors (2144 bytes header)
+  [OK] model-00008-of-00008.safetensors (2096 bytes header)
+
+--- model: /data/magnus/models/qwen-sft-v1/final ---
+-rw-r--r-- 1 magnus magnus 1.7G Apr 24 00:04 /data/magnus/models/qwen-sft-v1/final/model-00001-of-00002.safetensors
+-rw-r--r-- 1 magnus magnus 1.3G Apr 24 00:04 /data/magnus/models/qwen-sft-v1/final/model-00002-of-00002.safetensors
+  files: 8
+  size:  2.9G
+  [OK] model-00001-of-00002.safetensors (19272 bytes header)
+  [OK] model-00002-of-00002.safetensors (19016 bytes header)
+
+
+========== training data (/data/magnus/training_data) ==========
+path: /data/magnus/training_data
+
+--- test.json (150K) ---
+  rows: 101
+  [0] {"id": "q_2231", "instruction": "【4245】计算球面上的三角形 $x^{2} + y^{2} + z^{2} = a^{2}; x \\geqslant 0, y \\geqslant 0, z \\geqslant 0$ 的围线的质心的坐标.", "input": "", "output": "答案：$x_0 = y_0 = z_0 = \\frac{4a}{3\\pi}$\n\n解答：解 作球坐标变换 $x = r\\cos \\varphi \\cos \\psi, y = r\\sin \\varphi \\cos \\psi, z = r\\sin ...
+  [1] {"id": "q_2232", "instruction": "【4236】 $x^{2} + y^{2} + z^{2} = a^{2},\\sqrt{x^{2} + y^{2}}\\mathrm{ch}\\left(\\arctan \\frac{y}{x}\\right) = a$ ，从点 $(a,0,0)$ 到点 $B(x,y,z)$", "input": "", "output": "答案：$s = \\sqrt{2} a\\arctan{\\frac{|z|}{\\sqrt{a^2 - z^2}}}\n\n解答：解令 $x = \\sqrt{a^2 - z^2}\\cos \\v...
+
+--- train.json (1.9M) ---
+  rows: 2231
+  [0] {"id": "q_0", "instruction": "19.15 Find $\\int \\frac{1}{\\sec x} dx.$", "input": "", "output": "答案：$\\sin x + C.$\n\n解答：$\\int \\frac{1}{\\sec x} dx = \\int \\cos x dx = \\sin x + C.$", "domain": "math", "difficulty": 2}
+  [1] {"id": "q_1", "instruction": "19.26 Evaluate $\\int \\frac{x}{\\sqrt{x + 1}} dx$", "input": "", "output": "答案：$\\frac {2}{3} \\sqrt{x + 1}(x - 2) + C$\n\n解答：Let $u = x + 1, \\quad du = dx$ . Then $\\int \\frac{x}{\\sqrt{x + 1}} dx = \\int \\frac{u - 1}{\\sqrt{u}} du = \\int (u^{1/2} - u^{-1/2}) du =...
+
+
+========== inspection complete ==========

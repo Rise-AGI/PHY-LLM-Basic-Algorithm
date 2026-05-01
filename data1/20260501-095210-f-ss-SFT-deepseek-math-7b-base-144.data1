@@ -1,0 +1,224 @@
+@{20260501-095210-f-ss-SFT-deepseek-math-7b-base-144.data1,
+  time = 2026-05-01T09:52:10.147786,
+  name = SFT-deepseek-math-7b-base,
+  submitter = submit_sft.py,
+  job_id = 692f6bc040f9f8b9,
+  type = 日志,
+  status = Failed,
+  source_abbr = ss,
+  seq = 144,
+  created_at = 2026-05-01T09:52:10.147786,
+  updated_at = 2026-05-01 10:42:22,
+  gpu_count = 2,
+  gpu_type = a100,
+}
+
+[2026-05-01 10:42:08] [SFT-deepseek-math-7b-base] [Running]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-05-01 09:52:07] === [Warmup] 检查本地 pip 缓存 ====
+[2026-05-01 09:52:07] [Warmup] 命中缓存: /data/magnus/pip-cache/wheels（80 个 wheel）
+[2026-05-01 09:52:07] === [0/5] 检查输出目录 ===
+[2026-05-01 09:52:07] 输出目录可用: /data/magnus/models/deepseek-math-7b-base-sft-v1
+[2026-05-01 09:52:07] === [1/5] 环境信息 ===
+Fri May  1 09:52:09 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.211.01             Driver Version: 570.211.01     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100 80GB PCIe          Off |   00000000:E5:00.0 Off |                    0 |
+| N/A   68C    P0             95W /  300W |       0MiB /  81920MiB |      1%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA A100 80GB PCIe          Off |   00000000:E6:00.0 Off |                    0 |
+| N/A   73C    P0            103W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Python 3.11.10
+[2026-05-01 09:52:12] === [2/5] 检查依赖 ===
+  [就绪] transformers 5.7.0
+  [就绪] datasets 4.8.5
+  [就绪] accelerate 1.13.0
+  [就绪] pandas 3.0.2
+  [就绪] einops 0.8.2
+  [就绪] sentencepiece 0.2.1
+  [就绪] google.protobuf 
+  [警告] magnus SDK 未找到，custody 上传将失败
+所有依赖已就绪，跳过 pip install
+[环境] torch 2.5.1+cu124 | CUDA 12.4 | GPU 2 张
+[2026-05-01 09:52:47] === [3/5] 准备模型和数据 ===
+[2026-05-01 09:52:47] === 加载模型 ===
+[2026-05-01 09:52:47] [模型] 使用本地路径: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:52:47] [模型] 模型文件列表:
+    594  /data/magnus/models/deepseek-math-7b-base/config.json
+     79  /data/magnus/models/deepseek-math-7b-base/configuration.json
+    121  /data/magnus/models/deepseek-math-7b-base/generation_config.json
+   9.3G  /data/magnus/models/deepseek-math-7b-base/pytorch_model-00001-of-00002.bin
+   3.6G  /data/magnus/models/deepseek-math-7b-base/pytorch_model-00002-of-00002.bin
+    22K  /data/magnus/models/deepseek-math-7b-base/pytorch_model.bin.index.json
+   4.4M  /data/magnus/models/deepseek-math-7b-base/tokenizer.json
+    655  /data/magnus/models/deepseek-math-7b-base/tokenizer_config.json
+[2026-05-01 09:52:47] [模型] 目录总大小: 13G
+[2026-05-01 09:52:47] === [4/5] 开始 SFT 训练 ===
+[2026-05-01 09:52:47] [诊断] launcher=torchrun --nproc_per_node=2
+[2026-05-01 09:52:47] [诊断] ACTUAL_MODEL_PATH=/data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:52:47] [诊断] TRAIN_DATA_PATH=/data/magnus/training_data/train.json
+[2026-05-01 09:52:47] [诊断] TEST_DATA_PATH=/data/magnus/training_data/test.json
+[2026-05-01 09:52:47] [诊断] CUDA_VISIBLE_DEVICES=0,1
+[诊断] torch=2.5.1+cu124, cuda=True, gpu_count=2
+[诊断] sft_train.py 语法检查通过
+[诊断] transformers 核心导入 OK
+W0501 09:53:14.470000 254 site-packages/torch/distributed/run.py:793] 
+W0501 09:53:14.470000 254 site-packages/torch/distributed/run.py:793] *****************************************
+W0501 09:53:14.470000 254 site-packages/torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0501 09:53:14.470000 254 site-packages/torch/distributed/run.py:793] *****************************************
+[W501 09:53:40.756926886 CUDAAllocatorConfig.h:28] Warning: expandable_segments not supported on this platform (function operator())
+[2026-05-01 09:53:40] [环境] 设备=cuda:0, GPU 数量=2, rank=0
+[2026-05-01 09:53:40] [配置] epochs=3, batch_size=1, grad_accum=4, lr=2e-05, max_length=512
+[2026-05-01 09:53:40] [1/8] 加载 tokenizer: /data/magnus/models/deepseek-math-7b-base
+[W501 09:53:40.776271177 CUDAAllocatorConfig.h:28] Warning: expandable_segments not supported on this platform (function operator())
+[2026-05-01 09:53:40] [环境] 设备=cuda:1, GPU 数量=2, rank=1
+[2026-05-01 09:53:40] [配置] epochs=3, batch_size=1, grad_accum=4, lr=2e-05, max_length=512
+[2026-05-01 09:53:40] [1/8] 加载 tokenizer: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:53:41] [1/8] tokenizer 加载完成 (0.3s) | vocab_size=100000 | pad_token_id=100001
+[2026-05-01 09:53:41] [2/8] 加载 config: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:53:41] [2/8] config 加载完成 (0.0s) | model_type=llama
+[2026-05-01 09:53:41] [3/8] 开始加载模型权重到内存 (dtype=torch.bfloat16)...
+[2026-05-01 09:53:41] [3/8] 提示: 72B 模型 ~144GB，从 /data NFS 读取预计 30-60 分钟，请耐心等待
+[2026-05-01 09:53:41] [3/8] 模型路径: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:53:41] [3/8] 模型文件: 2 个, 总计 ~13.8GB
+[2026-05-01 09:53:41]           pytorch_model-00001-of-00002.bin  9.97GB
+[2026-05-01 09:53:41]           pytorch_model-00002-of-00002.bin  3.85GB
+[2026-05-01 09:53:41] [1/8] tokenizer 加载完成 (0.5s) | vocab_size=100000 | pad_token_id=100001
+[2026-05-01 09:53:41] [2/8] 加载 config: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:53:41] [2/8] config 加载完成 (0.0s) | model_type=llama
+[2026-05-01 09:53:41] [3/8] 开始加载模型权重到内存 (dtype=torch.bfloat16)...
+[2026-05-01 09:53:41] [3/8] 提示: 72B 模型 ~144GB，从 /data NFS 读取预计 30-60 分钟，请耐心等待
+[2026-05-01 09:53:41] [3/8] 模型路径: /data/magnus/models/deepseek-math-7b-base
+[2026-05-01 09:53:41] [3/8] 模型文件: 2 个, 总计 ~13.8GB
+[2026-05-01 09:53:41]           pytorch_model-00001-of-00002.bin  9.97GB
+[2026-05-01 09:53:41]           pytorch_model-00002-of-00002.bin  3.85GB
+
+Loading weights:   0%|          | 0/273 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 273/273 [00:00<00:00, 32307.57it/s]
+
+Loading weights:   0%|          | 0/273 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 273/273 [00:00<00:00, 22599.42it/s]
+[2026-05-01 09:53:41] [3/8] 模型权重加载完成 (0.5s = 0.0min)
+[2026-05-01 09:53:41] [3/8] 模型权重加载完成 (0.6s = 0.0min)
+[2026-05-01 09:53:42]   GPU 0: 空闲 84.6GB / 总计 85.1GB
+[2026-05-01 09:53:42]   GPU 0: 空闲 84.2GB / 总计 85.1GB
+[2026-05-01 09:53:42]   GPU 1: 空闲 84.6GB / 总计 85.1GB
+[2026-05-01 09:53:42] [4/8] 配置训练优化...
+[2026-05-01 09:53:42] [4/8] gradient_checkpointing 已开启
+[2026-05-01 09:53:42] [4/8] 原始参数量: 6.91B (6910365696 params)
+[2026-05-01 09:53:42] [5/8] 分布式包装 (2 GPU)...
+[2026-05-01 09:53:42] [5/8] 预计每卡 ~6.9GB (模型+优化器分片)
+[2026-05-01 09:53:42] [5/8] 检测到 transformer layer: LlamaDecoderLayer (来自 model.layers.0)
+[2026-05-01 09:53:42]   GPU 1: 空闲 83.4GB / 总计 85.1GB
+[2026-05-01 09:53:42] [4/8] 配置训练优化...
+[2026-05-01 09:53:42] [4/8] gradient_checkpointing 已开启
+[2026-05-01 09:53:42] [4/8] 原始参数量: 6.91B (6910365696 params)
+[2026-05-01 09:53:42] [5/8] 分布式包装 (2 GPU)...
+[2026-05-01 09:53:42] [5/8] 预计每卡 ~6.9GB (模型+优化器分片)
+[2026-05-01 09:53:42] [5/8] 检测到 transformer layer: LlamaDecoderLayer (来自 model.layers.0)
+[2026-05-01 09:53:44] [5/8] FSDP FULL_SHARD 完成 (2.7s)
+[2026-05-01 09:53:44] [配置] 等效全局batch=8 (1/卡 × 4累积 × 2GPU)
+[2026-05-01 09:53:44] [6/8] 加载训练数据: /data/magnus/training_data/train.json
+[2026-05-01 09:53:44] [数据] 从 /data/magnus/training_data/train.json 加载 2231 条样本
+[2026-05-01 09:53:44] [6/8] 训练样本: 2231 条
+[2026-05-01 09:53:44] [6/8] DataLoader: 1116 batches/epoch (batch_size=1)
+[2026-05-01 09:53:44] [6/8] 加载测试数据: /data/magnus/training_data/test.json
+[2026-05-01 09:53:44] [数据] 从 /data/magnus/training_data/test.json 加载 101 条样本
+[2026-05-01 09:53:44] [6/8] 测试集: 101 条, 101 batches
+[2026-05-01 09:53:44] [6/8] 数据准备完成 (0.0s)
+[2026-05-01 09:53:44] [7/8] 创建 optimizer (AdamW, lr=2e-05)...
+[2026-05-01 09:53:44] [7/8] 优化器就绪 (0.0s) | steps_per_epoch=279 | total_steps=837 | warmup=41
+[2026-05-01 09:53:44] [8/8] 开始训练循环
+[2026-05-01 09:53:44] ============================================================
+[2026-05-01 09:53:44]   模型: 6.91B params | FSDP: FULL_SHARD
+[2026-05-01 09:53:44]   数据: 2231 训练样本 | 1116 batches/epoch
+[2026-05-01 09:53:44]   训练: 3 epochs × 279 steps = 837 total steps
+[2026-05-01 09:53:44]   保存: 每 200 steps | 日志: 每 10 steps
+[2026-05-01 09:53:44]   GPU: 2 × NVIDIA A100 80GB PCIe
+[2026-05-01 09:53:44] ============================================================
+[2026-05-01 09:53:44] [Epoch 1/3] 开始...
+[2026-05-01 09:53:45] [5/8] FSDP FULL_SHARD 完成 (2.8s)
+[2026-05-01 09:53:45] [配置] 等效全局batch=8 (1/卡 × 4累积 × 2GPU)
+[2026-05-01 09:53:45] [6/8] 加载训练数据: /data/magnus/training_data/train.json
+[2026-05-01 09:53:45] [数据] 从 /data/magnus/training_data/train.json 加载 2231 条样本
+[2026-05-01 09:53:45] [6/8] 训练样本: 2231 条
+[2026-05-01 09:53:45] [6/8] DataLoader: 1116 batches/epoch (batch_size=1)
+[2026-05-01 09:53:45] [6/8] 加载测试数据: /data/magnus/training_data/test.json
+[2026-05-01 09:53:45] [数据] 从 /data/magnus/training_data/test.json 加载 101 条样本
+[2026-05-01 09:53:45] [6/8] 测试集: 101 条, 101 batches
+[2026-05-01 09:53:45] [6/8] 数据准备完成 (0.0s)
+[2026-05-01 09:53:45] [7/8] 创建 optimizer (AdamW, lr=2e-05)...
+[2026-05-01 09:53:45] [7/8] 优化器就绪 (0.0s) | steps_per_epoch=279 | total_steps=837 | warmup=41
+[2026-05-01 09:53:45] [8/8] 开始训练循环
+[2026-05-01 09:53:45] ============================================================
+[2026-05-01 09:53:45]   模型: 6.91B params | FSDP: FULL_SHARD
+[2026-05-01 09:53:45]   数据: 2231 训练样本 | 1116 batches/epoch
+[2026-05-01 09:53:45]   训练: 3 epochs × 279 steps = 837 total steps
+[2026-05-01 09:53:45]   保存: 每 200 steps | 日志: 每 10 steps
+[2026-05-01 09:53:45]   GPU: 2 × NVIDIA A100 80GB PCIe
+[2026-05-01 09:53:45] ============================================================
+[2026-05-01 09:53:45] [Epoch 1/3] 开始...
+[2026-05-01 09:55:38]   Epoch 1/3 | Step 40/1116 (global 10) | Loss 0.7060 | LR: 4.88e-06
+[2026-05-01 09:55:38]   Epoch 1/3 | Step 40/1116 (global 10) | Loss 0.8341 | LR: 4.88e-06
+[2026-05-01 09:57:27]   Epoch 1/3 | Step 80/1116 (global 20) | Loss nan | LR: 9.76e-06[2026-05-01 09:57:27]   Epoch 1/3 | Step 80/1116 (global 20) | Loss 0.7782 | LR: 9.76e-06
+
+[2026-05-01 09:59:16]   Epoch 1/3 | Step 120/1116 (global 30) | Loss nan | LR: 1.46e-05[2026-05-01 09:59:16]   Epoch 1/3 | Step 120/1116 (global 30) | Loss 0.7471 | LR: 1.46e-05
+
+[2026-05-01 10:01:06]   Epoch 1/3 | Step 160/1116 (global 40) | Loss nan | LR: 1.95e-05[2026-05-01 10:01:06]   Epoch 1/3 | Step 160/1116 (global 40) | Loss 0.7241 | LR: 1.95e-05
+
+[2026-05-01 10:02:55]   Epoch 1/3 | Step 200/1116 (global 50) | Loss nan | LR: 2.00e-05[2026-05-01 10:02:55]   Epoch 1/3 | Step 200/1116 (global 50) | Loss 0.6861 | LR: 2.00e-05
+
+[2026-05-01 10:04:44]   Epoch 1/3 | Step 240/1116 (global 60) | Loss nan | LR: 2.00e-05
+[2026-05-01 10:04:44]   Epoch 1/3 | Step 240/1116 (global 60) | Loss 0.6730 | LR: 2.00e-05
+[2026-05-01 10:06:33]   Epoch 1/3 | Step 280/1116 (global 70) | Loss nan | LR: 1.99e-05[2026-05-01 10:06:33]   Epoch 1/3 | Step 280/1116 (global 70) | Loss 0.6852 | LR: 1.99e-05
+
+[2026-05-01 10:08:23]   Epoch 1/3 | Step 320/1116 (global 80) | Loss 0.6646 | LR: 1.99e-05[2026-05-01 10:08:23]   Epoch 1/3 | Step 320/1116 (global 80) | Loss nan | LR: 1.99e-05
+
+[2026-05-01 10:10:12]   Epoch 1/3 | Step 360/1116 (global 90) | Loss nan | LR: 1.98e-05
+[2026-05-01 10:10:12]   Epoch 1/3 | Step 360/1116 (global 90) | Loss 0.6511 | LR: 1.98e-05
+[2026-05-01 10:12:01]   Epoch 1/3 | Step 400/1116 (global 100) | Loss nan | LR: 1.97e-05
+[2026-05-01 10:12:01]   Epoch 1/3 | Step 400/1116 (global 100) | Loss 0.6365 | LR: 1.97e-05
+[2026-05-01 10:13:50]   Epoch 1/3 | Step 440/1116 (global 110) | Loss nan | LR: 1.96e-05
+[2026-05-01 10:13:50]   Epoch 1/3 | Step 440/1116 (global 110) | Loss 0.6261 | LR: 1.96e-05
+[2026-05-01 10:15:40]   Epoch 1/3 | Step 480/1116 (global 120) | Loss nan | LR: 1.95e-05
+[2026-05-01 10:15:40]   Epoch 1/3 | Step 480/1116 (global 120) | Loss 0.6136 | LR: 1.95e-05
+[2026-05-01 10:17:29]   Epoch 1/3 | Step 520/1116 (global 130) | Loss nan | LR: 1.94e-05
+[2026-05-01 10:17:29]   Epoch 1/3 | Step 520/1116 (global 130) | Loss 0.6079 | LR: 1.94e-05
+[2026-05-01 10:19:18]   Epoch 1/3 | Step 560/1116 (global 140) | Loss nan | LR: 1.92e-05
+[2026-05-01 10:19:18]   Epoch 1/3 | Step 560/1116 (global 140) | Loss nan | LR: 1.92e-05
+[2026-05-01 10:21:08]   Epoch 1/3 | Step 600/1116 (global 150) | Loss nan | LR: 1.91e-05
+[2026-05-01 10:21:08]   Epoch 1/3 | Step 600/1116 (global 150) | Loss nan | LR: 1.91e-05
+[2026-05-01 10:22:57]   Epoch 1/3 | Step 640/1116 (global 160) | Loss nan | LR: 1.89e-05
+[2026-05-01 10:22:57]   Epoch 1/3 | Step 640/1116 (global 160) | Loss nan | LR: 1.89e-05
+[2026-05-01 10:24:46]   Epoch 1/3 | Step 680/1116 (global 170) | Loss nan | LR: 1.87e-05
+[2026-05-01 10:24:46]   Epoch 1/3 | Step 680/1116 (global 170) | Loss nan | LR: 1.87e-05
+[2026-05-01 10:26:35]   Epoch 1/3 | Step 720/1116 (global 180) | Loss nan | LR: 1.85e-05[2026-05-01 10:26:35]   Epoch 1/3 | Step 720/1116 (global 180) | Loss nan | LR: 1.85e-05
+
+[2026-05-01 10:28:25]   Epoch 1/3 | Step 760/1116 (global 190) | Loss nan | LR: 1.83e-05
+[2026-05-01 10:28:25]   Epoch 1/3 | Step 760/1116 (global 190) | Loss nan | LR: 1.83e-05
+[2026-05-01 10:30:14]   Epoch 1/3 | Step 800/1116 (global 200) | Loss nan | LR: 1.81e-05
+[2026-05-01 10:30:14]   Epoch 1/3 | Step 800/1116 (global 200) | Loss nan | LR: 1.81e-05
+
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]
+Writing model shards: 100%|██████████| 1/1 [00:22<00:00, 22.44s/it]
+Writing model shards: 100%|██████████| 1/1 [00:22<00:00, 22.44s/it]
+[2026-05-01 10:32:00]   [Checkpoint] 已保存 step=200 -> /data/magnus/models/deepseek-math-7b-base-sft-v1/checkpoint-200
+[rank1]:[E501 10:41:40.777268738 ProcessGroupNCCL.cpp:1484] [PG ID 0 PG GUID 0(default_pg) Rank 1] ProcessGroupNCCL's watchdog got stuck for 480 seconds without making progress in monitoring enqueued collectives. This typically indicates a NCCL/CUDA API (e.g., CudaEventDestroy) hang blocking the watchdog, and could be triggered by another thread holding the GIL inside a CUDA api (for example, CudaEventDestroy), or other deadlock-prone behaviors.If you suspect the watchdog is not actually stuck and a longer timeout would help, you can either increase the timeout (TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC) to a larger value or disable the heartbeat monitor (TORCH_NCCL_ENABLE_MONITORING=0).If either of aforementioned helps, feel free to file an issue to PyTorch about the short timeout or false positive abort; otherwise, please attempt to debug the hang. 
+[rank0]:[E501 10:42:10.711688299 ProcessGroupNCCL.cpp:616] [Rank 0] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=77204, OpType=_REDUCE_SCATTER_BASE, NumelIn=202383360, NumelOut=101191680, Timeout(ms)=600000) ran for 600065 milliseconds before timing out.
+[rank0]:[E501 10:42:10.746189903 ProcessGroupNCCL.cpp:1785] [PG ID 0 PG GUID 0(default_pg) Rank 0] Exception (either an error or timeout) detected by watchdog at work: 77204, last enqueued NCCL work: 77208, last completed NCCL work: 77203.

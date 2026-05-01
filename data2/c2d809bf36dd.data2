@@ -1,0 +1,21 @@
+@{c2d809bf36dd.data2,
+  time = 2026-04-27T02:03:32.577310,
+  name = Warmup-Pip-Cache,
+  submitter = magnus,
+  job_id = c2d809bf36ddc2ea,
+  type = 时间线,
+  status = Failed,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-27T02:03:32.577310,
+  updated_at = 2026-05-01 09:04:55,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-05-01 09:04:55] [Failed]
+  [任务开始] 2026-04-27T02:03:32.577310
+
+[2026-05-01 09:04:55] [Failed]
+  [任务结束] Failed 2026-05-01 09:04:55

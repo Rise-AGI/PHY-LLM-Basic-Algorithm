@@ -1,0 +1,22 @@
+@{20260428-062000-s-is-Inspect-Storage-001.data1,
+  time = 2026-04-28 06:20:00,
+  name = Inspect-Storage,
+  submitter = is,
+  job_id = 7ce853296acb0453,
+  type = 日志,
+  status = Success,
+  source_abbr = is,
+  seq = 001,
+  created_at = 2026-04-28T06:20:00.342618,
+  updated_at = 2026-04-28 14:20:31,
+}
+
+[监控] poll_interval=30s | 跟踪 1 个任务
+[监控] ──────────────────────────────────────────────────
+[2026-04-28 14:20:00] [Inspect-Storage] [Pending]
+[2026-04-28 14:20:00] [Inspect-Storage] --- 日志 ---
+  Waiting for output stream...
+
+[2026-04-28 14:20:31] [Inspect-Storage] [Pending] → [Success]
+[2026-04-28 14:20:31] [Inspect-Storage] ✅ 成功!
+[监控] 结束 (共运行 30s)

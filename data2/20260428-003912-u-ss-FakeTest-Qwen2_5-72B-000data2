@@ -1,0 +1,18 @@
+@{ae0df8957290.data2,
+  time = 2026-04-28T00:39:12.926144,
+  name = FakeTest-Qwen2.5-72B,
+  submitter = submit_sft.py,
+  job_id = ae0df8957290751c,
+  type = 时间线,
+  status = Pending,
+  source_abbr = ss,
+  seq = 000,
+  created_at = 2026-04-28T00:39:12.926144,
+  updated_at = 2026-04-28 00:39:41,
+  gpu_count = 3,
+  gpu_type = a100,
+}
+
+[2026-04-28 00:39:41] [Pending] Waiting for output stream...
+[2026-04-28 00:41:11] [Pending] Waiting for output stream...
+[2026-04-28 00:41:17] [Pending] (运行中, 无新日志)

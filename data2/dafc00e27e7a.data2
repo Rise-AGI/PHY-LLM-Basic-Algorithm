@@ -1,0 +1,21 @@
+@{dafc00e27e7a.data2,
+  time = 2026-04-25T01:42:30.449701,
+  name = FakeTest-internlm2-math-7b,
+  submitter = magnus,
+  job_id = dafc00e27e7a10ad,
+  type = 时间线,
+  status = Failed,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-25T01:42:30.449701,
+  updated_at = 2026-05-01 09:05:04,
+  gpu_count = 3,
+  gpu_type = a100,
+}
+
+
+[2026-05-01 09:05:04] [Failed]
+  [任务开始] 2026-04-25T01:42:30.449701
+
+[2026-05-01 09:05:04] [Failed]
+  [任务结束] Failed 2026-05-01 09:05:04

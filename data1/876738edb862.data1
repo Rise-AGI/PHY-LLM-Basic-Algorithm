@@ -1,0 +1,18 @@
+@{876738edb862.data1,
+  time = 2026-04-24T14:25:04.386467,
+  name = DownloadModel-deepseek-math-7b-base,
+  submitter = magnus,
+  job_id = 876738edb862be17,
+  type = 日志,
+  status = Terminated,
+  source_abbr = mag,
+  seq = 000,
+  created_at = 2026-04-24T14:25:04.386467,
+  updated_at = 2026-05-01 09:05:05,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+[2026-05-01 09:05:05] [DownloadModel-deepseek-math-7b-base] [Terminated]
+WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+slurmstepd-zhustation: error: *** JOB 9028 ON zhustation CANCELLED AT 2026-04-24T22:26:28 ***

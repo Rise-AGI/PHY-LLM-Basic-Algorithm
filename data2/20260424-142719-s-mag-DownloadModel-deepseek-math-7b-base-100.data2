@@ -1,0 +1,21 @@
+@{20260424-142719-s-mag-DownloadModel-deepseek-math-7b-base-100.data2,
+  time = 2026-04-24T14:27:19.134870,
+  name = DownloadModel-deepseek-math-7b-base,
+  submitter = magnus,
+  job_id = 1daf7718342b72f7,
+  type = 时间线,
+  status = Success,
+  source_abbr = mag,
+  seq = 100,
+  created_at = 2026-04-24T14:27:19.134870,
+  updated_at = 2026-04-27 16:22:38,
+  gpu_count = 0,
+  gpu_type = cpu,
+}
+
+
+[2026-04-27 16:22:38] [Success] WARNING: Overriding HOME environment variable with APPTAINERENV_HOME is not permitted
+[2026-04-27 16:22:38] [Success] === 当前用户 ===
+[2026-04-27 16:22:38] [Success] magnus
+[2026-04-27 16:22:38] [Success] 模型将保存到: /data/magnus/models/deepseek-math-7b-base
+[2026-04-27 16:22:38] [Success] [跳过] 模型已存在: /data/magnus/models/deepseek-math-7b-base
