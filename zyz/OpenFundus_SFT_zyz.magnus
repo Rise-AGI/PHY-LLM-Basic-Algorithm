@@ -158,6 +158,7 @@ import json
 import os
 import time
 import traceback
+from datetime import timedelta
 
 def log(msg: str) -> None:
     """带时间戳打印，与 shell _log() 格式一致。flush=True 确保长时间操作中日志立即可见。"""
@@ -320,33 +321,80 @@ def unwrap_model(model):
 
 
 def save_checkpoint(model, tokenizer, output_dir, step, meta, local_rank=0):
-    """仅 rank 0 保存 checkpoint（覆盖式：始终写入 checkpoint-latest）。"""
-    if local_rank != 0:
-        return
+    """FSDP-safe checkpoint：所有 rank 参与 state_dict gather，仅 rank 0 写盘。"""
     ckpt_path = os.path.join(output_dir, "checkpoint-latest")
     os.makedirs(ckpt_path, exist_ok=True)
-    m = unwrap_model(model)
-    m.save_pretrained(ckpt_path)
-    tokenizer.save_pretrained(ckpt_path)
-    with open(os.path.join(ckpt_path, "checkpoint_meta.json"), "w", encoding="utf-8") as f:
-        json.dump(meta, f, ensure_ascii=False, indent=2)
-    log(f"  [Checkpoint] 已保存 step={step} -> {ckpt_path} (覆盖)")
+    if isinstance(model, FSDP):
+        from torch.distributed.fsdp.api import StateDictType, FullStateDictConfig
+        full_config = FullStateDictConfig(rank0_only=True, offload_to_cpu=True)
+        with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, full_config):
+            state = model.state_dict()
+            if local_rank == 0:
+                m = unwrap_model(model)
+                m.save_pretrained(ckpt_path, state_dict=state)
+                tokenizer.save_pretrained(ckpt_path)
+                with open(os.path.join(ckpt_path, "checkpoint_meta.json"), "w", encoding="utf-8") as f:
+                    json.dump(meta, f, ensure_ascii=False, indent=2)
+                log(f"  [Checkpoint] 已保存 step={step} -> {ckpt_path} (覆盖)")
+    else:
+        if local_rank != 0:
+            return
+        m = unwrap_model(model)
+        m.save_pretrained(ckpt_path)
+        tokenizer.save_pretrained(ckpt_path)
+        with open(os.path.join(ckpt_path, "checkpoint_meta.json"), "w", encoding="utf-8") as f:
+            json.dump(meta, f, ensure_ascii=False, indent=2)
+        log(f"  [Checkpoint] 已保存 step={step} -> {ckpt_path} (覆盖)")
 
 
 def save_final(model, tokenizer, output_dir, train_log, local_rank=0):
-    """仅 rank 0 保存最终模型。"""
-    if local_rank != 0:
-        return
+    """FSDP-safe：所有 rank 参与 state_dict gather，仅 rank 0 写盘。"""
     final_path = os.path.join(output_dir, "final")
     os.makedirs(final_path, exist_ok=True)
-    m = unwrap_model(model)
-    m.save_pretrained(final_path, max_shard_size="1800MB")
-    tokenizer.save_pretrained(final_path)
-    log_path = os.path.join(output_dir, "training_log.json")
-    with open(log_path, "w", encoding="utf-8") as f:
-        json.dump(train_log, f, ensure_ascii=False, indent=2)
-    log(f"[最终模型] 已保存 -> {final_path}")
-    log(f"[训练日志] 已保存 -> {log_path}")
+    if isinstance(model, FSDP):
+        from torch.distributed.fsdp.api import StateDictType, FullStateDictConfig
+        full_config = FullStateDictConfig(rank0_only=True, offload_to_cpu=True)
+        with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, full_config):
+            state = model.state_dict()
+            if local_rank == 0:
+                m = unwrap_model(model)
+                m.save_pretrained(final_path, max_shard_size="1800MB", state_dict=state)
+                tokenizer.save_pretrained(final_path)
+                log_path = os.path.join(output_dir, "training_log.json")
+                with open(log_path, "w", encoding="utf-8") as f:
+                    json.dump(train_log, f, ensure_ascii=False, indent=2)
+                log(f"[最终模型] 已保存 -> {final_path}")
+                log(f"[训练日志] 已保存 -> {log_path}")
+    else:
+        if local_rank != 0:
+            return
+        m = unwrap_model(model)
+        m.save_pretrained(final_path, max_shard_size="1800MB")
+        tokenizer.save_pretrained(final_path)
+        log_path = os.path.join(output_dir, "training_log.json")
+        with open(log_path, "w", encoding="utf-8") as f:
+            json.dump(train_log, f, ensure_ascii=False, indent=2)
+        log(f"[最终模型] 已保存 -> {final_path}")
+        log(f"[训练日志] 已保存 -> {log_path}")
+
+
+def _load_safetensors_state(ckpt_path):
+    """从 safetensors 加载 state dict（处理分片）。"""
+    import json as _json
+    index_path = os.path.join(ckpt_path, "model.safetensors.index.json")
+    single_path = os.path.join(ckpt_path, "model.safetensors")
+    if os.path.exists(index_path):
+        from safetensors.torch import load_file
+        with open(index_path) as f:
+            _idx = _json.load(f)
+        sd = {}
+        for _sf in set(_idx["weight_map"].values()):
+            sd.update(load_file(os.path.join(ckpt_path, _sf)))
+        return sd
+    elif os.path.exists(single_path):
+        from safetensors.torch import load_file
+        return load_file(single_path)
+    return None
 
 
 @torch.no_grad()
@@ -380,7 +428,7 @@ def train():
     local_rank = 0
     if n_gpu > 1:
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
-        dist.init_process_group(backend="nccl")
+        dist.init_process_group(backend="nccl", timeout=timedelta(seconds=1800))
         torch.cuda.set_device(local_rank)
         device = torch.device(f"cuda:{local_rank}")
     os.makedirs(args.output_dir, exist_ok=True)
@@ -446,10 +494,12 @@ def train():
             with open(meta_path) as f:
                 meta = json.load(f)
             start_step = meta.get("step", 0)
-        state = torch.load(os.path.join(ckpt, "pytorch_model.bin"), map_location="cpu") if os.path.exists(os.path.join(ckpt, "pytorch_model.bin")) else None
-        if state:
+        state = _load_safetensors_state(ckpt)
+        if state is not None:
             model.load_state_dict(state, strict=False)
-        log(f"[4/8] 从 checkpoint 恢复，start_step={start_step}")
+            log(f"[4/8] 从 checkpoint 恢复权重 (safetensors), start_step={start_step}")
+        else:
+            log(f"[4/8] 未找到 checkpoint 权重, start_step={start_step}（仅续接日志）")
 
     if hasattr(model, "gradient_checkpointing_enable"):
         model.gradient_checkpointing_enable()
@@ -961,7 +1011,7 @@ print(json.dumps({{
         'fi\n'
     )
 
-    launcher = f"torchrun --nproc_per_node={gpu_count}" if gpu_count > 1 else "python3"
+    launcher = f"torchrun --nproc_per_node={gpu_count} --rdzv_endpoint=localhost:29501" if gpu_count > 1 else "python3"
     log_dir_flag = '--log-dir "$TORCHRUN_LOG_DIR" \\' if gpu_count > 1 else ""
 
     entry_command = (
@@ -972,10 +1022,12 @@ print(json.dumps({{
         "export PYTHONUNBUFFERED=1\n"
         "export PYTHONPYCACHEPREFIX=/tmp/.pycache\n"
         "export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True\n"
-        "# NCCL: A100 PCIe 无 NVLink，增加超时 + 禁止 P2P 直连以降低 hang 概率\n"
+        "# NCCL: 增加超时 + 避免 record stream hang\n"
         "export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=1800\n"
-        "export NCCL_DEBUG=INFO\n"
+        "export NCCL_DEBUG=WARN\n"
+        "export TORCH_NCCL_AVOID_RECORD_STREAMS=1\n"
         "export NCCL_P2P_DISABLE=1\n"
+        "export NCCL_IB_TIMEOUT=22\n"
         "export MASTER_PORT=29501\n\n"
 
         f'_on_exit() {{\n'
@@ -1087,41 +1139,62 @@ print(json.dumps({{
         "from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer\n"
         "print('[诊断] transformers 核心导入 OK')\n"
         "\"\n"
+        "MAX_RETRIES=3\n"
+        "RETRY_COUNT=0\n"
         "TRAIN_OK=0\n"
         "TRAIN_EXIT_CODE=0\n"
         "TORCHRUN_LOG_DIR=/tmp/torchrun_logs_$$\n"
         "mkdir -p \"$TORCHRUN_LOG_DIR\"\n"
-        f"if {launcher} \\\n"
-        f'    {log_dir_flag}\n'
-        f'    /tmp/sft_train.py \\\n'
-        f'    --model_path    "$ACTUAL_MODEL_PATH" \\\n'
-        f'    --train_data    "$TRAIN_DATA_PATH" \\\n'
-        f'    --test_data     "$TEST_DATA_PATH" \\\n'
-        f'    --output_dir    "{output_dir}" \\\n'
-        f'    --epochs        $TRAIN_EPOCHS \\\n'
-        f'    --batch_size    $TRAIN_BATCH \\\n'
-        f'    --gradient_accumulation_steps $TRAIN_ACCUM \\\n'
-        f'    --learning_rate {learning_rate} \\\n'
-        f'    --max_length    $TRAIN_MAXLEN \\\n'
-        f'    --logging_steps $TRAIN_LOG \\\n'
-        f'    $RESUME_ARG 2>&1; then\n'
-        f'    TRAIN_OK=1\n'
-        f'    _log "=== 训练完成 ==="\n'
-        "else\n"
+        "while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do\n"
+        '    RETRY_COUNT=$((RETRY_COUNT + 1))\n'
+        '    if [ $RETRY_COUNT -gt 1 ]; then\n'
+        f'        if [ -d "{output_dir}/checkpoint-latest" ]; then\n'
+        f'            RESUME_ARG="--resume_from_checkpoint {output_dir}/checkpoint-latest"\n'
+        f'            _log "[Retry #$((RETRY_COUNT - 1))] 从 checkpoint-latest 恢复训练..."\n'
+        '        else\n'
+        '            RESUME_ARG=""\n'
+        f'            _log "[Retry #$((RETRY_COUNT - 1))] checkpoint 不存在，从头开始..."\n'
+        '        fi\n'
+        '    fi\n'
+        f"    if {launcher} \\\n"
+        f'        {log_dir_flag}\n'
+        f'        /tmp/sft_train.py \\\n'
+        f'        --model_path    "$ACTUAL_MODEL_PATH" \\\n'
+        f'        --train_data    "$TRAIN_DATA_PATH" \\\n'
+        f'        --test_data     "$TEST_DATA_PATH" \\\n'
+        f'        --output_dir    "{output_dir}" \\\n'
+        f'        --epochs        $TRAIN_EPOCHS \\\n'
+        f'        --batch_size    $TRAIN_BATCH \\\n'
+        f'        --gradient_accumulation_steps $TRAIN_ACCUM \\\n'
+        f'        --learning_rate {learning_rate} \\\n'
+        f'        --max_length    $TRAIN_MAXLEN \\\n'
+        f'        --logging_steps $TRAIN_LOG \\\n'
+        f'        $RESUME_ARG 2>&1; then\n'
+        f'        TRAIN_OK=1\n'
+        '        break\n'
+        '    fi\n'
         '    TRAIN_EXIT_CODE=$?\n'
-        f'    _log "[FATAL] 训练异常退出 (exit_code=$TRAIN_EXIT_CODE)"\n'
-        f'    _log "[FATAL] torchrun 日志目录: $TORCHRUN_LOG_DIR"\n'
-        f'    _log "[FATAL] === 各 rank 日志 ==="\n'
-        f'    for f in "$TORCHRUN_LOG_DIR"/*; do\n'
-        f'        if [ -f "$f" ]; then\n'
-        f'            _log "--- $f ---"\n'
-        f'            cat "$f"\n'
-        f'            _log "--- end of $f ---"\n'
-        f'        fi\n'
-        f'    done\n'
+        '    _log "[Retry] 第 ${RETRY_COUNT} 次失败 (exit_code=$TRAIN_EXIT_CODE)"\n'
+        '    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then\n'
+        '        _log "[Retry] 将在 10s 后自动重试..."\n'
+        '        sleep 10\n'
+        '    fi\n'
+        'done\n'
+        'if [ $TRAIN_OK -eq 0 ]; then\n'
+        '    _log "[FATAL] 训练在 ${MAX_RETRIES} 次尝试后仍然失败"\n'
+        '    _log "[FATAL] torchrun 日志目录: $TORCHRUN_LOG_DIR"\n'
+        '    _log "[FATAL] === 各 rank 日志 ==="\n'
+        '    for f in "$TORCHRUN_LOG_DIR"/*; do\n'
+        '        if [ -f "$f" ]; then\n'
+        '            _log "--- $f ---"\n'
+        '            cat "$f"\n'
+        '            _log "--- end of $f ---"\n'
+        '        fi\n'
+        '    done\n'
         '    _log "[FATAL] trap 将自动打包已保存的 checkpoint"\n'
-        "    exit 1\n"
-        "fi\n\n"
+        '    exit 1\n'
+        'fi\n'
+        '_log "=== 训练完成 ==="\n\n'
         + (eval_section if test_data or use_fake else no_eval_section)
         + result_section
     )

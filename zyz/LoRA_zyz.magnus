@@ -214,6 +214,7 @@ import os
 import time
 import traceback
 import math
+from datetime import timedelta
 
 def log(msg: str) -> None:
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
@@ -362,42 +363,83 @@ def unwrap_model(model):
 
 
 def save_lora_checkpoint(model, tokenizer, output_dir, step, meta, local_rank=0):
-    """保存 LoRA adapter checkpoint（覆盖式：始终写入 checkpoint-latest）。"""
-    if local_rank != 0:
-        return
+    """FSDP-safe：所有 rank 参与 state_dict gather，仅 rank 0 写盘。"""
     ckpt_path = os.path.join(output_dir, "checkpoint-latest")
     os.makedirs(ckpt_path, exist_ok=True)
-    # 只保存 LoRA adapter
-    model.save_pretrained(ckpt_path)
-    tokenizer.save_pretrained(ckpt_path)
-    with open(os.path.join(ckpt_path, "checkpoint_meta.json"), "w", encoding="utf-8") as f:
-        json.dump(meta, f, ensure_ascii=False, indent=2)
-    log(f"  [Checkpoint] LoRA adapter saved step={step} -> {ckpt_path} (覆盖)")
+    _FSDP = None
+    try:
+        from torch.distributed.fsdp import FullyShardedDataParallel as _FSDP
+    except ImportError:
+        pass
+    if _FSDP is not None and isinstance(model, _FSDP):
+        from torch.distributed.fsdp.api import StateDictType, FullStateDictConfig
+        full_config = FullStateDictConfig(rank0_only=True, offload_to_cpu=True)
+        with _FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, full_config):
+            state = model.state_dict()
+            if local_rank == 0:
+                model.save_pretrained(ckpt_path, state_dict=state)
+                tokenizer.save_pretrained(ckpt_path)
+                with open(os.path.join(ckpt_path, "checkpoint_meta.json"), "w", encoding="utf-8") as f:
+                    json.dump(meta, f, ensure_ascii=False, indent=2)
+                log(f"  [Checkpoint] LoRA adapter saved step={step} -> {ckpt_path} (覆盖)")
+    else:
+        if local_rank != 0:
+            return
+        model.save_pretrained(ckpt_path)
+        tokenizer.save_pretrained(ckpt_path)
+        with open(os.path.join(ckpt_path, "checkpoint_meta.json"), "w", encoding="utf-8") as f:
+            json.dump(meta, f, ensure_ascii=False, indent=2)
+        log(f"  [Checkpoint] LoRA adapter saved step={step} -> {ckpt_path} (覆盖)")
 
 
 def save_final(model, tokenizer, output_dir, train_log, merge_on_save, local_rank=0):
-    """保存最终模型。视 merge_on_save 决定是否合并 LoRA → 完整模型。"""
-    if local_rank != 0:
-        return
+    """FSDP-safe：所有 rank 参与 state_dict gather，仅 rank 0 写盘。"""
     adapter_path = os.path.join(output_dir, "lora_adapter")
     os.makedirs(adapter_path, exist_ok=True)
-    model.save_pretrained(adapter_path)
-    tokenizer.save_pretrained(adapter_path)
-    log(f"[LoRA adapter] 已保存 -> {adapter_path}")
-
-    if merge_on_save:
-        log("[合并] 开始合并 LoRA adapter → 完整模型...")
-        merged = model.merge_and_unload()
-        final_path = os.path.join(output_dir, "final")
-        os.makedirs(final_path, exist_ok=True)
-        merged.save_pretrained(final_path, max_shard_size="1800MB")
-        tokenizer.save_pretrained(final_path)
-        log(f"[最终模型] 已保存 -> {final_path}")
-
-    log_path = os.path.join(output_dir, "training_log.json")
-    with open(log_path, "w", encoding="utf-8") as f:
-        json.dump(train_log, f, ensure_ascii=False, indent=2)
-    log(f"[训练日志] 已保存 -> {log_path}")
+    _FSDP = None
+    try:
+        from torch.distributed.fsdp import FullyShardedDataParallel as _FSDP
+    except ImportError:
+        pass
+    if _FSDP is not None and isinstance(model, _FSDP):
+        from torch.distributed.fsdp.api import StateDictType, FullStateDictConfig
+        full_config = FullStateDictConfig(rank0_only=True, offload_to_cpu=True)
+        with _FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, full_config):
+            state = model.state_dict()
+            if local_rank == 0:
+                model.save_pretrained(adapter_path, state_dict=state)
+                tokenizer.save_pretrained(adapter_path)
+                log(f"[LoRA adapter] 已保存 -> {adapter_path}")
+                if merge_on_save:
+                    log("[合并] 开始合并 LoRA adapter → 完整模型...")
+                    merged = model.merge_and_unload()
+                    final_path = os.path.join(output_dir, "final")
+                    os.makedirs(final_path, exist_ok=True)
+                    merged.save_pretrained(final_path, max_shard_size="1800MB")
+                    tokenizer.save_pretrained(final_path)
+                    log(f"[最终模型] 已保存 -> {final_path}")
+                log_path = os.path.join(output_dir, "training_log.json")
+                with open(log_path, "w", encoding="utf-8") as f:
+                    json.dump(train_log, f, ensure_ascii=False, indent=2)
+                log(f"[训练日志] 已保存 -> {log_path}")
+    else:
+        if local_rank != 0:
+            return
+        model.save_pretrained(adapter_path)
+        tokenizer.save_pretrained(adapter_path)
+        log(f"[LoRA adapter] 已保存 -> {adapter_path}")
+        if merge_on_save:
+            log("[合并] 开始合并 LoRA adapter → 完整模型...")
+            merged = model.merge_and_unload()
+            final_path = os.path.join(output_dir, "final")
+            os.makedirs(final_path, exist_ok=True)
+            merged.save_pretrained(final_path, max_shard_size="1800MB")
+            tokenizer.save_pretrained(final_path)
+            log(f"[最终模型] 已保存 -> {final_path}")
+        log_path = os.path.join(output_dir, "training_log.json")
+        with open(log_path, "w", encoding="utf-8") as f:
+            json.dump(train_log, f, ensure_ascii=False, indent=2)
+        log(f"[训练日志] 已保存 -> {log_path}")
 
 
 @torch.no_grad()
@@ -429,7 +471,7 @@ def train():
     local_rank = 0
     if n_gpu > 1:
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
-        dist.init_process_group(backend="nccl")
+        dist.init_process_group(backend="nccl", timeout=timedelta(seconds=1800))
         torch.cuda.set_device(local_rank)
         device = torch.device(f"cuda:{local_rank}")
     os.makedirs(args.output_dir, exist_ok=True)
@@ -1033,7 +1075,7 @@ print(json.dumps({{
         'fi\n'
     )
 
-    launcher = f"torchrun --nproc_per_node={gpu_count}" if gpu_count > 1 else "python3"
+    launcher = f"torchrun --nproc_per_node={gpu_count} --rdzv_endpoint=localhost:29501" if gpu_count > 1 else "python3"
 
     entry_command = (
         "set -e\n"
@@ -1043,10 +1085,12 @@ print(json.dumps({{
         "export PYTHONUNBUFFERED=1\n"
         "export PYTHONPYCACHEPREFIX=/tmp/.pycache\n"
         "export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True\n"
-        "# NCCL: A100 PCIe 无 NVLink，增加超时 + 禁止 P2P 直连以降低 hang 概率\n"
+        "# NCCL: 增加超时 + 避免 record stream hang\n"
         "export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=1800\n"
-        "export NCCL_DEBUG=INFO\n"
+        "export NCCL_DEBUG=WARN\n"
+        "export TORCH_NCCL_AVOID_RECORD_STREAMS=1\n"
         "export NCCL_P2P_DISABLE=1\n"
+        "export NCCL_IB_TIMEOUT=22\n"
         "export MASTER_PORT=29501\n\n"
 
         f'_on_exit() {{\n'
