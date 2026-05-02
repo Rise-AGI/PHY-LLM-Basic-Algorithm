@@ -989,7 +989,11 @@ print(json.dumps({{
         + "export PYTHONDONTWRITEBYTECODE=1\n"
         "export PYTHONUNBUFFERED=1\n"
         "export PYTHONPYCACHEPREFIX=/tmp/.pycache\n"
-        "export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True\n\n"
+        "export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True\n"
+        "# NCCL: A100 PCIe 无 NVLink，增加超时 + 禁止 P2P 直连以降低 hang 概率\n"
+        "export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=1800\n"
+        "export NCCL_DEBUG=INFO\n"
+        "export NCCL_P2P_DISABLE=1\n\n"
 
         f'_on_exit() {{\n'
         f'    _log ""\n'
