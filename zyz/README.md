@@ -482,22 +482,23 @@ datas = copy_metadata("magnus-sdk")
 
 #### 2. 多卡并行 FSDP（旧版 DataParallel 导致大模型 OOM）
 
-| 组件 | DataParallel (单卡) | FSDP SHARD_GRAD_OP (3卡) | FSDP FULL_SHARD (3卡) |
+| 组件 | DataParallel (单卡) | FSDP SHARD_GRAD_OP (2卡) | FSDP FULL_SHARD (3卡) |
 |------|---------------------|--------------------------|------------------------|
-| 模型权重 | 14 GB (完整) | 14 GB (完整) | **5 GB** (分片) |
-| 梯度 | 14 GB (完整) | **5 GB** (分片) | **5 GB** (分片) |
-| AdamW 状态 | 56 GB (完整) | **19 GB** (分片) | **19 GB** (分片) |
-| **合计** | **~84 GB** | **~38 GB** ✓ | **~29 GB** ✓ |
-| 适用 | 小模型 | ≤30B 模型 | **大模型（72B+）** |
+| 模型权重 | 14 GB (完整) | 14 GB (完整) | **~48 GB** (分片) |
+| 梯度 | 14 GB (完整) | **7 GB** (分片) | **~48 GB** (分片) |
+| AdamW 状态 | 56 GB (完整) | **28 GB** (分片) | **~192 GB** (分片) |
+| **合计** | **~84 GB** | **~49 GB** ✓ | **~288 GB** ✓ |
+| 通信量/步 | 无 | 1 次 reduce-scatter | 3 次 collective |
+| 适用 | 小模型 | **7B~14B（推荐）** | **72B+** |
 
-72B 模型 bf16 ≈ 144GB，SHARD_GRAD_OP 每卡完整权重 > 80GB OOM → 已切换为 FULL_SHARD。
+> 对 A100 PCIe（无 NVLink），SHARD_GRAD_OP 通信量仅为 FULL_SHARD 的 1/3，能显著降低 NCCL 超时概率。7B~14B 模型显存充裕（~49GB/2卡），无需 FULL_SHARD。
 
-**关键实现**：
+**关键实现**（针对 7B~14B 模型；72B+ 需改用 `FULL_SHARD`）：
 
 ```python
 model = FSDP(
     model,
-    sharding_strategy=ShardingStrategy.FULL_SHARD,
+    sharding_strategy=ShardingStrategy.SHARD_GRAD_OP,  # 7B~14B; 72B+ 换 FULL_SHARD
     mixed_precision=MixedPrecision(
         param_dtype=torch.bfloat16,
         reduce_dtype=torch.bfloat16,
@@ -529,7 +530,7 @@ model = FSDP(
 |------|----------------------|--------------------------|
 | 位置 | `trian-share/` | `train/` |
 | 对话模板 | 硬编码 Qwen ChatML | `apply_chat_template()` 自动适配 |
-| 并行策略 | DataParallel（大模型 OOM） | FSDP FULL_SHARD + 逐层包装 |
+| 并行策略 | DataParallel（大模型 OOM） | FSDP SHARD_GRAD_OP + 逐层包装（7B~14B） / FULL_SHARD（72B+） |
 | 镜像加速 | 无 | 本地缓存 → 清华源 fallback |
 | 参数数量 | 9 个 | 20 个 |
 | 日志粒度 | `echo`（无时间戳） | `[时间] [步骤]` 含耗时统计 |

@@ -121,17 +121,18 @@
 - AdamW exp_avg + exp_avg_sq (fp32): 56 GB
 - 合计 ~84.7 GB / 85.1 GB，反向传播无余量
 
-**解决**：改用 FSDP（Fully Sharded Data Parallelism）FULL_SHARD 策略：
+**解决**：改用 FSDP（Fully Sharded Data Parallelism），7B~14B 模型用 `SHARD_GRAD_OP`（梯度分片，省通信），72B+ 用 `FULL_SHARD`（全分片）。
 
-| 组件 | DataParallel | FSDP SHARD_GRAD_OP | FSDP FULL_SHARD |
-|------|-------------|-------------------|-----------------|
-| 模型权重 | 14 GB（每卡完整） | 14 GB（每卡完整） | **5 GB**（分片到 3 卡） |
-| 梯度 | 14 GB（每卡完整） | **5 GB**（分片） | **5 GB**（分片） |
-| AdamW 状态 | 56 GB（每卡完整） | **19 GB**（分片） | **19 GB**（分片） |
-| **合计** | **~84 GB** | **~38 GB** ✓ | **~29 GB** ✓ |
-| 适用 | 小模型 | ≤30B 模型 | **大模型（72B+）** |
+| 组件 | DataParallel | FSDP SHARD_GRAD_OP(7B,2卡) | FSDP FULL_SHARD(72B,3卡) |
+|------|-------------|---------------------------|-------------------------|
+| 模型权重 | 14 GB（每卡完整） | 14 GB（每卡完整） | **~48 GB**（分片到 3 卡） |
+| 梯度 | 14 GB（每卡完整） | **7 GB**（分片） | **~48 GB**（分片） |
+| AdamW 状态 | 56 GB（每卡完整） | **28 GB**（分片） | **~192 GB**（分片） |
+| **合计** | **~84 GB** | **~49 GB** ✓  | **~288 GB** ✓ |
+| 通信量/步 | 无（环等到） | **1 次 reduce-scatter** | 3 次 all-gather + reduce-scatter |
+| 适用 | 小模型 | **≤14B 模型（推荐）** | 72B+ 大模型 |
 
-> **2026-04-28 更新**：72B 模型 bf16 ≈ 144GB，SHARD_GRAD_OP 每卡完整权重 > 80GB OOM。已切换为 FULL_SHARD，模型参数也跨卡分片。
+> **通信量权衡**：SHARD_GRAD_OP 仅 backward 时做一次 reduce-scatter（梯度），forward 不需要通信。FULL_SHARD 每步 forward 前 all-gather 权重、backward 后 reduce-scatter 梯度+再次 all-gather，通信量 ~3×。对 A100 PCIe（无 NVLink，走 PCIe switch），减少通信能显著降低 NCCL 超时概率。
 
 **关键改动**（SFT_TRAIN_PY 中）：
 
@@ -140,10 +141,10 @@
 model = torch.nn.DataParallel(model)
 model.to(device)
 
-# 之后
+# 之后（7B~14B）
 model = FSDP(
     model,
-    sharding_strategy=ShardingStrategy.FULL_SHARD,
+    sharding_strategy=ShardingStrategy.SHARD_GRAD_OP,       # 72B+ 换 FULL_SHARD
     mixed_precision=MixedPrecision(
         param_dtype=torch.bfloat16,
         reduce_dtype=torch.bfloat16,
@@ -152,6 +153,10 @@ model = FSDP(
     device_id=local_rank,
 )
 ```
+
+选择依据：
+- **7B~14B 模型**用 `SHARD_GRAD_OP`：仅梯度分片，forward 无需通信，显存足够（~49GB/2卡）
+- **72B+ 大模型**改用 `FULL_SHARD`：权重/梯度/优化器全分片（~288GB/3卡）
 
 配套改动：
 - 启动命令从 `python3` 改为 `torchrun --nproc_per_node=N`（多卡时自动切换）
@@ -738,6 +743,7 @@ unset VIRTUAL_ENV SSL_CERT_FILE
 - 训练前添加诊断打印（`$CUDA_VISIBLE_DEVICES`、torch/cuda 版本、Python 脚本语法预检、import 预检）
 - 失败时自动遍历并打印所有 rank 日志文件
 - 打印 `$TRAIN_EXIT_CODE` 判断信号终止 vs Python 异常
+- 增加 NCCL 调试日志（`NCCL_DEBUG=INFO`），通信 hang 时可直接定位卡住的 rank
 
 ### 8.8 transformers 5.7.0 + torch 2.5.1 CVE 安全检查拦截
 
@@ -832,17 +838,52 @@ if torch.isnan(loss) or torch.isinf(loss):
 ```
 已应用于 `OpenFundus_SFT_zyz.magnus` 和 `LoRA_zyz.magnus`。
 
-### 8.12 NCCL 超时（NaN 二次效应）
+### 8.12 NCCL 超时
 
-**现象**：
+存在两种场景：
+
+**场景 A：NaN 导致 NCCL 超时**（NaN 时序图）
+
 ```
-[Rank 0] Watchdog caught collective operation timeout:
-WorkNCCL(SeqNum=77204, OpType=_REDUCE_SCATTER_BASE, ...) ran for 600065 milliseconds
+Loss: 0.70 → 0.61 → 0.60 → NaN → NaN → ...
+[Watchdog] WorkNCCL OpType=_REDUCE_SCATTER_BASE 超时 (600s)
 ```
 
-**原因**：NaN 梯度导致 FSDP reduce_scatter 操作挂住。torchrun 默认心跳超时 600s（10min）后触发 watchdog 异常。
+**原因**：NaN 梯度传播后 FSDP reduce_scatter 操作挂住，身份是 NaN 的"二次效应"。
 
-**修复**：修复 NaN loss 传播（见 §8.11）即可消除此类 NCCL 超时。NCCL 超时本身不是根因。
+**修复**：修复 NaN loss 传播（见 §8.11）即可消除此类 NCCL 超时。
+
+---
+
+**场景 B：纯通信挂起**（Loss 一直正常）
+
+```
+Loss: 1.37 → 1.08 → 0.98 → 0.88 → 0.82 → ...（全程正常）
+[Rank 1] Watchdog caught collective operation timeout (600s)
+```
+
+**现象**：Qwen2.5-Math-7B-Instruct 训练，Loss 正常收敛，但 `_REDUCE_SCATTER_BASE` 在持续运行 25 分钟后突然超时（A100 PCIe，2卡，无 NVLink）。
+
+**原因**：
+1. A100 PCIe 版没有 NVLink，GPU 间通过 PCIe switch 通信
+2. `FULL_SHARD` 策略每步通信量大（3 次 collective），在 PCIe 拓扑下容易 hang
+3. CUDA 12.4 + PyTorch 2.5.1 + Driver 570 组合有已知 NCCL 兼容问题
+
+**修复**（已应用于 `OpenFundus_SFT_zyz.magnus`）：
+
+```bash
+# 1. 增加 heartbeat 超时（默认 600s → 1800s），避免误杀
+export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=1800
+
+# 2. 禁止 P2P 直连，降级到共享内存/copy（A100 PCIe 兼容性）
+export NCCL_P2P_DISABLE=1
+
+# 3. 开启 NCCL 调试日志（下次出问题时可定位确切 rank/操作）
+export NCCL_DEBUG=INFO
+
+# 4. 对 ≤14B 模型换用 SHARD_GRAD_OP（通信量减少 ~66%）
+#    SFT_TRAIN_PY 中: ShardingStrategy.SHARD_GRAD_OP 代替 FULL_SHARD
+```
 
 ---
 
