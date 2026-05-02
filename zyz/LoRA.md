@@ -265,15 +265,23 @@ ValueError: Cannot use chat template functions because tokenizer.chat_template i
 
 **现象**（2 GPU 训练）：
 - 一个 rank 持续 NaN loss，另一个正常；数步后两个 rank 全部 NaN
+- 或训练 Loss 正常（0.8~0.9），但突然 NCCL 超时，日志中无 NaN 警告
 
 **原因**：训练数据中部分样本 `output` 为空 → labels 全部为 -100 → loss NaN。bf16 训练下 NaN 梯度过 `backward()` 进入模型参数 → allreduce 时污染所有 rank。
 
-**修复**：在 `backward()` 前添加 NaN/Inf 检测，跳过坏 batch。详见 SFT.md §8.11。
+**修复（v2）**：用零 loss 替代 NaN loss，保持 FSDP/DDP 同步：
+```python
+if torch.isnan(loss) or torch.isinf(loss):
+    loss = torch.zeros_like(loss)
+```
+禁止使用 `continue` 跳过 backward，否则 FSDP 状态机不同步 → NCCL 超时。详见 SFT.md §8.11。
 
 ### 6.8 NCCL 超时（NaN 二次效应）
 
 **现象**：`Watchdog caught collective operation timeout: WorkNCCL(_REDUCE_SCATTER_BASE)` 超时 600s。
 
-**原因**：NaN 梯度导致 NCCL 通信操作挂住。
+**两种情境**：
+1. **NaN 梯度传播** — NaN loss → backward → FSDP allreduce 挂住
+2. **FSDP 不同步** — `continue` 跳过 backward → 一个 rank 不参与 allreduce → 永远等不到
 
-**修复**：修复 NaN loss 传播（见 §6.7）即可消除。NCCL 超时本身不是根因。
+**修复**：使用 `torch.zeros_like(loss)` 替代 `continue`（见 §6.7）。NCCL 超时本身不是根因。

@@ -828,30 +828,38 @@ if tokenizer.chat_template is None:
 3. `loss.backward()` 将 NaN 梯度写入模型参数 → FSDP 下一次 allreduce 时 NaN 传播到所有 rank
 4. 一旦模型参数含 NaN，所有后续 batch 的 loss 全部 NaN
 
-**修复**：在 `backward()` 前检测 NaN/Inf，跳过坏 batch：
+**修复（v2 — 当前方案）**：用零 loss 替代 NaN loss，保持 FSDP 同步：
 ```python
 if torch.isnan(loss) or torch.isinf(loss):
     nan_count += 1
     if local_rank == 0 and nan_count <= 5:
         log(f"  [警告] NaN/Inf loss @ step {step}, 跳过此 batch (#{nan_count})")
-    continue
+    loss = torch.zeros_like(loss)  # 用零 loss 保持 FSDP 同步，不学此 batch
 ```
+关键区别：
+- `continue` → FSDP 状态机不同步 → NCCL 超时 ❌
+- `loss = torch.zeros_like(loss)` → backward 正常执行，梯度为 0，allreduce 正常完成 ✅
+
 已应用于 `OpenFundus_SFT_zyz.magnus` 和 `LoRA_zyz.magnus`。
 
-### 8.12 NCCL 超时
+### 8.12 NCCL 超时（NaN 二次效应）
 
-存在两种场景：
+NCCL 超时有两种情境，根因不同但表象相同：
 
-**场景 A：NaN 导致 NCCL 超时**（NaN 时序图）
+| 情境 | 根因 | 触发时机 | Loss 状态 |
+|------|------|----------|-----------|
+| **NaN 梯度传播** | 空 output 样本 → NaN loss → `backward()` 将 NaN 写入参数 → FSDP allreduce 挂住 | 坏样本后数步内 | 先 NaN，后超时 |
+| **FSDP 状态机不同步** | 一个 rank 跳过 `backward()`（如 `continue`），FSDP 后向钩子未触发，allreduce 永远等不到 | 坏样本后的下一次 backward | Loss 正常，但 backward 不执行 |
 
+**现象**（相同）：
 ```
-Loss: 0.70 → 0.61 → 0.60 → NaN → NaN → ...
-[Watchdog] WorkNCCL OpType=_REDUCE_SCATTER_BASE 超时 (600s)
+[Rank 0] Watchdog caught collective operation timeout:
+WorkNCCL(SeqNum=77204, OpType=_REDUCE_SCATTER_BASE, ...) ran for 600065 milliseconds
 ```
 
-**原因**：NaN 梯度传播后 FSDP reduce_scatter 操作挂住，身份是 NaN 的"二次效应"。
-
-**修复**：修复 NaN loss 传播（见 §8.11）即可消除此类 NCCL 超时。
+**修复**：
+- 类型 1（NaN 传播）：见 §8.11 v2 修复，用 `torch.zeros_like(loss)` 替代原始 loss
+- 类型 2（FSDP 不同步）：禁止在 FSDP 训练循环中使用 `continue` 跳过 backward。始终调用 `backward()`，通过零 loss 实现跳过
 
 ---
 

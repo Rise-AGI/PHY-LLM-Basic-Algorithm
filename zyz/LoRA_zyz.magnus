@@ -80,15 +80,6 @@ MaxLength = Annotated[int, {
     "default": 1024,
 }]
 
-SaveSteps = Annotated[int, {
-    "label": "Checkpoint 保存间隔（步）",
-    "scope": "超参数",
-    "description": "LoRA checkpoint 很小（仅 adapter 权重），可适当频繁保存",
-    "min": 50,
-    "max": 2000,
-    "default": 200,
-}]
-
 # ── LoRA 专属参数 ──────────────────────────────────────────
 
 LoraR = Annotated[int, {
@@ -221,6 +212,7 @@ import argparse
 import json
 import os
 import time
+import traceback
 import math
 
 def log(msg: str) -> None:
@@ -257,7 +249,6 @@ def parse_args():
     p.add_argument("--max_length",    type=int,   default=1024)
     p.add_argument("--warmup_ratio",  type=float, default=0.05)
     p.add_argument("--weight_decay",  type=float, default=0.01)
-    p.add_argument("--save_steps",    type=int,   default=200)
     p.add_argument("--logging_steps", type=int,   default=10)
     p.add_argument("--resume_from_checkpoint", type=str, default=None)
     # LoRA 参数
@@ -371,17 +362,17 @@ def unwrap_model(model):
 
 
 def save_lora_checkpoint(model, tokenizer, output_dir, step, meta, local_rank=0):
-    """保存 LoRA adapter checkpoint（非常小，仅几 MB）。"""
+    """保存 LoRA adapter checkpoint（覆盖式：始终写入 checkpoint-latest）。"""
     if local_rank != 0:
         return
-    ckpt_path = os.path.join(output_dir, f"checkpoint-{step}")
+    ckpt_path = os.path.join(output_dir, "checkpoint-latest")
     os.makedirs(ckpt_path, exist_ok=True)
     # 只保存 LoRA adapter
     model.save_pretrained(ckpt_path)
     tokenizer.save_pretrained(ckpt_path)
     with open(os.path.join(ckpt_path, "checkpoint_meta.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
-    log(f"  [Checkpoint] LoRA adapter saved step={step} -> {ckpt_path}")
+    log(f"  [Checkpoint] LoRA adapter saved step={step} -> {ckpt_path} (覆盖)")
 
 
 def save_final(model, tokenizer, output_dir, train_log, merge_on_save, local_rank=0):
@@ -625,7 +616,7 @@ def train():
     log(f"  模型: {total_params:.2f}B params | LoRA: {lora_params_b:.4f}B trainable")
     log(f"  数据: {len(train_samples)} 训练样本 | {len(train_loader)} batches/epoch")
     log(f"  训练: {args.epochs} epochs × {steps_per_epoch} steps = {total_steps} total steps")
-    log(f"  保存: 每 {args.save_steps} steps | 日志: 每 {args.logging_steps} steps")
+    log(f"  保存: 每 40 steps（自动覆盖） | 日志: 每 {args.logging_steps} steps")
     log(f"  GPU: {n_gpu} × {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'}")
     log(f"{'='*60}")
 
@@ -634,29 +625,91 @@ def train():
     optimizer.zero_grad()
     model.train()
 
+    # ── 诊断: 数据质量预检（仅 rank 0）──
+    if local_rank == 0:
+        bad_samples = 0
+        for di, s in enumerate(train_dataset.samples):
+            out = s.get("output", "")
+            if not out or not out.strip():
+                bad_samples += 1
+                if bad_samples <= 3:
+                    log(f"  [数据诊断] 空 output 样本 #{di}: instruction={s.get('instruction','')[:80]}")
+        if bad_samples:
+            log(f"  [数据诊断] 共 {bad_samples} 条空 output 样本（已统计）")
+        else:
+            log(f"  [数据诊断] 所有 {len(train_dataset.samples)} 条样本 output 均非空 ✓")
+
     for epoch in range(1, args.epochs + 1):
         if n_gpu > 1 and train_sampler is not None:
             train_sampler.set_epoch(epoch)
         epoch_loss  = 0.0
         nan_count   = 0
+        _skip_count = 0
         epoch_start = time.time()
+        slow_count  = 0
+        torch.cuda.reset_peak_memory_stats()
         log(f"[Epoch {epoch}/{args.epochs}] 开始...")
 
         for step, batch in enumerate(train_loader, 1):
+            step_start = time.time()
+
+            # ── 诊断: 每 10 步打印一次步进信息 ──
+            if local_rank == 0 and step % 10 == 1:
+                log(f"  [诊断] >>> Step {step}/{len(train_loader)} (global {global_step+1}) 开始")
+
             input_ids = batch["input_ids"].to(device)
             labels    = batch["labels"].to(device)
             attn_mask = batch["attention_mask"].to(device)
-            outputs = model(input_ids=input_ids, attention_mask=attn_mask, labels=labels)
-            loss = outputs.loss
+            seq_len   = input_ids.shape[-1]
+
+            # ── 诊断: 定期记录序列长度和显存 ──
+            if local_rank == 0 and step % 40 == 1:
+                cur_mem = torch.cuda.memory_allocated() / 1024**3
+                peak_mem = torch.cuda.max_memory_allocated() / 1024**3
+                log(f"  [诊断]   seq_len={seq_len}, GPU mem={cur_mem:.1f}GB (peak={peak_mem:.1f}GB)")
+
+            # ── 前向传播（含异常恢复）──
+            _skip_batch = False
+            try:
+                outputs = model(input_ids=input_ids, attention_mask=attn_mask, labels=labels)
+                loss = outputs.loss
+            except Exception as e:
+                _skip_batch = True
+                _skip_count += 1
+                if local_rank == 0:
+                    log(f"  [错误] Step {step} 前向异常: {e}")
+                    for _tb_line in traceback.format_exc().rstrip().split("\n"):
+                        log(f"  [错误]   {_tb_line}")
+
+            if _skip_batch:
+                loss = torch.zeros(1, device=device)
 
             if torch.isnan(loss) or torch.isinf(loss):
                 nan_count += 1
                 if local_rank == 0 and nan_count <= 5:
                     log(f"  [警告] NaN/Inf loss @ step {step}, 跳过此 batch (#{nan_count})")
-                continue
+                loss = torch.zeros_like(loss)
 
-            (loss / accum).backward()
-            epoch_loss += loss.item()
+            try:
+                (loss / accum).backward()
+                epoch_loss += loss.item()
+            except Exception as e:
+                if local_rank == 0:
+                    log(f"  [错误] Step {step} 反向异常: {e}")
+                try:
+                    (torch.zeros(1, device=device) / accum).backward()
+                except:
+                    pass
+
+            # ── 诊断: 检测慢步 ──
+            step_elapsed = time.time() - step_start
+            if step_elapsed > 30:
+                slow_count += 1
+                log(f"  [SLOW] Step {step} 耗时 {step_elapsed:.1f}s | seq_len={seq_len} | "
+                    f"GPU={torch.cuda.memory_allocated()/1024**3:.1f}GB "
+                    f"(此 epoch 第 {slow_count} 次慢步)")
+            elif step_elapsed > 10 and local_rank == 0:
+                log(f"  [诊断] Step {step} 略慢: {step_elapsed:.1f}s | seq_len={seq_len}")
 
             is_update = (step % accum == 0) or (step == len(train_loader))
             if is_update:
@@ -679,7 +732,8 @@ def train():
                     log(f"  Epoch {epoch}/{args.epochs} | Step {step}/{len(train_loader)} (global {global_step}) | Loss {avg_loss:.4f} | LR: {lr_now:.2e} | VRAM free: {_free_gb:.1f}GB")
                     train_log.append({"global_step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(avg_loss, 6), "lr": round(lr_now, 8), "vram_free_gb": round(_free_gb, 1), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
-                if global_step % args.save_steps == 0:
+                # ── 自动存档: 每 40 步覆盖保存 ──
+                if global_step % 40 == 0:
                     eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank) if eval_loader else None
                     save_lora_checkpoint(model, tokenizer, args.output_dir, global_step, meta={"step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}, local_rank=local_rank)
 
@@ -688,6 +742,8 @@ def train():
         eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank) if eval_loader else None
         eval_str = f" | Eval Loss: {eval_loss:.4f}" if eval_loss is not None else ""
         log(f"[Epoch {epoch}/{args.epochs}] Train Loss: {avg_epoch_loss:.4f}{eval_str} | 耗时: {elapsed:.0f}s ({elapsed/60:.1f}min)")
+        if _skip_count > 0:
+            log(f"  [诊断] Epoch {epoch} 中共 {_skip_count} 个 batch 因错误跳过")
         train_log.append({"global_step": global_step, "epoch": epoch, "train_loss": round(avg_epoch_loss, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "elapsed_sec": round(elapsed, 1), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
     save_final(model, tokenizer, args.output_dir, train_log, merge_on_save=args.merge_on_save, local_rank=local_rank)
@@ -794,7 +850,6 @@ def blueprint(
     grad_accum:        GradAccum        = 4,
     learning_rate:     LearningRate     = 5e-5,
     max_length:        MaxLength        = 1024,
-    save_steps:        SaveSteps        = 200,
     lora_r:            LoraR            = 64,
     lora_alpha:        LoraAlpha        = 128,
     lora_dropout:      LoraDropout      = 0.05,
@@ -901,7 +956,6 @@ TRAIN_EPOCHS=1
 TRAIN_BATCH=2
 TRAIN_ACCUM=4
 TRAIN_MAXLEN=256
-TRAIN_SAVE=20
 TRAIN_LOG=5
 """
     else:
@@ -912,7 +966,6 @@ TRAIN_EPOCHS={epochs}
 TRAIN_BATCH={batch_size}
 TRAIN_ACCUM={grad_accum}
 TRAIN_MAXLEN={max_length}
-TRAIN_SAVE={save_steps}
 TRAIN_LOG=10
 """
 
@@ -993,7 +1046,8 @@ print(json.dumps({{
         "# NCCL: A100 PCIe 无 NVLink，增加超时 + 禁止 P2P 直连以降低 hang 概率\n"
         "export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=1800\n"
         "export NCCL_DEBUG=INFO\n"
-        "export NCCL_P2P_DISABLE=1\n\n"
+        "export NCCL_P2P_DISABLE=1\n"
+        "export MASTER_PORT=29501\n\n"
 
         f'_on_exit() {{\n'
         f'    _log ""\n'
@@ -1122,7 +1176,6 @@ print(json.dumps({{
         f'    --gradient_accumulation_steps $TRAIN_ACCUM \\\n'
         f'    --learning_rate {learning_rate} \\\n'
         f'    --max_length    $TRAIN_MAXLEN \\\n'
-        f'    --save_steps    $TRAIN_SAVE \\\n'
         f'    --logging_steps $TRAIN_LOG \\\n'
         f'    --lora_r        {lora_r} \\\n'
         f'    --lora_alpha    {lora_alpha} \\\n'
