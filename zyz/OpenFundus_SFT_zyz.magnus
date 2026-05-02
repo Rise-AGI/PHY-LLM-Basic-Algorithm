@@ -1037,7 +1037,7 @@ print(json.dumps({{
         "TORCHRUN_LOG_DIR=/tmp/torchrun_logs_$$\n"
         "mkdir -p \"$TORCHRUN_LOG_DIR\"\n"
         f"if {launcher} \\\n"
-        f'    --log-dir "$TORCHRUN_LOG_DIR" \\\n'
+        f'    {"--log-dir \\"$TORCHRUN_LOG_DIR\\" \\" if gpu_count > 1 else ""}\n'
         f'    /tmp/sft_train.py \\\n'
         f'    --model_path    "$ACTUAL_MODEL_PATH" \\\n'
         f'    --train_data    "$TRAIN_DATA_PATH" \\\n'
