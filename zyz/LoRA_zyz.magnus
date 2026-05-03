@@ -512,7 +512,7 @@ def train():
     local_rank = 0
     if n_gpu > 1:
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
-        dist.init_process_group(backend="nccl", timeout=timedelta(seconds=1800))
+        dist.init_process_group(backend="nccl", timeout=timedelta(seconds=600))
         torch.cuda.set_device(local_rank)
         device = torch.device(f"cuda:{local_rank}")
     os.makedirs(args.output_dir, exist_ok=True)
@@ -1196,11 +1196,14 @@ print(json.dumps({{
         "export PYTHONPYCACHEPREFIX=/tmp/.pycache\n"
         "export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True\n"
         "# NCCL: 增加超时 + 避免 record stream hang\n"
-        "export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=1800\n"
-        "export NCCL_DEBUG=WARN\n"
+        "export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=600\n"
+        "export NCCL_DEBUG=INFO\n"
         "export TORCH_NCCL_AVOID_RECORD_STREAMS=1\n"
         "export NCCL_P2P_DISABLE=1\n"
         "export NCCL_IB_TIMEOUT=22\n"
+        "export NCCL_IB_DISABLE=1\n"
+        "export NCCL_SOCKET_IFNAME=^docker,lo,virbr\n"
+        "export NCCL_NET_GDR_LEVEL=0\n"
         "export MASTER_PORT=29501\n\n"
 
         f'_on_exit() {{\n'
