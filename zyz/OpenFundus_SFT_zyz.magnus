@@ -428,7 +428,7 @@ def train():
     local_rank = 0
     if n_gpu > 1:
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
-        dist.init_process_group(backend="nccl", timeout=timedelta(seconds=1800))
+        dist.init_process_group(backend="nccl", timeout=timedelta(seconds=600))
         torch.cuda.set_device(local_rank)
         device = torch.device(f"cuda:{local_rank}")
     os.makedirs(args.output_dir, exist_ok=True)
@@ -535,7 +535,7 @@ def train():
         # 使用 auto_wrap_policy 逐层分片，避免 FSDP init 时将完整模型移至单卡
         model = FSDP(
             model,
-            sharding_strategy=ShardingStrategy.SHARD_GRAD_OP,  # 7B-14B 用 SHARD_GRAD_OP 省通信; 72B+ 需换 FULL_SHARD
+            sharding_strategy=ShardingStrategy.FULL_SHARD,
             auto_wrap_policy=_policy,
             mixed_precision=MixedPrecision(
                 param_dtype=torch.bfloat16,
@@ -544,7 +544,7 @@ def train():
             ),
             device_id=local_rank,
         )
-        log(f"[5/8] FSDP SHARD_GRAD_OP 完成 ({time.time()-t0:.1f}s)")
+        log(f"[5/8] FSDP FULL_SHARD 完成 ({time.time()-t0:.1f}s)")
     else:
         model = model.to(device)
         log(f"[5/8] 单卡模式，模型已移至 {device} ({time.time()-t0:.1f}s)")
@@ -592,7 +592,7 @@ def train():
     # ── Step 8: 开始训练循环 ──
     log(f"[8/8] 开始训练循环")
     log(f"{'='*60}")
-    log(f"  模型: {total_params:.2f}B params | FSDP: {'SHARD_GRAD_OP' if n_gpu > 1 else 'OFF'}")
+    log(f"  模型: {total_params:.2f}B params | FSDP: {'FULL_SHARD' if n_gpu > 1 else 'OFF'}")
     log(f"  数据: {len(train_samples)} 训练样本 | {len(train_loader)} batches/epoch")
     log(f"  训练: {args.epochs} epochs × {steps_per_epoch} steps = {total_steps} total steps")
     log(f"  保存: 每 40 steps（自动覆盖） | 日志: 每 {args.logging_steps} steps")
@@ -1024,11 +1024,14 @@ print(json.dumps({{
         "export PYTHONPYCACHEPREFIX=/tmp/.pycache\n"
         "export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True\n"
         "# NCCL: 增加超时 + 避免 record stream hang\n"
-        "export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=1800\n"
-        "export NCCL_DEBUG=WARN\n"
+        "export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=600\n"
+        "export NCCL_DEBUG=INFO\n"
         "export TORCH_NCCL_AVOID_RECORD_STREAMS=1\n"
         "export NCCL_P2P_DISABLE=1\n"
         "export NCCL_IB_TIMEOUT=22\n"
+        "export NCCL_IB_DISABLE=1\n"
+        "export NCCL_SOCKET_IFNAME=^docker,lo,virbr\n"
+        "export NCCL_NET_GDR_LEVEL=0\n"
         "export MASTER_PORT=29501\n\n"
 
         f'_on_exit() {{\n'
