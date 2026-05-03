@@ -362,7 +362,42 @@ def unwrap_model(model):
     return model
 
 
-def save_lora_checkpoint(model, tokenizer, output_dir, step, meta, local_rank=0):
+def _load_safetensors_state(ckpt_dir: str) -> dict:
+    """从 safetensors 加载完整 state_dict（支持 sharded）。"""
+    from safetensors.torch import load_file
+    import json
+    # adapter format (LoRA)
+    idx_path = os.path.join(ckpt_dir, "adapter_model.safetensors.index.json")
+    if os.path.exists(idx_path):
+        with open(idx_path) as f:
+            idx = json.load(f)
+        state = {}
+        for shard in set(idx.get("weight_map", {}).values()):
+            sp = os.path.join(ckpt_dir, shard)
+            if os.path.exists(sp):
+                state.update(load_file(sp))
+        return state
+    single = os.path.join(ckpt_dir, "adapter_model.safetensors")
+    if os.path.exists(single):
+        return load_file(single)
+    # full model format (model.safetensors)
+    idx_path = os.path.join(ckpt_dir, "model.safetensors.index.json")
+    if os.path.exists(idx_path):
+        with open(idx_path) as f:
+            idx = json.load(f)
+        state = {}
+        for shard in set(idx.get("weight_map", {}).values()):
+            sp = os.path.join(ckpt_dir, shard)
+            if os.path.exists(sp):
+                state.update(load_file(sp))
+        return state
+    single = os.path.join(ckpt_dir, "model.safetensors")
+    if os.path.exists(single):
+        return load_file(single)
+    raise FileNotFoundError(f"checkpoint 目录中未找到 safetensors 文件: {ckpt_dir}")
+
+
+def save_lora_checkpoint(model, tokenizer, optimizer, scheduler, output_dir, step, meta, local_rank=0):
     """FSDP-safe：所有 rank 参与 state_dict gather，仅 rank 0 写盘。"""
     ckpt_path = os.path.join(output_dir, "checkpoint-latest")
     os.makedirs(ckpt_path, exist_ok=True)
@@ -382,6 +417,9 @@ def save_lora_checkpoint(model, tokenizer, output_dir, step, meta, local_rank=0)
                 with open(os.path.join(ckpt_path, "checkpoint_meta.json"), "w", encoding="utf-8") as f:
                     json.dump(meta, f, ensure_ascii=False, indent=2)
                 log(f"  [Checkpoint] LoRA adapter saved step={step} -> {ckpt_path} (覆盖)")
+                torch.save(optimizer.state_dict(), os.path.join(ckpt_path, "optimizer.pt"))
+                torch.save(scheduler.state_dict(), os.path.join(ckpt_path, "scheduler.pt"))
+                log(f"  [Checkpoint] optimizer/scheduler state saved")
     else:
         if local_rank != 0:
             return
@@ -390,6 +428,9 @@ def save_lora_checkpoint(model, tokenizer, output_dir, step, meta, local_rank=0)
         with open(os.path.join(ckpt_path, "checkpoint_meta.json"), "w", encoding="utf-8") as f:
             json.dump(meta, f, ensure_ascii=False, indent=2)
         log(f"  [Checkpoint] LoRA adapter saved step={step} -> {ckpt_path} (覆盖)")
+        torch.save(optimizer.state_dict(), os.path.join(ckpt_path, "optimizer.pt"))
+        torch.save(scheduler.state_dict(), os.path.join(ckpt_path, "scheduler.pt"))
+        log(f"  [Checkpoint] optimizer/scheduler state saved")
 
 
 def save_final(model, tokenizer, output_dir, train_log, merge_on_save, local_rank=0):
@@ -666,6 +707,74 @@ def train():
     global_step = 0
     optimizer.zero_grad()
     model.train()
+    retry_seed = int(os.environ.get("RETRY_SEED", "0"))
+
+    # ── Resume from checkpoint ──
+    if args.resume_from_checkpoint:
+        ckpt = args.resume_from_checkpoint
+        if os.path.isdir(ckpt):
+            log(f"[Resume] 从 checkpoint 恢复: {ckpt}")
+            try:
+                ckpt_state = _load_safetensors_state(ckpt)
+                log(f"  [Resume] 加载了 {len(ckpt_state)} 个权重")
+                _FSDP = None
+                try:
+                    from torch.distributed.fsdp import FullyShardedDataParallel as _FSDP
+                except ImportError:
+                    pass
+                if n_gpu > 1:
+                    if isinstance(model, torch.nn.parallel.DistributedDataParallel):
+                        # DDP: 期望 key 带 module. 前缀
+                        new_sd = model.state_dict()
+                        matched = 0
+                        for k, v in ckpt_state.items():
+                            mk = f"module.{k}"
+                            if mk in new_sd:
+                                new_sd[mk] = v
+                                matched += 1
+                        model.load_state_dict(new_sd, strict=False)
+                        log(f"  [Resume] DDP: 匹配 {matched}/{len(ckpt_state)} 个 key")
+                    elif _FSDP is not None and isinstance(model, _FSDP):
+                        from torch.distributed.fsdp.api import StateDictType, FullStateDictConfig
+                        full_config = FullStateDictConfig(rank0_only=True, offload_to_cpu=True)
+                        with _FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, full_config):
+                            current_sd = model.state_dict()
+                            for k in ckpt_state:
+                                if k in current_sd:
+                                    current_sd[k] = ckpt_state[k]
+                            model.load_state_dict(current_sd, strict=False)
+                        log(f"  [Resume] FSDP: LoRA weights loaded")
+                else:
+                    model.load_state_dict(ckpt_state, strict=False)
+                    log(f"  [Resume] 单卡: weights loaded")
+
+                opt_path = os.path.join(ckpt, "optimizer.pt")
+                if os.path.exists(opt_path):
+                    optimizer.load_state_dict(torch.load(opt_path, map_location=device, weights_only=True))
+                    log(f"  [Resume] optimizer state loaded")
+
+                sched_path = os.path.join(ckpt, "scheduler.pt")
+                if os.path.exists(sched_path):
+                    scheduler.load_state_dict(torch.load(sched_path, map_location="cpu", weights_only=True))
+                    log(f"  [Resume] scheduler state loaded")
+
+                meta_path = os.path.join(ckpt, "checkpoint_meta.json")
+                if os.path.exists(meta_path):
+                    import json
+                    with open(meta_path) as f:
+                        meta = json.load(f)
+                    global_step = meta.get("step", 0)
+                    log(f"  [Resume] 恢复 global_step={global_step}")
+
+                model.train()
+            except Exception as e:
+                log(f"  [Resume] 恢复失败: {e}，从头开始训练")
+                import traceback
+                for _tb in traceback.format_exc().rstrip().split("\n"):
+                    log(f"  [Resume]   {_tb}")
+                train_log = []
+                global_step = 0
+                optimizer.zero_grad()
 
     # ── 诊断: 数据质量预检（仅 rank 0）──
     if local_rank == 0:
@@ -683,7 +792,7 @@ def train():
 
     for epoch in range(1, args.epochs + 1):
         if n_gpu > 1 and train_sampler is not None:
-            train_sampler.set_epoch(epoch)
+            train_sampler.set_epoch(epoch + retry_seed)
         epoch_loss  = 0.0
         nan_count   = 0
         _skip_count = 0
@@ -777,7 +886,7 @@ def train():
                 # ── 自动存档: 每 40 步覆盖保存 ──
                 if global_step % 40 == 0:
                     eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank) if eval_loader else None
-                    save_lora_checkpoint(model, tokenizer, args.output_dir, global_step, meta={"step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}, local_rank=local_rank)
+                    save_lora_checkpoint(model, tokenizer, optimizer, scheduler, args.output_dir, global_step, meta={"step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}, local_rank=local_rank)
 
         avg_epoch_loss = epoch_loss / len(train_loader)
         elapsed = time.time() - epoch_start
@@ -1076,6 +1185,7 @@ print(json.dumps({{
     )
 
     launcher = f"torchrun --nproc_per_node={gpu_count} --rdzv_endpoint=localhost:29501" if gpu_count > 1 else "python3"
+    log_dir_flag = '--log-dir "$TORCHRUN_LOG_DIR" \\' if gpu_count > 1 else ""
 
     entry_command = (
         "set -e\n"
@@ -1204,35 +1314,47 @@ print(json.dumps({{
         "from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer\n"
         "print('[诊断] transformers 核心导入 OK')\n"
         "\"\n"
-        "TRAIN_OK=0\n"
-        "TRAIN_EXIT_CODE=0\n"
-        "TORCHRUN_LOG_DIR=/tmp/torchrun_logs_$$\n"
-        "mkdir -p \"$TORCHRUN_LOG_DIR\"\n"
-        f"if {launcher} \\\n"
-        f'    --log-dir "$TORCHRUN_LOG_DIR" \\\n'
-        f'    /tmp/lora_train.py \\\n'
-        f'    --model_path    "$ACTUAL_MODEL_PATH" \\\n'
-        f'    --train_data    "$TRAIN_DATA_PATH" \\\n'
-        f'    --test_data     "$TEST_DATA_PATH" \\\n'
-        f'    --output_dir    "{output_dir}" \\\n'
-        f'    --epochs        $TRAIN_EPOCHS \\\n'
-        f'    --batch_size    $TRAIN_BATCH \\\n'
-        f'    --gradient_accumulation_steps $TRAIN_ACCUM \\\n'
-        f'    --learning_rate {learning_rate} \\\n'
-        f'    --max_length    $TRAIN_MAXLEN \\\n'
-        f'    --logging_steps $TRAIN_LOG \\\n'
-        f'    --lora_r        {lora_r} \\\n'
-        f'    --lora_alpha    {lora_alpha} \\\n'
-        f'    --lora_dropout  {lora_dropout} \\\n'
-        f'    --quantization  {quantization} \\\n'
-        f'    --merge_on_save {"1" if merge_on_save else "0"} \\\n'
-        + (f'    --target_modules "{target_modules}" \\\n' if target_modules else '')
-        + f'    $RESUME_ARG 2>&1; then\n'
-        f'    TRAIN_OK=1\n'
-        f'    _log "=== LoRA 训练完成 ==="\n'
-        "else\n"
-        '    TRAIN_EXIT_CODE=$?\n'
-        f'    _log "[FATAL] LoRA 训练异常退出 (exit_code=$TRAIN_EXIT_CODE)"\n'
+        "MAX_RETRIES=3\n"
+        "RETRY_COUNT=0\n"
+        "while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do\n"
+        f'    _log "[Retry $((RETRY_COUNT+1))/$MAX_RETRIES] 启动训练... (seed=$RETRY_COUNT)"\n'
+        f'    export RETRY_SEED=$RETRY_COUNT\n'
+        f"    if {launcher} \\\n"
+        f'        {log_dir_flag}\n'
+        f'        /tmp/lora_train.py \\\n'
+        f'        --model_path    "$ACTUAL_MODEL_PATH" \\\n'
+        f'        --train_data    "$TRAIN_DATA_PATH" \\\n'
+        f'        --test_data     "$TEST_DATA_PATH" \\\n'
+        f'        --output_dir    "{output_dir}" \\\n'
+        f'        --epochs        $TRAIN_EPOCHS \\\n'
+        f'        --batch_size    $TRAIN_BATCH \\\n'
+        f'        --gradient_accumulation_steps $TRAIN_ACCUM \\\n'
+        f'        --learning_rate {learning_rate} \\\n'
+        f'        --max_length    $TRAIN_MAXLEN \\\n'
+        f'        --logging_steps $TRAIN_LOG \\\n'
+        f'        --lora_r        {lora_r} \\\n'
+        f'        --lora_alpha    {lora_alpha} \\\n'
+        f'        --lora_dropout  {lora_dropout} \\\n'
+        f'        --quantization  {quantization} \\\n'
+        f'        --merge_on_save {"1" if merge_on_save else "0"} \\\n'
+        + (f'        --target_modules "{target_modules}" \\\n' if target_modules else '')
+        + f'        $RESUME_ARG 2>&1; then\n'
+        f'        TRAIN_OK=1\n'
+        f'        _log "=== LoRA 训练完成 ==="\n'
+        f'        break\n'
+        f'    else\n'
+        f'        TRAIN_EXIT_CODE=$?\n'
+        f'        RETRY_COUNT=$((RETRY_COUNT + 1))\n'
+        f'        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then\n'
+        f'            _log "[Retry $RETRY_COUNT/$MAX_RETRIES] 10s 后重试... (seed=$RETRY_COUNT)"\n'
+        f'            sleep 10\n'
+        f'            RESUME_ARG="--resume_from_checkpoint {output_dir}/checkpoint-latest"\n'
+        f'            _log "[Retry] 下次重试将从 checkpoint-latest 恢复"\n'
+        f'        fi\n'
+        f'    fi\n'
+        f'done\n\n'
+        "if [ $TRAIN_OK -ne 1 ]; then\n"
+        '    _log "[FATAL] 所有重试均失败 (exit_code=$TRAIN_EXIT_CODE)"\n'
         f'    _log "[FATAL] torchrun 日志目录: $TORCHRUN_LOG_DIR"\n'
         f'    _log "[FATAL] === 各 rank 日志 ==="\n'
         f'    for f in "$TORCHRUN_LOG_DIR"/*; do\n'
@@ -1242,9 +1364,9 @@ print(json.dumps({{
         f'            _log "--- end of $f ---"\n'
         f'        fi\n'
         f'    done\n'
-        '    _log "[FATAL] trap 将自动打包已保存的 checkpoint"\n'
-        "    exit 1\n"
-        "fi\n\n"
+        f'    _log "[FATAL] trap 将自动打包已保存的 checkpoint"\n'
+        f'    exit 1\n'
+        f'fi\n\n'
         + (eval_section if test_data or use_fake else no_eval_section)
         + result_section
     )

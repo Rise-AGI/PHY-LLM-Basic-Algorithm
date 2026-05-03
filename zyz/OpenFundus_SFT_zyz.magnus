@@ -603,6 +603,7 @@ def train():
     global_step = 0
     optimizer.zero_grad()
     model.train()
+    retry_seed = int(os.environ.get("RETRY_SEED", "0"))
 
     # ── 诊断: 数据质量预检（仅 rank 0）──
     if local_rank == 0:
@@ -620,7 +621,7 @@ def train():
 
     for epoch in range(1, args.epochs + 1):
         if n_gpu > 1:
-            train_sampler.set_epoch(epoch)
+            train_sampler.set_epoch(epoch + retry_seed)
         epoch_loss  = 0.0
         nan_count   = 0
         _skip_count = 0
@@ -1156,6 +1157,7 @@ print(json.dumps({{
         f'            _log "[Retry #$((RETRY_COUNT - 1))] checkpoint 不存在，从头开始..."\n'
         '        fi\n'
         '    fi\n'
+        f'    export RETRY_SEED=$RETRY_COUNT\n'
         f"    if {launcher} \\\n"
         f'        {log_dir_flag}\n'
         f'        /tmp/sft_train.py \\\n'
