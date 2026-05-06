@@ -65,15 +65,23 @@ from transformers import (
 )
 from torch.optim import AdamW
 import torch.distributed as dist
-from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-from torch.distributed.fsdp import ShardingStrategy, MixedPrecision
+try:
+    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+    from torch.distributed.fsdp import ShardingStrategy, MixedPrecision
+except ImportError:
+    FSDP = None
+    ShardingStrategy = None
+    MixedPrecision = None
 from torch.utils.data.distributed import DistributedSampler
 
 # ═══════════════════════════════════════════════════════════════
 # A100 硬件加速 + NCCL 优化（在 NCCL 初始化前设置）
 # ═══════════════════════════════════════════════════════════════
 torch.set_float32_matmul_precision('high')   # A100 TF32 tensor core 加速
-torch.backends.cudnn.benchmark = True        # 固定 shape 输入下卷积/矩阵乘自寻最优算法
+try:
+    torch.backends.cudnn.benchmark = True    # 固定 shape 输入下卷积/矩阵乘自寻最优算法
+except Exception:
+    pass  # CPU-only PyTorch 无 cudnn 后端
 
 # NCCL: 单节点双卡走 NVLink（撤销蓝图可能设置的 P2P_DISABLE=1）
 os.environ.setdefault("NCCL_P2P_LEVEL", "NVL")
