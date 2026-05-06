@@ -27,6 +27,33 @@ def log(msg: str) -> None:
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
 
 
+import re as _re
+
+def parse_answer_solution(text: str):
+    """
+    将 "答案：...\\n\\n解答：..." 格式拆分为 (answer, solution)。
+    对模型输出和标准答案通用。无法解析时 answer 返回全文。
+    """
+    if not text:
+        return "", ""
+    # 按 "解答" 分割（兼容中英文冒号）
+    parts = _re.split(r'\n?\s*解答\s*[：:]\s*', text, maxsplit=1)
+    if len(parts) >= 2:
+        ans_part = parts[0]
+        sol = parts[1].strip()
+        m = _re.search(r'答案\s*[：:]\s*(.*?)$', ans_part, _re.DOTALL)
+        ans = m.group(1).strip() if m else ans_part.strip()
+        return ans, sol
+    # fallback: 在单段文本中分别匹配
+    m_ans = _re.search(r'答案\s*[：:]\s*(.*?)(?:\n\n|\n解答|$)', text, _re.DOTALL)
+    m_sol = _re.search(r'解答\s*[：:]\s*(.*?)$', text, _re.DOTALL)
+    ans = m_ans.group(1).strip() if m_ans else ""
+    sol = m_sol.group(1).strip() if m_sol else ""
+    if not ans and not sol:
+        return text.strip(), ""
+    return ans, sol
+
+
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
@@ -96,7 +123,7 @@ def parse_args():
     p.add_argument("--warmup_ratio",  type=float, default=0.05)
     p.add_argument("--weight_decay",  type=float, default=0.01)
     p.add_argument("--logging_steps", type=int,   default=10)
-    p.add_argument("--save_steps",    type=int,   default=40,
+    p.add_argument("--save_steps",    type=int,   default=100,
                     help="checkpoint 保存间隔（global_step 倍数）")
     p.add_argument("--retry_seed",    type=int,   default=0,
                     help="DistributedSampler retry seed（shell retry 递增）")
@@ -710,15 +737,14 @@ def train(args):
                     log(f"  Epoch {epoch}/{args.epochs} | Step {step}/{len(train_loader)} (global {global_step}) | Loss {avg_loss:.4f} | LR: {lr_now:.2e}")
                     train_log.append({"global_step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(avg_loss, 6), "lr": round(lr_now, 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
-                # ── 自动存档 ──
+                # ── 自动存档（仅 loss 评估 + 保存权重，不做生成式推理）──
                 if global_step % args.save_steps == 0:
                     eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank) if eval_loader else None
                     save_checkpoint(model, tokenizer, args.output_dir, global_step, meta={"step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}, local_rank=local_rank)
-                    if eval_samples_raw is not None:
-                        run_generation_eval(model, tokenizer, eval_samples_raw, args,
-                                            tag=f"step_{global_step}", model_path=args.model_path,
-                                            output_dir=args.output_dir, device=device,
-                                            local_rank=local_rank, n_gpu=n_gpu)
+                    if local_rank == 0:
+                        _e_str = f" | eval_loss={eval_loss:.4f}" if eval_loss is not None else ""
+                        log(f"  [存档] step={global_step} train_loss={epoch_loss/step:.4f}{_e_str}")
+                    train_log.append({"global_step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "lr": round(scheduler.get_last_lr()[0], 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
         avg_epoch_loss = epoch_loss / len(train_loader)
         elapsed        = time.time() - epoch_start
@@ -800,11 +826,17 @@ def run_eval(args):
         new_ids  = out_ids[0][inputs["input_ids"].shape[1]:]
         response = tokenizer.decode(new_ids, skip_special_tokens=True).strip()
 
+        gt_ans, gt_sol = parse_answer_solution(gt_out)
+        md_ans, md_sol = parse_answer_solution(response)
         results.append({
-            "id":            sample.get("id", i),
-            "question":      user_content,
-            "gt_output":     gt_out,
-            "full_response": response,
+            "id": sample.get("id", i),
+            "question": user_content,
+            "gt_full": gt_out,
+            "gt_answer": gt_ans,
+            "gt_solution": gt_sol,
+            "model_full": response,
+            "model_answer": md_ans,
+            "model_solution": md_sol,
         })
 
         if (i + 1) % 10 == 0 or (i + 1) == len(samples):
@@ -891,11 +923,17 @@ def run_generation_eval(model, tokenizer, test_samples, args, tag,
         _new_ids = _out_ids[0][_inputs["input_ids"].shape[1]:]
         _response = tokenizer.decode(_new_ids, skip_special_tokens=True).strip()
 
+        _gt_ans, _gt_sol = parse_answer_solution(_gt)
+        _md_ans, _md_sol = parse_answer_solution(_response)
         _results.append({
             "id": _sample.get("id", _i),
             "question": _content,
-            "gt_output": _gt,
-            "model_output": _response,
+            "gt_full": _gt,
+            "gt_answer": _gt_ans,
+            "gt_solution": _gt_sol,
+            "model_full": _response,
+            "model_answer": _md_ans,
+            "model_solution": _md_sol,
         })
 
         if (_i + 1) % 10 == 0 or (_i + 1) == len(test_samples):
