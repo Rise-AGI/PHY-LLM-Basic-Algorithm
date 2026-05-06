@@ -494,6 +494,8 @@ def train(args):
                 buffer_dtype=torch.bfloat16,
             ),
             device_id=local_rank,
+            limit_all_gathers=True,
+            forward_prefetch=True,
         )
         log(f"[5/8] FSDP FULL_SHARD 完成 ({time.time()-t0:.1f}s)")
     else:
@@ -613,14 +615,7 @@ def train(args):
             log("  [初始化] step=0: eval_loss=None")
     train_log.append({"global_step": 0, "epoch": 0.0, "train_loss": round(init_train_loss, 6) if init_train_loss is not None else None, "eval_loss": round(init_eval_loss, 6) if init_eval_loss is not None else None, "lr": round(scheduler.get_last_lr()[0], 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
-    # ── Initial generation eval（训练开始前）──
-    # 跳过：step=0 生成式评估耗时 10+ 分钟且收益有限（step=0 loss 已提供 baseline）。
-    # checkpoint 评估 + final 评估有完整保留，训练全周期的生成质量变化仍可追踪。
-    # if eval_samples_raw is not None:
-    #     run_generation_eval(model, tokenizer, eval_samples_raw, args,
-    #                         tag="initial", model_path=args.model_path,
-    #                         output_dir=args.output_dir, device=device,
-    #                         local_rank=local_rank, n_gpu=n_gpu)
+    # 训练前生成式评估已独立为 eval_baseline.py（按需手动执行）
 
     for epoch in range(1, args.epochs + 1):
         if n_gpu > 1:
@@ -821,7 +816,10 @@ def run_eval(args):
     eval_path = os.path.join(eval_dir, "eval_results.json")
     with open(eval_path, "w", encoding="utf-8") as fh:
         json.dump(results, fh, ensure_ascii=False, indent=2)
-    log("[推理] 结果已保存: " + eval_path + "  共 %d 条" % len(results))
+    _fn = os.path.basename(eval_path)
+    log(f"[推理] 已保存: {_fn} ({len(results)} 条)")
+    log(f"[推理] 文件路径: {eval_path}")
+    log(f"[推理] 下载: 任务结束后查看日志末尾的 magnus receive 命令")
 
 
 @torch.no_grad()
@@ -909,7 +907,10 @@ def run_generation_eval(model, tokenizer, test_samples, args, tag,
     _path = os.path.join(_eval_dir, f"eval_results_{tag}.json")
     with open(_path, "w", encoding="utf-8") as _f:
         json.dump(_results, _f, ensure_ascii=False, indent=2)
-    log(f"[推理-{tag}] 已保存: {_path} ({len(_results)} 条)")
+    _fn = os.path.basename(_path)
+    log(f"[推理-{tag}] 已保存: {_fn} ({len(_results)} 条)")
+    log(f"[推理-{tag}] 文件路径: {_path}")
+    log(f"[推理-{tag}] 下载: 任务结束后查看日志末尾的 magnus receive 命令")
 
     # ── 5. 清理 ──
     if isinstance(model, FSDP):
