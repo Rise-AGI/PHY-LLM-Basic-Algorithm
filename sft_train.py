@@ -123,6 +123,8 @@ def parse_args():
     p.add_argument("--warmup_ratio",  type=float, default=0.05)
     p.add_argument("--weight_decay",  type=float, default=0.01)
     p.add_argument("--logging_steps", type=int,   default=10)
+    p.add_argument("--num_workers",  type=int,   default=2,
+                    help="DataLoader worker 进程数")
     p.add_argument("--save_steps",    type=int,   default=100,
                     help="checkpoint 保存间隔（global_step 倍数）")
     p.add_argument("--retry_seed",    type=int,   default=0,
@@ -544,7 +546,7 @@ def train(args):
     log(f"[6/8] 训练样本: {len(train_samples)} 条")
     train_dataset = SFTDataset(train_samples, tokenizer, args.max_length, args.prompt_prefix)
     train_sampler = DistributedSampler(train_dataset, rank=local_rank, shuffle=True) if n_gpu > 1 else None
-    train_loader  = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), sampler=train_sampler, num_workers=2, pin_memory=True, prefetch_factor=2, collate_fn=train_collate)
+    train_loader  = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), sampler=train_sampler, num_workers=args.num_workers, pin_memory=True, prefetch_factor=2, collate_fn=train_collate)
     log(f"[6/8] DataLoader: {len(train_loader)} batches/epoch (batch_size={args.batch_size})")
 
     eval_loader = None
@@ -553,7 +555,7 @@ def train(args):
         log(f"[6/8] 加载测试数据: {args.test_data}")
         eval_samples_raw = load_json_dataset(args.test_data)
         eval_dataset = SFTDataset(eval_samples_raw, tokenizer, args.max_length, args.prompt_prefix)
-        eval_loader  = DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True, prefetch_factor=2, collate_fn=eval_collate)
+        eval_loader  = DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True, prefetch_factor=2, collate_fn=eval_collate)
         log(f"[6/8] 测试集: {len(eval_samples_raw)} 条, {len(eval_loader)} batches")
     else:
         log("[6/8] 测试集: 未提供，跳过 eval loss")
