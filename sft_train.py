@@ -473,12 +473,13 @@ def train(args):
     log(f"[6/8] DataLoader: {len(train_loader)} batches/epoch (batch_size={args.batch_size})")
 
     eval_loader = None
+    eval_samples_raw = None  # 用于生成式评估
     if args.test_data and os.path.exists(args.test_data):
         log(f"[6/8] 加载测试数据: {args.test_data}")
-        eval_samples = load_json_dataset(args.test_data)
-        eval_dataset = SFTDataset(eval_samples, tokenizer, args.max_length)
+        eval_samples_raw = load_json_dataset(args.test_data)
+        eval_dataset = SFTDataset(eval_samples_raw, tokenizer, args.max_length)
         eval_loader  = DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=0, collate_fn=eval_collate)
-        log(f"[6/8] 测试集: {len(eval_samples)} 条, {len(eval_loader)} batches")
+        log(f"[6/8] 测试集: {len(eval_samples_raw)} 条, {len(eval_loader)} batches")
     else:
         log("[6/8] 测试集: 未提供，跳过 eval loss")
     log(f"[6/8] 数据准备完成 ({time.time()-t0:.1f}s)")
@@ -565,6 +566,13 @@ def train(args):
         else:
             log("  [初始化] step=0: eval_loss=None")
     train_log.append({"global_step": 0, "epoch": 0.0, "train_loss": round(init_train_loss, 6) if init_train_loss is not None else None, "eval_loss": round(init_eval_loss, 6) if init_eval_loss is not None else None, "lr": round(scheduler.get_last_lr()[0], 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
+
+    # ── Initial generation eval（训练开始前）──
+    if eval_samples_raw is not None:
+        run_generation_eval(model, tokenizer, eval_samples_raw, args,
+                            tag="initial", model_path=args.model_path,
+                            output_dir=args.output_dir, device=device,
+                            local_rank=local_rank, n_gpu=n_gpu)
 
     for epoch in range(1, args.epochs + 1):
         if n_gpu > 1:
@@ -663,6 +671,11 @@ def train(args):
                 if global_step % args.save_steps == 0:
                     eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank) if eval_loader else None
                     save_checkpoint(model, tokenizer, args.output_dir, global_step, meta={"step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}, local_rank=local_rank)
+                    if eval_samples_raw is not None:
+                        run_generation_eval(model, tokenizer, eval_samples_raw, args,
+                                            tag=f"step_{global_step}", model_path=args.model_path,
+                                            output_dir=args.output_dir, device=device,
+                                            local_rank=local_rank, n_gpu=n_gpu)
 
         avg_epoch_loss = epoch_loss / len(train_loader)
         elapsed        = time.time() - epoch_start
@@ -674,6 +687,12 @@ def train(args):
         train_log.append({"global_step": global_step, "epoch": epoch, "train_loss": round(avg_epoch_loss, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "elapsed_sec": round(elapsed, 1), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
     save_final(model, tokenizer, args.output_dir, train_log, local_rank=local_rank)
+
+    if eval_samples_raw is not None:
+        run_generation_eval(model, tokenizer, eval_samples_raw, args,
+                            tag="final", model_path=args.model_path,
+                            output_dir=args.output_dir, device=device,
+                            local_rank=local_rank, n_gpu=n_gpu)
 
     final_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank) if eval_loader else None
     result = {"status": "success", "final_train_loss": round(train_log[-1]["train_loss"], 6), "final_eval_loss": round(final_eval_loss, 6) if final_eval_loss is not None else None, "total_steps": global_step, "output_dir": args.output_dir}
@@ -753,6 +772,86 @@ def run_eval(args):
     with open(eval_path, "w", encoding="utf-8") as fh:
         json.dump(results, fh, ensure_ascii=False, indent=2)
     log("[推理] 结果已保存: " + eval_path + "  共 %d 条" % len(results))
+
+
+@torch.no_grad()
+def run_generation_eval(model, tokenizer, test_samples, args, tag,
+                         model_path, output_dir, device, local_rank=0, n_gpu=1):
+    """
+    对测试集做生成式推理（逐样本生成 response），保存 JSON 结果。
+    FSDP 兼容：rank 0 收集完整 state_dict → 创建临时模型 → 推理 → 清理。
+    """
+    if local_rank != 0:
+        return
+
+    log(f"[推理-{tag}] 开始生成式评估 ({len(test_samples)} 条)...")
+
+    # ── 1. 收集完整 state dict ──
+    if isinstance(model, FSDP):
+        from torch.distributed.fsdp.api import StateDictType, FullStateDictConfig
+        _cfg = FullStateDictConfig(rank0_only=True, offload_to_cpu=True)
+        with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, _cfg):
+            _state = model.state_dict()
+        log(f"[推理-{tag}] FSDP state dict 收集完成")
+        # 创建临时模型（rank 0 only）
+        _config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+        _temp = AutoModelForCausalLM.from_config(_config, trust_remote_code=True,
+                                                  torch_dtype=torch.bfloat16)
+        _temp.load_state_dict(_state, strict=False)
+        _temp = _temp.to(device)
+        _temp.eval()
+        _inf_model = _temp
+        log(f"[推理-{tag}] 临时推理模型已创建")
+    else:
+        _inf_model = model
+        _inf_model.eval()
+
+    # ── 2. 逐样本推理 ──
+    _results = []
+    for _i, _sample in enumerate(test_samples):
+        _inst = _sample.get("instruction", "")
+        _extra = _sample.get("input", "")
+        _gt = _sample.get("output", "")
+        _content = _inst + ("\n" + _extra if _extra else "")
+
+        _messages = [{"role": "user", "content": _content}]
+        _prompt = tokenizer.apply_chat_template(_messages, tokenize=False,
+                                                 add_generation_prompt=True)
+        _inputs = tokenizer(_prompt, return_tensors="pt", truncation=True,
+                            max_length=args.max_length).to(device)
+        _out_ids = _inf_model.generate(
+            **_inputs,
+            max_new_tokens=512,
+            do_sample=False,
+            pad_token_id=tokenizer.eos_token_id,
+        )
+        _new_ids = _out_ids[0][_inputs["input_ids"].shape[1]:]
+        _response = tokenizer.decode(_new_ids, skip_special_tokens=True).strip()
+
+        _results.append({
+            "id": _sample.get("id", _i),
+            "question": _content,
+            "gt_output": _gt,
+            "model_output": _response,
+        })
+
+        if (_i + 1) % 10 == 0 or (_i + 1) == len(test_samples):
+            log(f"  [推理-{tag}] {_i+1}/{len(test_samples)}")
+
+    # ── 3. 保存 JSON ──
+    _eval_dir = os.path.join(output_dir, "eval")
+    os.makedirs(_eval_dir, exist_ok=True)
+    _path = os.path.join(_eval_dir, f"eval_results_{tag}.json")
+    with open(_path, "w", encoding="utf-8") as _f:
+        json.dump(_results, _f, ensure_ascii=False, indent=2)
+    log(f"[推理-{tag}] 已保存: {_path} ({len(_results)} 条)")
+
+    # ── 4. 清理 ──
+    if isinstance(model, FSDP):
+        del _temp, _state
+        torch.cuda.empty_cache()
+    else:
+        _inf_model.train()
 
 
 if __name__ == "__main__":
