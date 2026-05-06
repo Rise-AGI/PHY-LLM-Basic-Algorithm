@@ -18,6 +18,7 @@ import json
 import os
 import time
 import traceback
+import warnings
 from datetime import timedelta
 
 
@@ -40,6 +41,24 @@ import torch.distributed as dist
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import ShardingStrategy, MixedPrecision
 from torch.utils.data.distributed import DistributedSampler
+
+# ═══════════════════════════════════════════════════════════════
+# A100 硬件加速 + NCCL 优化（在 NCCL 初始化前设置）
+# ═══════════════════════════════════════════════════════════════
+torch.set_float32_matmul_precision('high')   # A100 TF32 tensor core 加速
+torch.backends.cudnn.benchmark = True        # 固定 shape 输入下卷积/矩阵乘自寻最优算法
+
+# NCCL: 单节点双卡走 NVLink（撤销蓝图可能设置的 P2P_DISABLE=1）
+os.environ.setdefault("NCCL_P2P_LEVEL", "NVL")
+os.environ["NCCL_P2P_DISABLE"] = "0"
+# IB 在单节点场景不需要，保留 DISABLE 以消除 IB timeout 风险
+os.environ.setdefault("NCCL_IB_DISABLE", "1")
+os.environ.setdefault("NCCL_SOCKET_IFNAME", "^docker,lo,virbr")
+
+# FSDP.state_dict_type() 已弃用但新 DCP get_state_dict 不支持 rank0_only，
+# rank0_only 对 72B 模型至关重要（避免每 rank 各持一份完整 CPU state dict）
+warnings.filterwarnings("ignore", category=FutureWarning,
+                        module="torch.distributed.fsdp")
 
 # ── 兼容性补丁 ──
 # pytorch/pytorch:2.5.1 镜像 + transformers>=5.7 的已知问题：
@@ -366,6 +385,13 @@ def train(args):
         if "type" in config.rope_scaling and "rope_type" not in config.rope_scaling:
             config.rope_scaling["rope_type"] = config.rope_scaling["type"]
             log(f"[兼容] rope_scaling: 添加 rope_type={config.rope_scaling['type']} (新旧格式共存)")
+    if hasattr(config, "attn_implementation"):
+        try:
+            import flash_attn  # noqa: F401
+            config.attn_implementation = "flash_attention_2"
+            log(f"[2/8] FlashAttention2 已启用")
+        except ImportError:
+            log(f"[2/8] flash_attn 未安装，使用默认 attention (sdpa)")
     log(f"[2/8] config 加载完成 ({time.time()-t0:.1f}s) | model_type={config.model_type}")
 
     # ── Step 3: 模型权重（72B 模型约 144GB，NFS 读取需 30-60 分钟）──
@@ -421,14 +447,19 @@ def train(args):
         except Exception as e:
             log(f"[4/8] 加载 checkpoint 失败: {e}，从头开始训练")
 
-    if hasattr(model, "gradient_checkpointing_enable"):
-        model.gradient_checkpointing_enable()
-        model.config.use_cache = False
-        log("[4/8] gradient_checkpointing 已开启")
-
     _raw_params = sum(p.numel() for p in model.parameters())
     total_params = _raw_params / 1e9
     log(f"[4/8] 原始参数量: {total_params:.2f}B ({_raw_params} params)")
+
+    # 按参数量自动区分 7B / 72B 配置
+    is_large_model = total_params > 30  # >30B → 大模型模式（显存安全优先）
+    if hasattr(model, "gradient_checkpointing_enable"):
+        if is_large_model:
+            model.gradient_checkpointing_enable()
+            model.config.use_cache = False
+            log("[4/8] gradient_checkpointing 已开启 (大模型模式)")
+        else:
+            log("[4/8] gradient_checkpointing 已跳过 (小模型模式，显存充足)")
 
     # ── Step 5: FSDP/分布式包装 ──
     log(f"[5/8] 分布式包装 ({n_gpu} GPU)...")
@@ -484,7 +515,7 @@ def train(args):
     log(f"[6/8] 训练样本: {len(train_samples)} 条")
     train_dataset = SFTDataset(train_samples, tokenizer, args.max_length, args.prompt_prefix)
     train_sampler = DistributedSampler(train_dataset, rank=local_rank, shuffle=True) if n_gpu > 1 else None
-    train_loader  = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), sampler=train_sampler, num_workers=0, collate_fn=train_collate)
+    train_loader  = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), sampler=train_sampler, num_workers=2, pin_memory=True, prefetch_factor=2, collate_fn=train_collate)
     log(f"[6/8] DataLoader: {len(train_loader)} batches/epoch (batch_size={args.batch_size})")
 
     eval_loader = None
@@ -493,7 +524,7 @@ def train(args):
         log(f"[6/8] 加载测试数据: {args.test_data}")
         eval_samples_raw = load_json_dataset(args.test_data)
         eval_dataset = SFTDataset(eval_samples_raw, tokenizer, args.max_length, args.prompt_prefix)
-        eval_loader  = DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=0, collate_fn=eval_collate)
+        eval_loader  = DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True, prefetch_factor=2, collate_fn=eval_collate)
         log(f"[6/8] 测试集: {len(eval_samples_raw)} 条, {len(eval_loader)} batches")
     else:
         log("[6/8] 测试集: 未提供，跳过 eval loss")
@@ -583,11 +614,13 @@ def train(args):
     train_log.append({"global_step": 0, "epoch": 0.0, "train_loss": round(init_train_loss, 6) if init_train_loss is not None else None, "eval_loss": round(init_eval_loss, 6) if init_eval_loss is not None else None, "lr": round(scheduler.get_last_lr()[0], 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
     # ── Initial generation eval（训练开始前）──
-    if eval_samples_raw is not None:
-        run_generation_eval(model, tokenizer, eval_samples_raw, args,
-                            tag="initial", model_path=args.model_path,
-                            output_dir=args.output_dir, device=device,
-                            local_rank=local_rank, n_gpu=n_gpu)
+    # 跳过：step=0 生成式评估耗时 10+ 分钟且收益有限（step=0 loss 已提供 baseline）。
+    # checkpoint 评估 + final 评估有完整保留，训练全周期的生成质量变化仍可追踪。
+    # if eval_samples_raw is not None:
+    #     run_generation_eval(model, tokenizer, eval_samples_raw, args,
+    #                         tag="initial", model_path=args.model_path,
+    #                         output_dir=args.output_dir, device=device,
+    #                         local_rank=local_rank, n_gpu=n_gpu)
 
     for epoch in range(1, args.epochs + 1):
         if n_gpu > 1:
