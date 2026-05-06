@@ -82,8 +82,19 @@ def parse_args():
     p.add_argument("--retry_seed",    type=int,   default=0,
                     help="DistributedSampler retry seed（shell retry 递增）")
     p.add_argument("--resume_from_checkpoint", type=str, default=None)
+    p.add_argument("--prompt_prefix",     type=str, default=None,
+                   help="统一添加到每条样本 instruction 前面的提示词。支持 {instruction} 占位符。")
+    p.add_argument("--prompt_prefix_b64", type=str, default=None,
+                   help="prompt_prefix 的 base64 编码（shell 安全传递）")
 
-    return p.parse_args()
+    args = p.parse_args()
+
+    # base64 解码 prompt_prefix（shell 安全传递）
+    if args.prompt_prefix_b64:
+        import base64
+        args.prompt_prefix = base64.b64decode(args.prompt_prefix_b64).decode("utf-8")
+
+    return args
 
 
 def load_json_dataset(path: str) -> list:
@@ -128,10 +139,11 @@ def load_json_dataset(path: str) -> list:
 
 
 class SFTDataset(Dataset):
-    def __init__(self, samples, tokenizer, max_length):
-        self.samples    = samples
-        self.tokenizer  = tokenizer
-        self.max_length = max_length
+    def __init__(self, samples, tokenizer, max_length, prompt_prefix=None):
+        self.samples      = samples
+        self.tokenizer    = tokenizer
+        self.max_length   = max_length
+        self.prompt_prefix = prompt_prefix
 
     def __len__(self):
         return len(self.samples)
@@ -141,6 +153,9 @@ class SFTDataset(Dataset):
         instruction = item.get("instruction", "")
         extra_input = item.get("input", "")
         output      = item.get("output", "")
+        # 统一提示词前缀：支持 {instruction} 占位符
+        if self.prompt_prefix:
+            instruction = self.prompt_prefix.replace("{instruction}", instruction)
         user_content = instruction
         if extra_input:
             user_content += f"\n{extra_input}"
@@ -467,7 +482,7 @@ def train(args):
 
     train_samples = load_json_dataset(args.train_data)
     log(f"[6/8] 训练样本: {len(train_samples)} 条")
-    train_dataset = SFTDataset(train_samples, tokenizer, args.max_length)
+    train_dataset = SFTDataset(train_samples, tokenizer, args.max_length, args.prompt_prefix)
     train_sampler = DistributedSampler(train_dataset, rank=local_rank, shuffle=True) if n_gpu > 1 else None
     train_loader  = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), sampler=train_sampler, num_workers=0, collate_fn=train_collate)
     log(f"[6/8] DataLoader: {len(train_loader)} batches/epoch (batch_size={args.batch_size})")
@@ -477,7 +492,7 @@ def train(args):
     if args.test_data and os.path.exists(args.test_data):
         log(f"[6/8] 加载测试数据: {args.test_data}")
         eval_samples_raw = load_json_dataset(args.test_data)
-        eval_dataset = SFTDataset(eval_samples_raw, tokenizer, args.max_length)
+        eval_dataset = SFTDataset(eval_samples_raw, tokenizer, args.max_length, args.prompt_prefix)
         eval_loader  = DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=0, collate_fn=eval_collate)
         log(f"[6/8] 测试集: {len(eval_samples_raw)} 条, {len(eval_loader)} batches")
     else:
@@ -738,6 +753,8 @@ def run_eval(args):
         extra       = sample.get("input", "")
         gt_out      = sample.get("output", "")
 
+        if args.prompt_prefix:
+            instruction = args.prompt_prefix.replace("{instruction}", instruction)
         user_content = instruction + ("\n" + extra if extra else "")
 
         # 通用：使用 apply_chat_template 自动适配所有模型
@@ -812,6 +829,8 @@ def run_generation_eval(model, tokenizer, test_samples, args, tag,
         _inst = _sample.get("instruction", "")
         _extra = _sample.get("input", "")
         _gt = _sample.get("output", "")
+        if args.prompt_prefix:
+            _inst = args.prompt_prefix.replace("{instruction}", _inst)
         _content = _inst + ("\n" + _extra if _extra else "")
 
         _messages = [{"role": "user", "content": _content}]
