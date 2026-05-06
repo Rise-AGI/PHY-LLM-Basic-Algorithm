@@ -796,21 +796,34 @@ def run_generation_eval(model, tokenizer, test_samples, args, tag,
                          model_path, output_dir, device, local_rank=0, n_gpu=1):
     """
     对测试集做生成式推理（逐样本生成 response），保存 JSON 结果。
-    FSDP 兼容：rank 0 收集完整 state_dict → 创建临时模型 → 推理 → 清理。
+    FSDP 兼容：所有 rank 参与 state_dict 收集（NCCL collective），
+    rank 0 单独推理，其他 rank 在 barrier 等待，完成后同步返回训练循环。
     """
-    if local_rank != 0:
-        return
-
-    log(f"[推理-{tag}] 开始生成式评估 ({len(test_samples)} 条)...")
-
-    # ── 1. 收集完整 state dict ──
+    # ── 1. 收集完整 state dict（ALL ranks 必须参与 NCCL collective）──
+    _state = None
     if isinstance(model, FSDP):
         from torch.distributed.fsdp.api import StateDictType, FullStateDictConfig
         _cfg = FullStateDictConfig(rank0_only=True, offload_to_cpu=True)
         with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, _cfg):
             _state = model.state_dict()
-        log(f"[推理-{tag}] FSDP state dict 收集完成")
-        # 创建临时模型（rank 0 only）
+        if local_rank == 0:
+            log(f"[推理-{tag}] FSDP state dict 收集完成")
+
+    # barrier: 确保 state dict 的所有 NCCL 操作完成后 rank 0 再单独推理
+    if n_gpu > 1:
+        dist.barrier()
+
+    # 非 rank 0 在此等待 rank 0 完成推理，防止其他 rank 进入训练循环
+    # 发送需要 rank 0 参与的 NCCL collective（FSDP forward allgather）
+    if local_rank != 0:
+        if n_gpu > 1:
+            dist.barrier()
+        return
+
+    log(f"[推理-{tag}] 开始生成式评估 ({len(test_samples)} 条)...")
+
+    # ── 2. 创建临时推理模型（rank 0 only）──
+    if isinstance(model, FSDP):
         _config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         _temp = AutoModelForCausalLM.from_config(_config, trust_remote_code=True,
                                                   torch_dtype=torch.bfloat16)
@@ -823,7 +836,7 @@ def run_generation_eval(model, tokenizer, test_samples, args, tag,
         _inf_model = model
         _inf_model.eval()
 
-    # ── 2. 逐样本推理 ──
+    # ── 3. 逐样本推理 ──
     _results = []
     for _i, _sample in enumerate(test_samples):
         _inst = _sample.get("instruction", "")
@@ -857,7 +870,7 @@ def run_generation_eval(model, tokenizer, test_samples, args, tag,
         if (_i + 1) % 10 == 0 or (_i + 1) == len(test_samples):
             log(f"  [推理-{tag}] {_i+1}/{len(test_samples)}")
 
-    # ── 3. 保存 JSON ──
+    # ── 4. 保存 JSON ──
     _eval_dir = os.path.join(output_dir, "eval")
     os.makedirs(_eval_dir, exist_ok=True)
     _path = os.path.join(_eval_dir, f"eval_results_{tag}.json")
@@ -865,12 +878,16 @@ def run_generation_eval(model, tokenizer, test_samples, args, tag,
         json.dump(_results, _f, ensure_ascii=False, indent=2)
     log(f"[推理-{tag}] 已保存: {_path} ({len(_results)} 条)")
 
-    # ── 4. 清理 ──
+    # ── 5. 清理 ──
     if isinstance(model, FSDP):
         del _temp, _state
         torch.cuda.empty_cache()
     else:
         _inf_model.train()
+
+    # barrier: 通知其他 rank 推理完成，可以继续训练循环
+    if n_gpu > 1:
+        dist.barrier()
 
 
 if __name__ == "__main__":
