@@ -115,6 +115,8 @@ def parse_args():
                     help="训练模式：训练集路径")
     p.add_argument("--test_data",     type=str, default=None,
                     help="训练或评估模式：测试集路径（评估/验证）")
+    p.add_argument("--test_path",     type=str, default=None,
+                    help="评估模式：测试集路径（与 --test_data 等价，用于兼容蓝图）")
     p.add_argument("--output_dir",    type=str, default="/tmp/sft_output",
                     help="输出目录")
 
