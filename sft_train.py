@@ -490,15 +490,13 @@ def train(args):
     total_params = _raw_params / 1e9
     log(f"[4/8] 原始参数量: {total_params:.2f}B ({_raw_params} params)")
 
-    # 按参数量自动区分 7B / 72B 配置
-    is_large_model = total_params > 30  # >30B → 大模型模式（显存安全优先）
+    # 始终开启 gradient checkpointing（用计算换显存）
     if hasattr(model, "gradient_checkpointing_enable"):
-        if is_large_model:
-            model.gradient_checkpointing_enable()
-            model.config.use_cache = False
-            log("[4/8] gradient_checkpointing 已开启 (大模型模式)")
-        else:
-            log("[4/8] gradient_checkpointing 已跳过 (小模型模式，显存充足)")
+        model.gradient_checkpointing_enable()
+        model.config.use_cache = False
+        log("[4/8] gradient_checkpointing 已开启")
+    else:
+        log("[4/8] gradient_checkpointing 不可用（模型不支持）")
 
     # ── Step 5: FSDP/分布式包装 ──
     log(f"[5/8] 分布式包装 ({n_gpu} GPU)...")
