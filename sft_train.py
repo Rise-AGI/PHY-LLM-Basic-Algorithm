@@ -26,8 +26,40 @@ def log(msg: str) -> None:
     """带时间戳打印，与 shell _log() 格式一致。flush=True 确保长时间操作中日志立即可见。"""
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
 
-
 import re as _re
+
+import math as _math
+import os as _os
+
+def _write_metric(name: str, value: float, step: int, step_domain: str,
+                  unit: str = "loss", labels: dict = None) -> None:
+    """Write a metric point to Magnus Metrics Protocol ($MAGNUS_METRICS_DIR).
+
+    Fail-open: never crashes training if metrics dir is missing or unwritable.
+    """
+    _metrics_dir = _os.environ.get("MAGNUS_METRICS_DIR")
+    if not _metrics_dir:
+        return
+    if not _math.isfinite(value):
+        return
+    try:
+        _rank = _os.environ.get("LOCAL_RANK", "0")
+        _path = _os.path.join(_metrics_dir, f"rank-{_rank}.jsonl")
+        _point = {
+            "name": name,
+            "kind": "gauge",
+            "value": float(value),
+            "time_unix_ms": int(time.time() * 1000),
+            "step": step,
+            "step_domain": step_domain,
+            "unit": unit,
+        }
+        if labels:
+            _point["labels"] = labels
+        with open(_path, "a") as _f:
+            _f.write(json.dumps(_point, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
 
 def parse_answer_solution(text: str):
     """
@@ -369,7 +401,7 @@ def _load_safetensors_state(ckpt_path):
 
 
 @torch.no_grad()
-def evaluate(model, dataloader, device, n_gpu=1, local_rank=0):
+def evaluate(model, dataloader, device, n_gpu=1, local_rank=0, global_step=None):
     model.eval()
     total_loss, total_steps = 0.0, 0
     for batch in dataloader:
@@ -389,7 +421,10 @@ def evaluate(model, dataloader, device, n_gpu=1, local_rank=0):
         total_loss = loss_t.item()
         total_steps = int(cnt_t.item())
     model.train()
-    return total_loss / max(total_steps, 1)
+    avg_loss = total_loss / max(total_steps, 1)
+    if local_rank == 0 and global_step is not None:
+        _write_metric("eval.loss", avg_loss, global_step, "eval")
+    return avg_loss
 
 
 def train(args):
