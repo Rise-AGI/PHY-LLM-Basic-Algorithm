@@ -651,7 +651,7 @@ def train(args):
     if local_rank == 0:
         log("  [初始化] 计算 step=0 初始 loss...")
     if eval_loader:
-        init_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank)
+        init_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=0)
     if len(train_loader) > 0:
         try:
             first_batch = next(iter(train_loader))
@@ -692,11 +692,12 @@ def train(args):
     for epoch in range(1, args.epochs + 1):
         if n_gpu > 1:
             train_sampler.set_epoch(epoch + retry_seed)
-        epoch_loss  = 0.0
-        nan_count   = 0
-        _skip_count = 0
-        epoch_start = time.time()
-        slow_count  = 0
+        epoch_loss   = 0.0
+        nan_count    = 0
+        _skip_count  = 0
+        epoch_start  = time.time()
+        slow_count   = 0
+        _metric_step = 0
         torch.cuda.reset_peak_memory_stats()
         log(f"[Epoch {epoch}/{args.epochs}] 开始...")
 
@@ -757,6 +758,11 @@ def train(args):
 
             (loss / accum).backward()
             epoch_loss += loss.item()
+
+            # ── Magnus 指标: train.loss（每步）──
+            _metric_step += 1
+            if local_rank == 0:
+                _write_metric("train.loss", loss.item(), _metric_step, "train")
 
             # ── 诊断: 检测慢步 ──
             step_elapsed = time.time() - step_start
