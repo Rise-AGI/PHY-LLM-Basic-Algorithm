@@ -36,6 +36,10 @@ def _write_metric(name: str, value: float, step: int, step_domain: str,
     """Write a metric point to Magnus Metrics Protocol ($MAGNUS_METRICS_DIR).
 
     Fail-open: never crashes training if metrics dir is missing or unwritable.
+
+    每条指标自动附带 "job" label（MAGNUS_JOB_ID 前 8 位），
+    不同 Job 的 train.loss / eval.loss 在 Magnus 面板上显示为不同折线，
+    与 system.gpu.utilization 通过 "device" label 区分类似。
     """
     _metrics_dir = _os.environ.get("MAGNUS_METRICS_DIR")
     if not _metrics_dir:
@@ -45,6 +49,11 @@ def _write_metric(name: str, value: float, step: int, step_domain: str,
     try:
         _rank = _os.environ.get("LOCAL_RANK", "0")
         _path = _os.path.join(_metrics_dir, f"rank-{_rank}.jsonl")
+        _job_id = _os.environ.get("MAGNUS_JOB_ID", "")
+        _job_label = _job_id[:8] if _job_id else "local"
+        _merged_labels = {"job": _job_label}
+        if labels:
+            _merged_labels.update(labels)
         _point = {
             "name": name,
             "kind": "gauge",
@@ -53,9 +62,8 @@ def _write_metric(name: str, value: float, step: int, step_domain: str,
             "step": step,
             "step_domain": step_domain,
             "unit": unit,
+            "labels": _merged_labels,
         }
-        if labels:
-            _point["labels"] = labels
         with open(_path, "a") as _f:
             _f.write(json.dumps(_point, ensure_ascii=False) + "\n")
     except Exception:
@@ -790,7 +798,7 @@ def train(args):
 
                 # ── 自动存档（仅 loss 评估 + 保存权重，不做生成式推理）──
                 if global_step % args.save_steps == 0:
-                    eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank) if eval_loader else None
+                    eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=global_step) if eval_loader else None
                     save_checkpoint(model, tokenizer, args.output_dir, global_step, meta={"step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}, local_rank=local_rank)
                     if local_rank == 0:
                         _e_str = f" | eval_loss={eval_loss:.4f}" if eval_loss is not None else ""
@@ -799,7 +807,7 @@ def train(args):
 
         avg_epoch_loss = epoch_loss / len(train_loader)
         elapsed        = time.time() - epoch_start
-        eval_loss      = evaluate(model, eval_loader, device, n_gpu, local_rank) if eval_loader else None
+        eval_loss      = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=global_step) if eval_loader else None
         eval_str = f" | Eval Loss: {eval_loss:.4f}" if eval_loss is not None else ""
         log(f"[Epoch {epoch}/{args.epochs}] Train Loss: {avg_epoch_loss:.4f}{eval_str} | 耗时: {elapsed:.0f}s ({elapsed/60:.1f}min)")
         if _skip_count > 0:
@@ -814,7 +822,7 @@ def train(args):
                             output_dir=args.output_dir, device=device,
                             local_rank=local_rank, n_gpu=n_gpu)
 
-    final_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank) if eval_loader else None
+    final_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=global_step) if eval_loader else None
     result = {"status": "success", "final_train_loss": round(train_log[-1]["train_loss"], 6), "final_eval_loss": round(final_eval_loss, 6) if final_eval_loss is not None else None, "total_steps": global_step, "output_dir": args.output_dir}
     log(f"[结果] {json.dumps(result, ensure_ascii=False)}")
     return result
