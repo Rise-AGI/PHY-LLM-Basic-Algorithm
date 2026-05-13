@@ -43,11 +43,13 @@ def _write_metric(name: str, value: float, step: int, step_domain: str,
     """
     _metrics_dir = _os.environ.get("MAGNUS_METRICS_DIR")
     if not _metrics_dir:
-        return
+        # fallback: Magnus 未设置时使用默认路径
+        _metrics_dir = "/magnus/workspace/metrics"
     if not _math.isfinite(value):
         return
     try:
         _rank = _os.environ.get("LOCAL_RANK", "0")
+        _os.makedirs(_metrics_dir, exist_ok=True)
         _path = _os.path.join(_metrics_dir, f"rank-{_rank}.jsonl")
         _job_id = _os.environ.get("MAGNUS_JOB_ID", "")
         _job_label = _job_id[:8] if _job_id else "local"
@@ -68,6 +70,70 @@ def _write_metric(name: str, value: float, step: int, step_domain: str,
             _f.write(json.dumps(_point, ensure_ascii=False) + "\n")
     except Exception:
         pass
+
+
+# ═══════════════════════════════════════════════════════════════
+# 性能诊断工具
+# ═══════════════════════════════════════════════════════════════
+
+class CUDATimer:
+    """CUDA Event-based timer for precise GPU phase timing."""
+    def __init__(self):
+        self.events = {}
+    def start(self, name):
+        if not torch.cuda.is_available():
+            return
+        e = torch.cuda.Event(enable_timing=True)
+        e.record()
+        self.events[name] = e
+    def elapsed_ms(self, a, b):
+        if a not in self.events or b not in self.events:
+            return 0.0
+        self.events[a].synchronize()
+        self.events[b].synchronize()
+        return self.events[a].elapsed_time(self.events[b])
+
+
+def get_memory_breakdown(device_id=0):
+    """返回 GPU 显存明细 (GB / %).
+
+    Returns dict: allocated_gb, reserved_gb, peak_allocated_gb,
+                  peak_reserved_gb, fragmentation_pct
+    """
+    if not torch.cuda.is_available():
+        return {}
+    allocated = torch.cuda.memory_allocated(device_id)
+    reserved = torch.cuda.memory_reserved(device_id)
+    peak_alloc = torch.cuda.max_memory_allocated(device_id)
+    peak_reserved = torch.cuda.max_memory_reserved(device_id)
+    return {
+        "allocated_gb": allocated / 1e9,
+        "reserved_gb": reserved / 1e9,
+        "peak_allocated_gb": peak_alloc / 1e9,
+        "peak_reserved_gb": peak_reserved / 1e9,
+        "fragmentation_pct": ((reserved - allocated) / reserved * 100) if reserved > 0 else 0.0,
+    }
+
+
+def estimate_memory_components(model, n_gpu, is_bf16=True):
+    """估测显存构成（理论值，不依赖 CUDA profiling）。
+
+    Returns dict: estimated_params_gb, estimated_optimizer_gb,
+                  estimated_gradients_gb, estimated_total_gb
+    """
+    total = sum(p.numel() for p in model.parameters())
+    bpp = 2 if is_bf16 else 4  # bytes per param
+    param_gb = total * bpp / 1e9
+    # AdamW: fp32 master copy + momentum + variance = 3 × 4 bytes
+    optim_gb = total * 12 / 1e9
+    grad_gb = total * bpp / 1e9
+    return {
+        "estimated_params_gb": param_gb,
+        "estimated_optimizer_gb": optim_gb,
+        "estimated_gradients_gb": grad_gb,
+        "estimated_total_gb": param_gb + optim_gb + grad_gb,
+    }
+
 
 def parse_answer_solution(text: str):
     """
@@ -107,11 +173,13 @@ from torch.optim import AdamW
 import torch.distributed as dist
 try:
     from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-    from torch.distributed.fsdp import ShardingStrategy, MixedPrecision
+    from torch.distributed.fsdp import ShardingStrategy, MixedPrecision, CPUOffload, BackwardPrefetch
 except ImportError:
     FSDP = None
     ShardingStrategy = None
     MixedPrecision = None
+    CPUOffload = None
+    BackwardPrefetch = None
 from torch.utils.data.distributed import DistributedSampler
 
 # ═══════════════════════════════════════════════════════════════
@@ -129,6 +197,10 @@ os.environ["NCCL_P2P_DISABLE"] = "0"
 # IB 在单节点场景不需要，保留 DISABLE 以消除 IB timeout 风险
 os.environ.setdefault("NCCL_IB_DISABLE", "1")
 os.environ.setdefault("NCCL_SOCKET_IFNAME", "^docker,lo,virbr")
+# NCCL 通讯优化：Ring 算法 + 多通道带宽利用
+os.environ.setdefault("NCCL_ALGO", "Ring")
+os.environ.setdefault("NCCL_PROTO", "Simple")
+os.environ.setdefault("NCCL_MIN_NCHANNELS", "4")
 
 # FSDP.state_dict_type() 已弃用但新 DCP get_state_dict 不支持 rank0_only，
 # rank0_only 对 72B 模型至关重要（避免每 rank 各持一份完整 CPU state dict）
@@ -179,6 +251,17 @@ def parse_args():
                     help="checkpoint 保存间隔（global_step 倍数）")
     p.add_argument("--retry_seed",    type=int,   default=0,
                     help="DistributedSampler retry seed（shell retry 递增）")
+    p.add_argument("--cpu_offload", action="store_true", default=False,
+                    help="FSDP CPU offload: 优化器状态移至 CPU，大幅降低显存")
+    p.add_argument("--backward_prefetch", type=str, default="pre",
+                    choices=["pre", "post"],
+                    help="FSDP backward prefetch: post 更省显存但略慢")
+    p.add_argument("--fused_optimizer", action="store_true", default=True,
+                    help="使用 fused AdamW（CUDA 融合内核加速）")
+    p.add_argument("--perf_metric_steps", type=int, default=50,
+                    help="性能指标记录间隔（global_step 倍数），0=禁用")
+    p.add_argument("--memory_metric_steps", type=int, default=20,
+                    help="显存指标记录间隔（global_step 倍数），0=禁用")
     p.add_argument("--resume_from_checkpoint", type=str, default=None)
     p.add_argument("--prompt_prefix",     type=str, default=None,
                    help="统一添加到每条样本 instruction 前面的提示词。支持 {instruction} 占位符。")
@@ -564,6 +647,10 @@ def train(args):
         else:
             _policy = _partial(transformer_auto_wrap_policy, transformer_layer_cls={_layer_cls})
         # 使用 auto_wrap_policy 逐层分片，避免 FSDP init 时将完整模型移至单卡
+        _bwd = BackwardPrefetch.BACKWARD_POST if args.backward_prefetch == "post" else BackwardPrefetch.BACKWARD_PRE
+        _cpu_offload = CPUOffload(offload_params=False) if args.cpu_offload else None
+        if _cpu_offload:
+            log(f"[5/8] CPU offload: 优化器状态将移至 CPU RAM")
         model = FSDP(
             model,
             sharding_strategy=ShardingStrategy.FULL_SHARD,
@@ -576,6 +663,8 @@ def train(args):
             device_id=local_rank,
             limit_all_gathers=True,
             forward_prefetch=True,
+            backward_prefetch=_bwd,
+            cpu_offload=_cpu_offload,
         )
         log(f"[5/8] FSDP FULL_SHARD 完成 ({time.time()-t0:.1f}s)")
     else:
@@ -597,7 +686,7 @@ def train(args):
     log(f"[6/8] 训练样本: {len(train_samples)} 条")
     train_dataset = SFTDataset(train_samples, tokenizer, args.max_length, args.prompt_prefix)
     train_sampler = DistributedSampler(train_dataset, rank=local_rank, shuffle=True) if n_gpu > 1 else None
-    train_loader  = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), sampler=train_sampler, num_workers=args.num_workers, pin_memory=True, prefetch_factor=2, collate_fn=train_collate)
+    train_loader  = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), sampler=train_sampler, num_workers=args.num_workers, pin_memory=True, prefetch_factor=4, persistent_workers=(args.num_workers > 0), collate_fn=train_collate)
     log(f"[6/8] DataLoader: {len(train_loader)} batches/epoch (batch_size={args.batch_size})")
 
     eval_loader = None
@@ -606,7 +695,7 @@ def train(args):
         log(f"[6/8] 加载测试数据: {args.test_data}")
         eval_samples_raw = load_json_dataset(args.test_data)
         eval_dataset = SFTDataset(eval_samples_raw, tokenizer, args.max_length, args.prompt_prefix)
-        eval_loader  = DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True, prefetch_factor=2, collate_fn=eval_collate)
+        eval_loader  = DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True, prefetch_factor=4, persistent_workers=(args.num_workers > 0), collate_fn=eval_collate)
         log(f"[6/8] 测试集: {len(eval_samples_raw)} 条, {len(eval_loader)} batches")
     else:
         log("[6/8] 测试集: 未提供，跳过 eval loss")
@@ -614,8 +703,9 @@ def train(args):
 
     # ── Step 7: Optimizer & Scheduler ──
     t0 = time.time()
-    log(f"[7/8] 创建 optimizer (AdamW, lr={args.learning_rate})...")
-    optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+    _fused = args.fused_optimizer and torch.cuda.is_available()
+    log(f"[7/8] 创建 optimizer (AdamW{' fused' if _fused else ''}, lr={args.learning_rate})...")
+    optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, fused=_fused)
     accum         = args.gradient_accumulation_steps
     steps_per_epoch = (len(train_loader) + accum - 1) // accum
     total_steps   = steps_per_epoch * args.epochs
@@ -697,6 +787,17 @@ def train(args):
 
     # 训练前生成式评估已独立为 eval_baseline.py（按需手动执行）
 
+    # ── 性能诊断: 初始化计时器和显存估测 ──
+    timer = CUDATimer()
+    if local_rank == 0 and args.perf_metric_steps > 0:
+        mem_est = estimate_memory_components(model, max(n_gpu, 1))
+        log(f"  [显存估测] params={mem_est['estimated_params_gb']:.1f}GB"
+            f" | optimizer={mem_est['estimated_optimizer_gb']:.1f}GB"
+            f" | gradients={mem_est['estimated_gradients_gb']:.1f}GB"
+            f" | total={mem_est['estimated_total_gb']:.1f}GB (sharded across {max(n_gpu,1)} GPU)")
+        for key, val in mem_est.items():
+            _write_metric(f"memory.{key}", val, 0, "train", unit="GB")
+
     for epoch in range(1, args.epochs + 1):
         if n_gpu > 1:
             train_sampler.set_epoch(epoch + retry_seed)
@@ -712,8 +813,8 @@ def train(args):
         for step, batch in enumerate(train_loader, 1):
             step_start = time.time()
 
-            # ── 诊断: 每 10 步打印一次步进信息 ──
-            if local_rank == 0 and step % 10 == 1:
+            # ── 诊断: 每 50 步打印一次步进信息 ──
+            if local_rank == 0 and step % 50 == 1:
                 log(f"  [诊断] >>> Step {step}/{len(train_loader)} (global {global_step+1}) 开始")
 
             input_ids = batch["input_ids"].to(device)
@@ -722,7 +823,7 @@ def train(args):
             seq_len   = input_ids.shape[-1]
 
             # ── 诊断: 定期记录序列长度和显存 ──
-            if local_rank == 0 and step % 40 == 1:
+            if local_rank == 0 and step % 100 == 1:
                 cur_mem = torch.cuda.memory_allocated() / 1024**3
                 peak_mem = torch.cuda.max_memory_allocated() / 1024**3
                 log(f"  [诊断]   seq_len={seq_len}, GPU mem={cur_mem:.1f}GB (peak={peak_mem:.1f}GB)")
@@ -730,6 +831,7 @@ def train(args):
             # ── 前向传播（含异常恢复）──
             _skip_batch = False
             try:
+                timer.start("fwd")
                 outputs = model(input_ids=input_ids, attention_mask=attn_mask)
                 # float32 计算 loss，避免 bfloat16 × 15 万词表数值下溢出
                 logits = outputs.logits
@@ -740,6 +842,7 @@ def train(args):
                     shift_labels.view(-1),
                     ignore_index=-100,
                 )
+                timer.start("fwd_done")
             except Exception as e:
                 _skip_batch = True
                 _skip_count += 1
@@ -764,7 +867,9 @@ def train(args):
                     loss,
                 )
 
+            timer.start("bwd")
             (loss / accum).backward()
+            timer.start("bwd_done")
             epoch_loss += loss.item()
 
             # ── Magnus 指标: train.loss（每步）──
@@ -774,7 +879,7 @@ def train(args):
 
             # ── 诊断: 检测慢步 ──
             step_elapsed = time.time() - step_start
-            if step_elapsed > 30:
+            if step_elapsed > 20:
                 slow_count += 1
                 log(f"  [SLOW] Step {step} 耗时 {step_elapsed:.1f}s | seq_len={seq_len} | "
                     f"GPU={torch.cuda.memory_allocated()/1024**3:.1f}GB "
@@ -784,11 +889,39 @@ def train(args):
 
             is_update = (step % accum == 0) or (step == len(train_loader))
             if is_update:
+                timer.start("opt")
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0) if n_gpu <= 1 else model.clip_grad_norm_(1.0)
                 optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
+                timer.start("opt_done")
                 global_step += 1
+
+                # ── 性能指标: 显存明细（所有 rank 写，按 GPU 分选）──
+                if args.memory_metric_steps > 0 and global_step % args.memory_metric_steps == 0:
+                    mem = get_memory_breakdown(local_rank)
+                    if mem:
+                        for key, val in mem.items():
+                            _write_metric(f"memory.{key}", val, global_step, "train",
+                                          unit="GB" if "gb" in key else "%",
+                                          labels={"rank": str(local_rank)})
+
+                # ── 性能指标: 时间分解（仅 rank 0）──
+                if args.perf_metric_steps > 0 and local_rank == 0 and global_step % args.perf_metric_steps == 0:
+                    fwd_ms = timer.elapsed_ms("fwd", "fwd_done")
+                    bwd_ms = timer.elapsed_ms("bwd", "bwd_done")
+                    opt_ms = timer.elapsed_ms("opt", "opt_done")
+                    total_ms = step_elapsed * 1000
+                    comm_ms = max(0, total_ms - fwd_ms - bwd_ms - opt_ms)
+                    _write_metric("perf.forward_ms", fwd_ms, global_step, "train", unit="ms")
+                    _write_metric("perf.backward_ms", bwd_ms, global_step, "train", unit="ms")
+                    _write_metric("perf.optimizer_ms", opt_ms, global_step, "train", unit="ms")
+                    _write_metric("perf.comm_ms", comm_ms, global_step, "train", unit="ms")
+                    _write_metric("perf.total_ms", total_ms, global_step, "train", unit="ms")
+                    eff_tokens = args.batch_size * seq_len * max(n_gpu, 1) * accum
+                    if total_ms > 0:
+                        _write_metric("perf.tokens_per_sec", eff_tokens / (total_ms / 1000),
+                                      global_step, "train", unit="tokens/s")
 
                 if global_step % args.logging_steps == 0:
                     avg_loss = epoch_loss / step

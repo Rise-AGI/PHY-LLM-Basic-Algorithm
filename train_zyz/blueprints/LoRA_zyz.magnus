@@ -1262,6 +1262,12 @@ print(json.dumps({{
         "export NCCL_P2P_LEVEL=NVL\n"
         "export NCCL_IB_DISABLE=1\n"
         "export NCCL_SOCKET_IFNAME=^docker,lo,virbr\n"
+        "# NCCL 通讯优化：Ring 算法 + 多通道带宽利用\n"
+        "export NCCL_ALGO=Ring\n"
+        "export NCCL_PROTO=Simple\n"
+        "export NCCL_MIN_NCHANNELS=4\n"
+        "export NCCL_NSOCKS_PERTHREAD=4\n"
+        "export NCCL_SOCKET_NTHREADS=2\n"
         "# 随机端口避免 EADDRINUSE 冲突\n"
         "export MASTER_PORT=$((RANDOM % 20000 + 30000))\n"
         "export RDZV_PORT=$MASTER_PORT\n\n"
@@ -1308,7 +1314,14 @@ print(json.dumps({{
         f'    _log "[FATAL] 无法创建输出目录 {output_dir}"\n'
         f'    exit 1\n'
         f'}}\n'
-        f'_log "输出目录可用: {output_dir}"\n\n'
+        f'_log "输出目录可用: {output_dir}"\n'
+        f'# Magnus Metrics Protocol: 确保指标目录存在（平台自动设置 MAGNUS_METRICS_DIR 环境变量）\n'
+        f'if [ -n "$MAGNUS_METRICS_DIR" ]; then\n'
+        f'    mkdir -p "$MAGNUS_METRICS_DIR" && _log "Metrics dir: $MAGNUS_METRICS_DIR"\n'
+        f'else\n'
+        f'    export MAGNUS_METRICS_DIR=/magnus/workspace/metrics\n'
+        f'    mkdir -p "$MAGNUS_METRICS_DIR" && _log "Metrics dir (fallback): $MAGNUS_METRICS_DIR"\n'
+        f'fi\n\n'
 
         f'_log "=== [1/5] 环境信息 ==="\n'
         "nvidia-smi 2>&1 || echo \"[环境] nvidia-smi 不可用（无 NVIDIA runtime 或 GPU 未挂载）\"\n"

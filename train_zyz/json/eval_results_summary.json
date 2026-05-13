@@ -1,0 +1,13 @@
+{
+  "total": 101,
+  "correct": 16,
+  "wrong": 85,
+  "accuracy": 0.1584,
+  "accuracy_pct": "15.8%",
+  "avg_process_score": 51.73,
+  "min_score": 20,
+  "max_score": 100,
+  "json_parse_ok": 97,
+  "json_parse_fail": 4,
+  "graded_at": "2026-05-11T21:02:48.192322"
+}

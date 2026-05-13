@@ -14,7 +14,7 @@ from config import auto_source, notify_exe, SYSTEM_ENTRY_COMMAND, wait_for_job, 
 def main():
     parser = argparse.ArgumentParser(description="download model from ModelScope to Magnus persistent storage")
 
-    parser.add_argument("--model",  default="deepseek-ai/deepseek-math-7b-base",
+    parser.add_argument("--model",  default="Qwen/Qwen2.5-32B-Instruct",
                         help="ModelScope model ID")
     parser.add_argument("--address", default=MAGNUS_ADDRESS,
                         help="Magnus server address (default: %(default)s)")

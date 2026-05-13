@@ -35,7 +35,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 # ── 模式 + 模型路径（放在最前面，输出目录/任务名自动从此推导）──
 MODE        = "sft"          # "sft" = 全参微调, "lora" = LoRA/QLoRA
-MODEL_PATH  = "/data/magnus/models/Qwen2.5-Math-7B-Instruct"
+MODEL_PATH  = "/data/magnus/models/Qwen2.5-72B-Instruct"
 
 # ── 以下参数通常无需手动修改（留空则自动推导） ───────────────
 # 蓝图文件（留空=根据 MODE 自动选择 .magnus）
@@ -61,12 +61,12 @@ GRAD_ACCUM      = 8
 # 学习率
 LEARNING_RATE   = 2e-5
 # 最大序列长度
-MAX_LENGTH      = 1024
+MAX_LENGTH      = 4096
 # DataLoader worker 进程数（0=主进程加载，2-4 可加速）
 NUM_WORKERS     = 4
 # -- 硬件资源与任务调度 --
 # GPU数量
-GPU_COUNT       = 2
+GPU_COUNT       = 4
 # GPU型号  # "a100"（英伟达A100显卡） 或 "cpu"（仅CPU）
 GPU_TYPE        = "a100"        
 # CPU核心数
@@ -92,6 +92,12 @@ PROMPT_PREFIX   = (
     '\n'
     '{instruction}'
 )
+
+# -- 显存 / 通讯优化 --
+# CPU Offload  # False = 优化器状态保留在 GPU, True = 移到 CPU RAM (节省显存)
+CPU_OFFLOAD     = True
+# FSDP Backward Prefetch  # "pre" = 提前预取(速度优先), "post" = 延迟预取(显存优先)
+BWD_PREFETCH    = "post"
 
 # -- GitHub 同步 --
 GITHUB_REPO_PATH = os.path.join(HERE, "..", "PHY-LLM-Basic-Algorithm")
@@ -189,6 +195,10 @@ def _build_bp_args(resolved_output_dir: str) -> dict:
         args["prompt_prefix_b64"] = base64.b64encode(
             PROMPT_PREFIX.encode("utf-8")
         ).decode("ascii")
+    if CPU_OFFLOAD:
+        args["cpu_offload"] = True
+    if BWD_PREFETCH != "pre":
+        args["backward_prefetch"] = BWD_PREFETCH
     return args
 
 

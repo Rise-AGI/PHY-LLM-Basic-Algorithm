@@ -30,23 +30,15 @@
 | `LoRA_zyz.magnus` | **LoRA/QLoRA 蓝图** | 低资源微调 72B，支持 4-bit/8-bit/bf16 |
 | `LoRA.md` | **LoRA 笔记** | LoRA 参数说明、量化策略对比、排错 |
 | `OpenFundus_SFT.magnus` | 旧版蓝图 | 仅支持 Qwen 模型，硬编码 ChatML 模板 |
-| `OpenFundus_SFT_zyz.magnus` | **新版蓝图** | 通用版，兼容任何 ModelScope/HF 模型 |
-| `monitor.py` | 监控模块 | 轮询任务状态 + 日志 + `notify_exe()` + 自动保存到 `data1/` |
-| `monitor_gui.py` | **Web 监控程序** | 内嵌 HTTP 服务器 + 浏览器界面 + 三层轮询 + `@{}` 元数据 |
-| `warmup_packages.py` | 包预热 | pip 依赖下载到 `/data/$USER/pip-cache/wheels/` + 自动排除 torch/nvidia |
-| `warmup_test.py` | 持久存储测试 | 提交两个 B2 作业验证 `/data/` NFS 跨容器持久 |
-| `download_model_auto.py` | 模型下载 | 从 ModelScope 下载模型到集群持久存储 |
+| `OpenFundus_SFT_zyz.magnus` | **新版蓝图** | 通用版，兼容任何 ModelScope/HF 模型；支持 CPU Offload、NCCL 优化 |
+| `config.py` | **共享配置模块** | 加载 secret.json、Magnus 连接、`wait_for_job()`、`record_storage()`、`notify_exe()` |
+| `sft_train.py` | **独立训练/评估脚本** | FSDP FULL_SHARD + CPU Offload + NCCL 优化 + CUDATimer 性能指标 |
+| `submit_sft.py` | **SFT 提交（蓝图版，推荐）** | 读取 .magnus → 保存蓝图到服务器 → 同步 GitHub → 启动蓝图 |
 | `magnus_sft.py` | SFT 提交（蓝图版） | 读取 .magnus 蓝图 → 保存 → 启动 → 监控 |
 | `run_sft_blueprint.py` | SFT 提交（蓝图版 v2） | 直接注册蓝图 + 一键提交（更简洁） |
-| `sft_train.py` | **独立训练/评估脚本** | 从 GitHub 拉取到容器内执行；支持 `--eval-only` 模式 |
-| `submit_sft.py` | **SFT 提交（蓝图版，推荐）** | 读取 .magnus → 保存蓝图到服务器 → 同步 GitHub → 启动蓝图 |
 | `serve_model.py` | **API 推理服务** | 在 Magnus 上启动 OpenAI 兼容 API，支持 ngrok 公网隧道 |
 | `auto_grade.py` | **LLM 批改** | 上传 eval_results，用 QLoRA 72B 逐条批改，输出正确率 + 过程分 |
 | `eval_baseline.py` | 基线评估 | 独立评估脚本，对测试集做生成式推理并保存结果 |
-| `plot_training.py` | 可视化 | 读取 `training_log.json` 绘制 Loss + LR 曲线 |
-| `inspect_storage.py` | 训练数据检查 | 提交作业读取训练集文件，展示完整样本内容与统计 |
-| `remove_storage.py` | 存储删除 | 提交作业 `rm -rf` 删除指定路径（交互确认 + `-y` 跳过） |
-| `hooks/hook-magnus.py` | PyInstaller 钩子 | 打包 magnus-sdk 元数据到 EXE |
 
 ### sft_train.py 架构说明
 
@@ -73,36 +65,10 @@ submit_sft.py                  Magnus 集群
 
 ### 自动生成目录
 
-| 路径 | 用途 | 后缀 |
-|------|------|------|
-| `data1/` | 完整日志文件（`monitor.py` + `monitor_gui.py` 快照） | `.data1` |
-| `data2/` | 时间线文件 + `storage_record.json` + EXE 配置 `config.json` / `jobs.json` / `incoming/` | `.data2` |
-| `SFT_data/` | 存放 submit_sft 下载的训练报告 | — |
-
-**日志文件命名约定**：`{提交时间}-{状态}-{来源缩写}-{任务名}-{序号}`，按提交时间字母序排列（与 GUI 排序一致）。状态缩写：`s`=成功, `f`=失败, `t`=终止, `u`=未知。
-
-**文件元数据头**：每个 `.data1` / `.data2` 文件第一行包含 BibTeX 风格的 `@{}` 头，记录任务全部元数据：
-
-```
-@{20260427-102800-s-wp-Warmup-SFT-Packages-001.data1,
-  time = 2026-04-27 10:28:00,
-  name = Warmup-SFT-Packages,
-  submitter = warmup_packages.py,
-  job_id = abc123def456,
-  type = 日志,
-  status = Success,
-  source_abbr = wp,
-  seq = 001,
-  created_at = 2026-04-27T10:28:00,
-  updated_at = 2026-04-27T11:00:00,
-  gpu_count = N/A,
-  gpu_type = N/A,
-}
-```
-
-- `type` = `日志`（完整日志）或 `时间线`（时间线摘要）
-- `data1/` 与 `data2/` 同基本文件名对应同一任务
-- 文件命名异常时 EXE 自动读取 `@{}` 头纠正文件名
+| 路径 | 用途 |
+|------|------|
+| `data2/` | `storage_record.json`（模型版本记录） |
+| `SFT_data/` | 存放 submit_sft 下载的训练报告 |
 
 ---
 
@@ -223,6 +189,82 @@ submit_sft.py (NUM_WORKERS=4)
 - 真数据模式：`TRAIN_WORKERS={num_workers}`
 - 推荐值：2-4（CPU→GPU 传输加速，过大反而拖慢）
 
+#### FSDP CPU Offload — 优化器状态移至 CPU RAM（2026-05-13）
+
+**原理**：`CPUOffload(offload_params=False)` 仅把 AdamW 优化器状态（momentum + variance, fp32）移到 CPU RAM，参数和梯度仍保留在 GPU。这是 72B 模型从 3 卡降到 2 卡的核心手段。
+
+**显存分析**（72B 模型, bf16 混合精度, N 卡 FSDP FULL_SHARD）：
+
+| 组件 | 无 CPU Offload | 有 CPU Offload |
+|------|---------------|---------------|
+| 参数 (bf16) | 144/N GB | 144/N GB |
+| 梯度 (bf16) | 144/N GB | 144/N GB |
+| 优化器状态 (fp32) | 864/N GB | **0** (移至 CPU RAM) |
+| **GPU 显存合计** | **~1152/N GB** | **~288/N GB** |
+| 72B 最低 GPU 数 | 3×80GB (384 GB/卡) | **2×80GB** (144 GB/卡) |
+
+**配置方式**：
+- `submit_sft.py` 配置区：`CPU_OFFLOAD = True`
+- CLI 参数：`--cpu_offload`
+- 蓝图参数：`cpu_offload`（bool, 默认 False）
+
+**FSDP BackwardPrefetch** — 控制反向传播预取策略：
+- `"pre"`（默认）— 提前预取下一层参数，**速度优先**
+- `"post"` — 延迟预取，等当前层计算完成后才取下一层，**显存优先**（约省 10-15% 峰值显存）
+
+配置方式：`BWD_PREFETCH = "post"` 或 `--backward_prefetch post`
+
+#### NCCL 通讯优化（2026-05-13）
+
+针对单节点多卡 NVLink 场景，微调 NCCL 环境变量以最大化 intra-node 带宽：
+
+```bash
+export NCCL_ALGO=Ring              # Ring 算法，NVLink 最优
+export NCCL_PROTO=Simple           # Simple 协议，减少 overhead
+export NCCL_MIN_NCHANNELS=4        # 最少 4 通道，增加并行度
+export NCCL_NSOCKS_PERTHREAD=4     # 每线程 4 socket
+export NCCL_SOCKET_NTHREADS=2      # 2 个 socket 线程
+```
+
+这些设置在 `sft_train.py` Python 层（`os.environ.setdefault`）和蓝图 shell 层均生效。
+
+#### 性能指标系统 — CUDATimer + 显存分解 + 分卡过滤（2026-05-13）
+
+训练循环中新增全面的性能诊断指标，写入 Magnus Metrics Protocol（可通过 Magnus 面板按 GPU 分别查看）。
+
+**CUDATimer** — 基于 CUDA Event 的精确 GPU 计时（`torch.cuda.Event(enable_timing=True)`）：
+
+| 指标 | 含义 | 写入频率 |
+|------|------|----------|
+| `perf.forward_ms` | 前向传播耗时 | 每 `perf_metric_steps`（默认 50）step |
+| `perf.backward_ms` | 反向传播耗时 | 同上 |
+| `perf.optimizer_ms` | 优化器 step + zero_grad 耗时 | 同上 |
+| `perf.comm_ms` | 通讯耗时（total - fwd - bwd - opt） | 同上 |
+| `perf.total_ms` | 单步总耗时 | 同上 |
+| `perf.tokens_per_sec` | 吞吐量（tokens/秒） | 同上 |
+
+**显存分解** — 每 `memory_metric_steps`（默认 20）step 写入：
+
+| 指标 | 含义 | labels |
+|------|------|--------|
+| `memory.allocated_gb` | 当前已分配显存 | `{"rank": "N"}` |
+| `memory.reserved_gb` | 当前已预留显存 | `{"rank": "N"}` |
+| `memory.peak_allocated_gb` | 峰值分配显存 | `{"rank": "N"}` |
+| `memory.fragmentation_pct` | 显存碎片率 (%) | `{"rank": "N"}` |
+
+> **关键设计**：所有 rank 均写入内存指标（带 rank 标签），Magnus 面板可按 `rank` 维度分选查看各 GPU 状态。性能计时仅 rank 0 写入（避免多卡数据重复）。
+
+**理论显存估算** — step=0 训练前打印一次（`estimate_memory_components()`）：
+
+| 估算项 | 计算方式 |
+|--------|----------|
+| `estimated_params_gb` | 参数总量 × 2 bytes (bf16) |
+| `estimated_optimizer_gb` | 参数总量 × 8 bytes (fp32 momentum+variance) × 2 |
+| `estimated_gradients_gb` | 参数总量 × 2 bytes (bf16) |
+| `estimated_total_gb` | 以上三项之和 / N GPUs |
+
+新增 CLI 参数：`--perf_metric_steps`（默认 50）、`--memory_metric_steps`（默认 20）。
+
 #### sft_train.py 独立脚本（GitHub 拉取）
 
 从 v4 开始，蓝图不再内嵌 Python 训练代码，改为从 GitHub RAW 拉取：
@@ -328,103 +370,26 @@ AutoTokenizer.from_pretrained(path, trust_remote_code=True)
 
 ## 3. 辅助 Python 脚本
 
-### 3.1 `monitor.py` — 任务监控模块
+### 3.1 `config.py` — 共享配置模块
 
-**功能**：轮询 Magnus 任务状态和日志，支持成功/失败时自动保存全部输出。
+**功能**：加载 `secret.json`，提供 Magnus 连接、任务监控、存储记录等共享功能。
 
 **关键接口**：
 ```python
-Monitor(
-    poll_interval=60,         # 轮询间隔（秒）
-    source="wp",              # 来源 py 文件缩写，用于日志文件命名
+from config import (
+    MAGNUS_ADDRESS, MAGNUS_TOKEN,   # 连接信息（从 ../secret.json 加载）
+    wait_for_job,                    # 轮询 Magnus 任务状态直到完成
+    notify_exe,                      # 记录任务提交
+    record_storage,                  # 追加持久存储记录
+    check_model_version_exists,      # 检查 model-version 是否已存在
+    SYSTEM_ENTRY_COMMAND,            # Apptainer bind-mount 脚本
+    auto_source,                     # 返回调用者文件名缩写
 )
-monitor.add(job_id)           # 添加要监控的任务
-monitor.add_many(*job_ids)    # 添加多个任务
-monitor.run()                 # 阻塞直到所有任务完成
 ```
 
-**状态格式**：`[2026-04-26 19:50:00] [task_name] [Preparing] → [Running]`
+`wait_for_job(job_id, poll_interval=60)` 轮询任务状态直到终态（Success/Failed/Terminated），过程中打印状态变化和增量日志。替代了旧版 `monitor.py` 的 `Monitor` 类。
 
-**日志保存**（`source` 非 None 时）：
-- 所有 print() 输出自动捕获到缓冲区
-- 任务结束（正常或 Ctrl+C）自动写入 `data1/{提交时间}-{状态缩写}-{source缩写}-{任务名}-{序列号}.data1`
-- 例：`20260427-102800-s-wp-Warmup-SFT-Packages-001.data1`
-- 命名与 GUI 排序一致：字母序按提交时间排列（与 GUI 的时间分组一致）
-- **序列号**确保同一时刻多个任务的日志不冲突
-
-**日志文件命名格式**：
-
-```
-{YYYYMMDD}-{HHMMSS}-{s/f/t/u}-{source缩写}-{SafeTaskName}-{seq:03d}
-```
-
-| 段 | 来源 | 说明 |
-|----|------|------|
-| `YYYYMMDD-HHMMSS` | `get_job().created_at` | 任务提交时间（非保存时间） |
-| `s/f/t/u` | 终态 | s=成功, f=失败, t=终止, u=未知 |
-| `source缩写` | `auto_source()` | 自动根据调用者文件名映射 |
-| `SafeTaskName` | `get_job().task_name` | 任务名，特殊字符替换为 `_` |
-| `seq` | 全局递增计数器 | 跨实例递增，确保唯一性 |
-
-**模块级函数**：
-```python
-record_storage(category, entry)              # 追加持久存储记录
-check_model_version_exists(model_version)    # 检查 model-version 是否已存在
-```
-
-### 3.2 `warmup_packages.py` — 包预热
-
-**目的**：预下载 20+ 个 SFT 依赖到 `/data/$USERNAME/pip-cache/wheels/`。
-
-**source 缩写**：`wp`
-
-**工作原理**：
-1. 逐包执行 `pip download`，下载所有 wheel（含传递依赖）到 `/tmp/pip-wheels/`
-2. **`accelerate` 单独处理**：使用 `--no-deps` 下载，避免拖入 `torch` + 20+ 个 nvidia/CUDA 包（~3GB）— 容器镜像 `pytorch:2.5.1-cuda12.4` 已自带
-3. 安全网清理：`rm -f` 容器镜像已自带的包（`torch-*` / `nvidia_*` / `nvidia-*` / `triton-*` / `cuda_*` / `cuda-*`）
-4. 用 `find -exec cp {}` 拷贝到 `/data/$USERNAME/pip-cache/wheels/`（避免 glob 参数列表溢出）
-5. 写入 `.warmup_complete` 标记文件
-
-**幂等机制**：仅当 `$SAVE_DIR/.warmup_complete` 存在时跳过；不存在或不完整则删除旧目录重建。上次 `cp` 失败留下的不完整缓存会被自动清理。
-
-**成功时自动记录**：`data2/storage_record.json` → `pip` 分类
-
-**用法**：
-```bash
-python train/warmup_packages.py
-python train/warmup_packages.py --address http://xxx:3011/ --token sk-xxx
-```
-
-### 3.2b `warmup_test.py` — 持久存储连通性测试
-
-**目的**：提交 Write + Read 两个 B2 作业，验证容器退出后 `/data/` NFS 写入是否持久。
-
-**source 缩写**：`wt`
-
-**用法**：
-```bash
-python train/warmup_test.py
-```
-
-### 3.3 `download_model_auto.py` — 模型下载
-
-**目的**：从 ModelScope 下载模型到集群持久存储 `/data/<user>/models/<model_name>/`。
-
-**下载策略**：直接用 `/data/` 做临时目录（避开容器 ephemeral storage 限制），下载完成后扁平化拷贝到目标目录。
-
-**扁平化处理**：ModelScope 下载结构为 `{publisher}/{model_name}/`（如 `Qwen/Qwen2.5-72B-Instruct/`），脚本自动扁平化，把模型文件直接放入 `SAVE_DIR/`。
-
-**source 缩写**：`dma`
-
-**成功时自动记录**：`data2/storage_record.json` → `modelscope` 分类
-
-**用法**：
-```bash
-python train/download_model_auto.py --model Qwen/Qwen2.5-7B
-python train/download_model_auto.py --model Qwen/Qwen2.5-72B-Instruct
-```
-
-### 3.4 `magnus_sft.py` — SFT 训练提交（蓝图版）
+### 3.2 `magnus_sft.py` — SFT 训练提交（蓝图版）
 
 **目的**：读取 .magnus 蓝图文件 → 保存到 Magnus → `launch_blueprint()` → 监控 → 后处理。
 
@@ -485,6 +450,8 @@ GPU_COUNT   = 6
 GPU_TYPE    = "a100"
 CPU_COUNT   = 40
 MEMORY      = "160G"
+CPU_OFFLOAD = False           # True = 优化器状态移至 CPU RAM，大幅降低显存
+BWD_PREFETCH = "pre"          # "pre"=速度优先, "post"=显存优先
 ...
 ```
 
@@ -531,54 +498,6 @@ submit_sft.py (base64 编码) → blueprint (透传,无 import) → shell $PROMP
 
 **设为 `None` 可禁用**。
 
-### 3.6 `inspect_storage.py` — 训练数据样本查询
-
-**目的**：提交一个轻量 CPU 作业到集群，读取训练数据文件并展示完整样本内容。
-
-**source 缩写**：`is`
-
-**检查内容**：
-- 文件大小、总样本数、字段列表
-- 各字段 avg/min/max 长度统计
-- 均匀采样展示完整样本（含首尾），不截断长字段
-- 支持 `.json` / `.jsonl` / `.parquet` 格式自动识别
-
-**默认路径**：`/data/magnus/training_data/train.json` + `/data/magnus/training_data/test.json`
-
-**用法**：
-```bash
-python train/inspect_storage.py                          # 默认每文件 3 条
-python train/inspect_storage.py --samples 5              # 每文件 5 条
-python train/inspect_storage.py --data-path /custom/train.json
-python train/inspect_storage.py --data-path /a.json --data-path /b.json
-```
-
-### 3.7 `remove_storage.py` — 删除长期存储
-
-**目的**：删除 `/data/` 下的文件或目录。
-
-**原理**：提交一个 B2 作业，通过 `system_entry_command` 挂载 `/data/`，在容器内执行 `rm -rf`。
-
-**source 缩写**：`rs`
-
-**防护**：默认交互确认 + `-y` 跳过确认 + 仅允许 `/data/` 前缀路径。
-
-**用法**：
-```bash
-python train/remove_storage.py /data/magnus/models/old-model
-python train/remove_storage.py /data/magnus/models/Qwen2.5-72B-Instruct -y
-```
-
-### 3.8 `plot_training.py` — 训练曲线可视化
-
-**目的**：读取 `training_log.json`，绘制三张图（Loss 曲线、Eval 对比、LR 调度）。
-
-**用法**：
-```bash
-python train/plot_training.py                    # 默认路径
-python train/plot_training.py /path/to/training_log.json
-```
-
 ---
 
 ## 4. 持久存储记录
@@ -589,12 +508,6 @@ python train/plot_training.py /path/to/training_log.json
 
 ```json
 {
-    "pip": [
-        {"time": "2026-04-26T19:50:00", "target": "/data/<用户名>/pip-cache/wheels", "packages": 42, "status": "success"}
-    ],
-    "modelscope": [
-        {"time": "2026-04-26T19:52:00", "model": "deepseek-ai/deepseek-math-7b-base", "target": "/data/<user>/models/deepseek-math-7b-base", "status": "success"}
-    ],
     "model-version": [
         {"time": "2026-04-26T20:00:00", "model": "Qwen2.5-7B-v1", "local_path": "/data/magnus/models/general-sft-v1", "status": "success"}
     ]
@@ -603,9 +516,7 @@ python train/plot_training.py /path/to/training_log.json
 
 | 分类 | 记录者 | 触发条件 |
 |------|--------|----------|
-| `pip` | `warmup_packages.py` | 预热作业 Success |
-| `modelscope` | `download_model_auto.py` | 下载作业 Success |
-| `model-version` | `submit_sft.py` | 训练作业 Success |
+| `model-version` | `submit_sft.py` / `magnus_sft.py` | 训练作业 Success |
 
 ---
 
@@ -638,118 +549,15 @@ python train/plot_training.py /path/to/training_log.json
 
 ---
 
-## 6. Magnus Monitor GUI — 独立 EXE 监控程序
+## 6. 任务监控
 
-### 6.1 概述
+任务状态监控由 `config.py` 中的 `wait_for_job()` 函数实现。
 
-`monitor_gui.py` 是独立于 Python 解释器的 GUI 监控程序，可用 PyInstaller 打包为 `MagnusMonitor.exe`。
-Python 脚本提交 job 后通过 HTTP 通知 EXE，EXE 独立轮询 Magnus API、保存日志、提供可视化界面。
+### 6.1 `wait_for_job()` — 轮询监控
 
-**核心特性**：
-- **三层轮询**：快速状态（15s）+ 全量日志（60s）+ 自动发现（60s）
-- **双通道通知**：HTTP POST → `localhost:9876`，失败时写入 `data2/incoming/*.job.json`
-- **自动发现**：每分钟调用 `magnus.list_jobs(limit=50)` 发现遗漏任务
-- **去重保护**：按 `job_id` 唯一键，HTTP 通知 / 自动发现 / 文件导入共用同一空间
-- **日志保证**：只要 EXE 在运行，每 60s 保存一次日志，与 Python 脚本生命周期无关
-- **后台运行**：关闭窗口默认最小化到后台（可在设置中关闭），再次运行 EXE 自动恢复窗口
-- **开机自启**：可在设置中勾选，写入 Windows 注册表 `Run` 键
+`wait_for_job(job_id, poll_interval=60)` 轮询 Magnus 任务状态直到终态，过程中打印状态变化和增量日志。替代了旧版 `monitor.py` 的 `Monitor` 类以及 Magnus Monitor GUI (monitor_gui.py)。
 
-### 6.2 架构
-
-```
-Python 脚本 → HTTP POST (localhost:9876) → Magnus Monitor EXE
-  Fallback: data2/incoming/*.job.json        │
-                                            ├── HTTP Server (thread, :9876)
-                                            ├── Polling Engine
-                                            │   ├── 快速状态 15s: get_job()
-                                            │   ├── 全量日志 60s: get_job_logs()
-                                            │   └── 自动发现 60s: list_jobs()
-                                            └── GUI (tkinter)
-                                                ├── 左栏: 任务列表 (状态颜色)
-                                                ├── 上栏: 操作按钮
-                                                ├── 主区: 日志显示
-                                                └── 设置: 地址/Token
-```
-
-### 6.3 文件
-
-| 文件 | 说明 |
-|------|------|
-| `train/monitor_gui.py` | 主程序（PyInstaller 入口） |
-| `train/data2/config.json` | EXE 设置（地址/Token/轮询/最小化/开机自启） |
-| `train/data2/jobs.json` | 任务注册表 |
-| `train/data2/incoming/*.job.json` | HTTP 通知失败的 fallback |
-| `train/data1/` | 完整日志（`.data1`）+ 终态快照 |
-| `train/data2/` | 时间线（`.data2`）+ 快照同名文件 |
-
-**日志快照命名**（任务进入终态时自动保存到 `data1/` + `data2/`）：
-```
-{YYYYMMDD-HHMMSS}-{s/f/t}-{submitter缩写}-{TaskName}-{seq:03d}.{data1|data2}
-```
-例：`20260427-102800-s-ss-FakeTest-Qwen2_5-72B-001.data1`
-
-### 6.5 核心功能
-
-- **关闭最小化**：关闭窗口默认最小化到后台（不退出）；可在设置中关闭此行为
-- **开机自启**：勾选设置后自动写入 Windows 注册表 `Run` 键
-- **单实例**：再次运行 EXE 自动恢复已隐藏的窗口
-- **文件标准化**：启动时自动扫描 `data1/`/`data2/`，非标准命名文件通过 `@{}` 头纠正
-- **快照保护**：每个任务仅保存一次终态快照，防止重复写入
-
-### 6.6 用法
-
-```bash
-# 开发模式
-python monitor_gui.py
-
-# 构建 EXE
-pip install pyinstaller
-pyinstaller --noconsole --onefile --name MagnusMonitor monitor_gui.py
-# 输出: dist/MagnusMonitor.exe，拷贝到 train/ 目录运行
-```
-
-### 6.7 界面
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  Magnus Job Monitor                                   ⚙ — □ ×   │
-├──────────────────────────────────────────────────────────────────┤
-│  [■ 终止任务]  [🌐 打开]  [⟳ 刷新]  [✕ 清除已完成]               │
-├────────────────────────┬─────────────────────────────────────────┤
-│  ● 10:00              │  [2026-04-27 10:00] [SFT-Qwen] [Run]   │
-│    FakeTest-Qwen2.5.. │  --- 新增日志 ---                        │
-│    submit_sft.py      │  [2026-04-27 10:00] 正在下载模型...      │
-│    Running            │  [2026-04-27 10:01] 模型加载完成         │
-│                       │                                         │
-│  ● 09:30              │          选中任务日志显示区               │
-│    Warmup-Pip-Cache   │                                         │
-│    ⚡ magnus          │                                         │
-│    Success            │                                         │
-├────────────────────────┴─────────────────────────────────────────┤
-│  共 5 个任务 | 2 个活跃 | 上次更新: 10:01:00                     │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### 6.8 通知机制
-
-所有提交脚本已在 `submit_job()` / `launch_blueprint()` 成功后自动调用 `notify_exe(job_id=job_id)`。
-
-`notify_exe()` 位于 `monitor.py`，自动推断：
-- **submitter**：通过 `inspect` 调用栈检测调用者文件名
-- **address/token**：使用模块默认值
-- **task_name**：可选，不传时 EXE 首次轮询自动从 `get_job()` 补全
-
-EXE 不在线时自动降级：写入 `data2/incoming/*.job.json`，EXE 启动时扫描导入。
-
-### 6.9 设置
-
-点击工具栏 ⚙ 按钮 → 设置对话框：
-- **Magnus 地址**：服务器 URL（默认 `http://162.105.151.134:3011/`）
-- **API Token**：认证令牌
-- **轮询间隔**：默认 60 秒
-- **启用自动发现**：自动扫描 Magnus 服务器上最近的 50 个任务
-- **关闭时最小化到后台**：点击 [X] 不退出，隐藏到系统托盘继续运行
-- **开机自启**：写入 Windows 注册表 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\MagnusMonitor`
+`notify_exe()` 简化为终端 print 输出，不再依赖外部 EXE 进程。
 
 ---
 
@@ -804,48 +612,7 @@ EXE 不在线时自动降级：写入 `data2/incoming/*.job.json`，EXE 启动�
 
 ## 8. 已知问题 & 排错
 
-### 8.1 Warmup 磁盘空间不足
-
-**现象**：`cp: error writing '...whl': No space left on device`
-
-**原因**：`accelerate` 的依赖 `torch` 引入 20+ 个 nvidia/CUDA 包（>3GB），撑满 `/tmp/` 或 `/data/`。
-
-**修复**（`warmup_packages.py`）：
-1. **核心修复**：`accelerate` 从主包列表移除，改为单独 `pip download --no-deps`（容器镜像已自带 torch/CUDA）
-2. 安全网：拷贝前 `rm -f` 所有 `torch-*` / `nvidia_*` / `nvidia-*` / `triton-*` / `cuda_*` / `cuda-*`
-3. 拷贝改用 `find -exec cp {}` 避免 glob 参数列表溢出
-4. 跳过逻辑改用 `.warmup_complete` 标记文件（而非目录是否存在）
-5. 无 `.warmup_complete` 则先 `rm -rf` 旧目录再重建
-
-### 8.2 EXE 刷新空白 / 强制刷新卡死
-
-**现象**：点击"刷新"后日志区空白，无 `data1/data2` 文件创建；"强制刷新"导致 GUI 卡死。
-
-**原因**：
-- `__file__` 在 PyInstaller onefile 中指向临时目录，`data1/data2` 创建在错误位置
-- `poll_logs()` 在主线程同步 HTTP 调用，Magnus 响应慢时阻塞 GUI
-
-**修复**：`monitor_gui.py` 已通过 `sys.executable` 定位正确路径 + 刷新操作移入后台线程。重新构建 EXE 即可。
-
-### 8.3 时间线只有第一行
-
-**现象**：时间线文件只有一行，丢失其余日志。
-
-**原因**：`_save_timeline()` 只取了 `new_part.splitlines()[0]`。
-
-**修复**：已改为遍历所有行，每行带 `[时间][状态]` 前缀。见 `monitor_gui.py:_save_timeline`。
-
-### 8.4 完整日志文件只存了增量 diff
-
-**现象**：`.data1` 文件只包含最近一次新增内容，不是完整日志。
-
-**原因**：传给 `_save_full_log()` 的是 `new_part or text`，`new_part` 有值时传入的是增量。
-
-**修复**：改为始终传入完整 `text`。见 `monitor_gui.py:poll_logs`。
-
----
-
-### 8.5 容器内无法访问 `/data/`（平台更新）
+### 8.1 容器内无法访问 `/data/`（平台更新）
 
 **现象**：作业日志出现 `No such file or directory` 或 `cp: cannot create regular file '/data/...': No such file or directory`，但 `/data/` 在宿主机上存在。
 
@@ -854,7 +621,7 @@ EXE 不在线时自动降级：写入 `data2/incoming/*.job.json`，EXE 启动�
 **修复**：所有 `submit_job()` 调用添加 `system_entry_command` 参数，显式声明挂载：
 
 ```python
-from monitor import SYSTEM_ENTRY_COMMAND
+from config import SYSTEM_ENTRY_COMMAND
 
 magnus.submit_job(
     ...
@@ -862,7 +629,7 @@ magnus.submit_job(
 )
 ```
 
-`SYSTEM_ENTRY_COMMAND`（定义在 `monitor.py`）内容：
+`SYSTEM_ENTRY_COMMAND`（定义在 `config.py`）内容：
 ```bash
 mounts=(
     "/home:/home"
@@ -878,15 +645,7 @@ unset VIRTUAL_ENV SSL_CERT_FILE
 
 `.magnus` 蓝图文件也已同步添加 `system_entry_command` 到 `submit_job()` 调用中。
 
-### 8.6 大模型下载空间不足
-
-**现象**：`[Errno 28] No space left on device: '/tmp/model_download/...'`，18 个文件下载失败。
-
-**原因**：大模型（如 72B）超过 130GB，ModelScope 下载到 `/tmp/`（容器 ephemeral storage），120G 不够用。
-
-**修复**（`download_model_auto.py`）：下载临时目录改为 `/data/$USERNAME/models/.dl_tmp`，直接走 NFS 持久存储，不受 ephemeral storage 限制。下载完成后 `rm -rf` 清理临时目录。
-
-### 8.7 torchrun 训练静默失败（stderr 未捕获）
+### 8.2 torchrun 训练静默失败（stderr 未捕获）
 
 **现象**：日志显示 `torchrun` OMP 警告后直接 Failed，没有 Python traceback，无法定位崩溃点。
 
@@ -899,7 +658,7 @@ unset VIRTUAL_ENV SSL_CERT_FILE
 - 失败时自动遍历并打印所有 rank 日志文件
 - 打印 `$TRAIN_EXIT_CODE` 判断信号终止 vs Python 异常
 
-### 8.8 transformers 5.7.0 + torch 2.5.1 CVE 安全检查拦截
+### 8.3 transformers 5.7.0 + torch 2.5.1 CVE 安全检查拦截
 
 **现象**：
 ```
@@ -923,7 +682,7 @@ transformers.modeling_utils.check_torch_load_is_safe = lambda: None
 
 **长期方案**：重建 Docker 镜像，使用 torch >= 2.6 的 base image，或将模型转为 `.safetensors` 格式。
 
-### 8.9 bash 语法错误：`_log` 字符串缺少结尾引号
+### 8.4 bash 语法错误：`_log` 字符串缺少结尾引号
 
 **现象**：
 ```
@@ -942,7 +701,7 @@ bash 将未闭合字符串后的 `(` 字符（例如诊断代码中的 `CUDA_VIS
 
 **修复**：确保所有 `_log` 字符串以 `"` 正确闭合。该 bug 已在两个蓝图中修复。
 
-### 8.10 tokenizer.chat_template 未设置（如 DeepSeek 模型）
+### 8.5 tokenizer.chat_template 未设置（如 DeepSeek 模型）
 
 **现象**：
 ```
@@ -969,7 +728,7 @@ if tokenizer.chat_template is None:
 ```
 已应用于 SFT 和 LoRA 蓝图的训练脚本及 eval 脚本（共 4 处）。
 
-### 8.11 NaN Loss + FSDP NCCL 死锁（v2 修复）
+### 8.6 NaN Loss + FSDP NCCL 死锁（v2 修复）
 
 **现象**：训练到 step ~110 时产生 NaN loss，10 分钟后 NCCL watchdog 杀进程：
 ```
@@ -1053,7 +812,7 @@ v1 看似正常但实际 `backward()` 始终失败，梯度从未正确传播，
 
 已应用于 `OpenFundus_SFT_zyz.magnus` 和 `LoRA_zyz.magnus`。
 
-### 8.12 NCCL 超时（NaN 二次效应）
+### 8.7 NCCL 超时（NaN 二次效应）
 
 **现象**：
 ```
@@ -1061,11 +820,11 @@ Watchdog caught collective operation timeout:
 WorkNCCL(SeqNum=13738, OpType=_ALLGATHER_BASE, ...) ran for 600069 milliseconds
 ```
 
-**根因**：NaN loss 处理不当（见 §8.11）。NaN → `zeros_like` 破坏计算图 → `backward()` 不执行 → FSDP 的 REDUCE_SCATTER 不触发 → NCCL 队列卡住。**NCCL 超时本身不是根因，而是 NaN 处理的症状。**
+**根因**：NaN loss 处理不当（见 §8.6）。NaN → `zeros_like` 破坏计算图 → `backward()` 不执行 → FSDP 的 REDUCE_SCATTER 不触发 → NCCL 队列卡住。**NCCL 超时本身不是根因，而是 NaN 处理的症状。**
 
-**修复**：§8.11 的 v2 方案（`torch.where` + float32 loss）从源头解决了此问题。
+**修复**：§8.6 的 v2 方案（`torch.where` + float32 loss）从源头解决了此问题。
 
-### 8.13 Checkpoint 损坏导致恢复失败
+### 8.8 Checkpoint 损坏导致恢复失败
 
 **现象**：训练中途中断后自动重试，3 次均因 checkpoint 损坏而失败：
 ```
@@ -1135,7 +894,7 @@ fi
 
 **验证方法**：正常训练日志中应看到 NCCL `Using network Socket` 并通过 SHM 通信（单机 2 卡），无 NCCL 超时。
 
-### 8.14 单卡训练 Permission Denied（2026-05-06）
+### 8.9 单卡训练 Permission Denied（2026-05-06）
 
 **现象**：`gpu_count=1` 时 `./sft_train.py: Permission denied`。
 
@@ -1143,7 +902,7 @@ fi
 
 **修复**：合并 `--log-dir` 到 `launcher` 变量内（仅多卡时包含），移除独立 `log_dir_flag` 行。同时将 `launcher` 从 Python f-string 改为 shell 变量 `$LAUNCHER`（见 §2.2 GPU 自动检测）。
 
-### 8.15 无 GPU 容器 nvidia-smi 崩溃（2026-05-06）
+### 8.10 无 GPU 容器 nvidia-smi 崩溃（2026-05-06）
 
 **现象**：0 GPU 任务时容器启动即退出：
 ```
@@ -1159,7 +918,7 @@ _on_exit trap fired immediately
 - `sft_train.py` 中 FSDP/cudnn import 用 `try/except` 包裹
 - 0 GPU 自动回退 CPU 模式
 
-### 8.16 eval-only 模式 --test_path 参数不存在（2026-05-06）
+### 8.11 eval-only 模式 --test_path 参数不存在（2026-05-06）
 
 **现象**：
 ```
@@ -1171,7 +930,7 @@ sft_train.py: error: unrecognized arguments: --test_path /data/.../test.json
 
 **修复**：`sft_train.py` 同时注册 `--test_data` 和 `--test_path`（等价参数），蓝图继续保持使用 `--test_path`。
 
-### 8.17 Epoch=0 初始 Loss 已记录
+### 8.12 Epoch=0 初始 Loss 已记录
 
 从 v4 开始，`sft_train.py` 在训练循环开始前自动记录 step=0 的 train_loss 和 eval_loss：
 - `init_train_loss`：取 train_loader 第一个 batch 计算
@@ -1186,43 +945,32 @@ sft_train.py: error: unrecognized arguments: --test_path /data/.../test.json
 ### 首次使用
 
 ```bash
-# Step 1: 预热 pip 包（只需一次）
-python train/warmup_packages.py
+# Step 1: 准备模型到集群持久存储 /data/magnus/models/
 
-# Step 2: 验证存储
-python train/warmup_test.py
-
-# Step 3: 下载模型（每个模型只需一次）
-python train/download_model_auto.py --model Qwen/Qwen2.5-72B-Instruct
-
-# Step 4: 检查存储完整性
-python train/inspect_storage.py
-
-# Step 5: 提交 SFT 训练（修改 submit_sft.py 配置区后直接运行）
+# Step 2: 提交 SFT 训练（修改 submit_sft.py 配置区后直接运行）
 python train/submit_sft.py
 
-# Step 5b: 或用 LoRA/QLoRA 低资源微调（详见 train/LoRA.md）
+# Step 3: 或用 LoRA/QLoRA 低资源微调（详见 train/docs/LoRA.md）
 #          blueprint: LoRA_zyz.magnus，支持 4-bit/8-bit/bf16
 
-# Step 6: 查看训练曲线
-python train/plot_training.py ./SFT_data/Qwen2.5-72B-Instruct-v1
-
-# Step 7 (可选): 启动模型 API 推理服务
+# Step 4 (可选): 启动模型 API 推理服务
 python train/serve_model.py
-# 获取公网 URL: magnus logs <job_id> | grep "PUBLIC API"
-# 调用:
-#   curl <PUBLIC_URL>/v1/chat/completions \
-#     -H "Authorization: Bearer sk-xxx" \
-#     -H "Content-Type: application/json" \
-#     -d '{"messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-### 更新模型版本
+### 日常训练
 
 ```bash
-# 修改 submit_sft.py 配置区 MODEL_PATH 和 OUTPUT_DIR 后
-python train/submit_sft.py
+# 编辑 submit_sft.py 配置区 MODE / MODEL_PATH / GPU_COUNT / CPU_OFFLOAD 等
+python submit_sft.py
 ```
+
+### 显存优化建议
+
+| 场景 | 推荐配置 |
+|------|----------|
+| 72B 模型 + 3×80GB | `CPU_OFFLOAD = False`, `BWD_PREFETCH = "pre"` |
+| 72B 模型 + 2×80GB | `CPU_OFFLOAD = True`, `BWD_PREFETCH = "post"` |
+| 7B 模型 + 1×80GB | `CPU_OFFLOAD = False`, `BWD_PREFETCH = "pre"` |
 
 ---
 
@@ -1232,7 +980,7 @@ python train/submit_sft.py
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `model_path` | 必填 | 本地绝对路径（如 `/data/.../model`）或 HuggingFace Hub ID（如 `Qwen/Qwen2.5-7B`） |
+| `model_path` | 必填 | 本地绝对路径（如 `/data/.../model`）或 HuggingFace Hub ID |
 | `num_workers` | 2 | DataLoader worker 进程数。假数据自动=0，推荐 2-4 |
 | `epochs` | 3 | 训练轮数 |
 | `batch_size` | 2 | 单卡 batch size |
@@ -1241,27 +989,25 @@ python train/submit_sft.py
 | `max_length` | 1024 | 最大序列长度 |
 | `gpu_count` | 6 | GPU 数量。设为 0 自动回退 CPU |
 | `gpu_type` | a100 | GPU 型号，`a100` / `v100` / `cpu` |
-| `github_path` | `PHY-LLM-Basic-Algorithm/sft_train.py` | 训练脚本 GitHub 路径 |
+| `cpu_offload` | False | FSDP CPU Offload：优化器状态移至 CPU RAM，大幅降低显存 |
+| `backward_prefetch` | `"pre"` | FSDP backward prefetch：`"pre"`=速度优先, `"post"`=显存优先 |
+| `prompt_prefix_b64` | — | 提示词前缀（base64 编码），由 submit_sft.py 自动传入 |
 
-### `monitor.py` 参数
+### `config.py` 参数
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `poll_interval` | 60 | 轮询间隔（秒） |
-| `source` | None | 文件缩写，用于日志命名 |
+| `poll_interval` | 60 | `wait_for_job()` 轮询间隔（秒） |
 
-### `submit_sft.py` 参数（与 `magnus_sft.py` 一致）
+### `submit_sft.py` 配置区关键参数
 
 | 参数 | 说明 |
 |------|------|
+| `MODE` | `"sft"` 全参微调 / `"lora"` LoRA |
+| `MODEL_PATH` | 模型路径（本地绝对路径或 Hub ID） |
+| `CPU_OFFLOAD` | 优化器状态 CPU offload（默认 False） |
+| `BWD_PREFETCH` | backward prefetch 策略（`"pre"` / `"post"`） |
 | `--model-version` | 模型版本名（默认自动递增） |
-
-### `warmup_packages.py` / `download_model_auto.py`
-
-| 参数 | 默认值 |
-|------|--------|
-| `--address` | `http://162.105.151.134:3011/` |
-| `--token` | 需手动修改 |
 
 ---
 

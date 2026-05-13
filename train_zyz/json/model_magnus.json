@@ -1,0 +1,1917 @@
+[
+  {
+    "path": "/data/dingchenyi/models/DeepSeek-R1-Distill-Qwen-7B",
+    "name": "DeepSeek-R1-Distill-Qwen-7B",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "Qwen2ForCausalLM"
+    ],
+    "model_type": "qwen2",
+    "hidden_size": 3584,
+    "num_hidden_layers": 28,
+    "is_moe": false,
+    "estimated_params_b": 4.32,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model-00001-of-000002.safetensors",
+        "size": 8606596466,
+        "size_mb": 8207.89,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00002-of-000002.safetensors",
+        "size": 6624675384,
+        "size_mb": 6317.78,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 2,
+    "total_weight_size_gb": 14.185,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/dingchenyi/models/Qwen2.5-1.5B",
+    "name": "Qwen2.5-1.5B",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "Qwen2ForCausalLM"
+    ],
+    "model_type": "qwen2",
+    "hidden_size": 1536,
+    "num_hidden_layers": 28,
+    "is_moe": false,
+    "estimated_params_b": 0.79,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model.safetensors",
+        "size": 3087467144,
+        "size_mb": 2944.44,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 1,
+    "total_weight_size_gb": 2.875,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhouzihan/models/Qwen2.5-0.5B",
+    "name": "Qwen2.5-0.5B",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "Qwen2ForCausalLM"
+    ],
+    "model_type": "qwen2",
+    "hidden_size": 896,
+    "num_hidden_layers": 24,
+    "is_moe": false,
+    "estimated_params_b": 0.23,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model.safetensors",
+        "size": 988097824,
+        "size_mb": 942.32,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 1,
+    "total_weight_size_gb": 0.92,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhouzihan/models/Qwen2.5-1.5B",
+    "name": "Qwen2.5-1.5B",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "Qwen2ForCausalLM"
+    ],
+    "model_type": "qwen2",
+    "hidden_size": 1536,
+    "num_hidden_layers": 28,
+    "is_moe": false,
+    "estimated_params_b": 0.79,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model.safetensors",
+        "size": 3087467144,
+        "size_mb": 2944.44,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 1,
+    "total_weight_size_gb": 2.875,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhouzihan/models/gpt2",
+    "name": "gpt2",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "GPT2LMHeadModel"
+    ],
+    "model_type": "gpt2",
+    "hidden_size": null,
+    "num_hidden_layers": null,
+    "is_moe": false,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model.safetensors",
+        "size": 497774208,
+        "size_mb": 474.71,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 1,
+    "total_weight_size_gb": 0.464,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhouzihan/models/opt-125m",
+    "name": "opt-125m",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhouzihan/models/public_dpo",
+    "name": "public_dpo",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhouzihan/models/pythia-160m",
+    "name": "pythia-160m",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": false
+    },
+    "config_ok": true,
+    "architecture": [
+      "GPTNeoXForCausalLM"
+    ],
+    "model_type": "gpt_neox",
+    "hidden_size": 768,
+    "num_hidden_layers": 12,
+    "is_moe": false,
+    "estimated_params_b": 0.08,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model.safetensors",
+        "size": 374998696,
+        "size_mb": 357.63,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 1,
+    "total_weight_size_gb": 0.349,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhouzihan/models/pythia-410m",
+    "name": "pythia-410m",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": false
+    },
+    "config_ok": true,
+    "architecture": [
+      "GPTNeoXForCausalLM"
+    ],
+    "model_type": "gpt_neox",
+    "hidden_size": 1024,
+    "num_hidden_layers": 24,
+    "is_moe": false,
+    "estimated_params_b": 0.3,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model.safetensors",
+        "size": 911373632,
+        "size_mb": 869.15,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 1,
+    "total_weight_size_gb": 0.849,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhouzihan/models/pythia-70m",
+    "name": "pythia-70m",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": false
+    },
+    "config_ok": true,
+    "architecture": [
+      "GPTNeoXForCausalLM"
+    ],
+    "model_type": "gpt_neox",
+    "hidden_size": 512,
+    "num_hidden_layers": 6,
+    "is_moe": false,
+    "estimated_params_b": 0.02,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model.safetensors",
+        "size": 166029852,
+        "size_mb": 158.34,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 1,
+    "total_weight_size_gb": 0.155,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhaoweiran/models/._____temp",
+    "name": "._____temp",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhaoweiran/models/.lock",
+    "name": ".lock",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/zhaoweiran/models/Qwen",
+    "name": "Qwen",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/.dl_tmp",
+    "name": ".dl_tmp",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": false,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "DeepseekV4ForCausalLM"
+    ],
+    "model_type": "deepseek_v4",
+    "hidden_size": 7168,
+    "num_hidden_layers": 61,
+    "is_moe": true,
+    "moe_reason": "config.n_routed_experts=384",
+    "estimated_params_b": 37.61,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model-00001-of-00064.safetensors",
+        "size": 1853358176,
+        "size_mb": 1767.5,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00002-of-00064.safetensors",
+        "size": 13874726024,
+        "size_mb": 13231.97,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00003-of-00064.safetensors",
+        "size": 13874726024,
+        "size_mb": 13231.97,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00004-of-00064.safetensors",
+        "size": 13910006752,
+        "size_mb": 13265.62,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00005-of-00064.safetensors",
+        "size": 13868522072,
+        "size_mb": 13226.05,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00006-of-00064.safetensors",
+        "size": 13903802792,
+        "size_mb": 13259.7,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00007-of-00064.safetensors",
+        "size": 13868522072,
+        "size_mb": 13226.05,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00008-of-00064.safetensors",
+        "size": 13903802792,
+        "size_mb": 13259.7,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00009-of-00064.safetensors",
+        "size": 13868522072,
+        "size_mb": 13226.05,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00010-of-00064.safetensors",
+        "size": 13903802792,
+        "size_mb": 13259.7,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00011-of-00064.safetensors",
+        "size": 13868522072,
+        "size_mb": 13226.05,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00012-of-00064.safetensors",
+        "size": 13903805136,
+        "size_mb": 13259.7,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00013-of-00064.safetensors",
+        "size": 13868524408,
+        "size_mb": 13226.06,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00014-of-00064.safetensors",
+        "size": 13903805136,
+        "size_mb": 13259.7,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00015-of-00064.safetensors",
+        "size": 13868524408,
+        "size_mb": 13226.06,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00016-of-00064.safetensors",
+        "size": 13903805136,
+        "size_mb": 13259.7,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00017-of-00064.safetensors",
+        "size": 13868524408,
+        "size_mb": 13226.06,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00018-of-00064.safetensors",
+        "size": 13903805136,
+        "size_mb": 13259.7,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00019-of-00064.safetensors",
+        "size": 13868524408,
+        "size_mb": 13226.06,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00020-of-00064.safetensors",
+        "size": 13903805136,
+        "size_mb": 13259.7,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00021-of-00064.safetensors",
+        "size": 13868524408,
+        "size_mb": 13226.06,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00022-of-00064.safetensors",
+        "size": 13903805136,
+        "size_mb": 13259.7,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00023-of-00064.safetensors",
+        "size": 13868524408,
+        "size_mb": 13226.06,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00024-of-00064.safetensors",
+        "size": 13903805136,
+        "size_mb": 13259.7,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00025-of-00064.safetensors",
+        "size": 13868524408,
+        "size_mb": 13226.06,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 25,
+    "total_weight_size_gb": 312.09,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": true
+    }
+  },
+  {
+    "path": "/data/magnus/models/DeepSeek-V4-Flash",
+    "name": "DeepSeek-V4-Flash",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "DeepseekV4ForCausalLM"
+    ],
+    "model_type": "deepseek_v4",
+    "hidden_size": 4096,
+    "num_hidden_layers": 43,
+    "is_moe": true,
+    "moe_reason": "config.n_routed_experts=256",
+    "estimated_params_b": 8.66,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model-00001-of-00046.safetensors",
+        "size": 1059061856,
+        "size_mb": 1010.0,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00002-of-00046.safetensors",
+        "size": 3566321192,
+        "size_mb": 3401.11,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00003-of-00046.safetensors",
+        "size": 3566321192,
+        "size_mb": 3401.11,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00004-of-00046.safetensors",
+        "size": 3596229272,
+        "size_mb": 3429.63,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00005-of-00046.safetensors",
+        "size": 3568768976,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00006-of-00046.safetensors",
+        "size": 3590024776,
+        "size_mb": 3423.71,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00007-of-00046.safetensors",
+        "size": 3568768976,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00008-of-00046.safetensors",
+        "size": 3590024776,
+        "size_mb": 3423.71,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00009-of-00046.safetensors",
+        "size": 3568768976,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00010-of-00046.safetensors",
+        "size": 3590024776,
+        "size_mb": 3423.71,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00011-of-00046.safetensors",
+        "size": 3568768976,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00012-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00013-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00014-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00015-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00016-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00017-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00018-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00019-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00020-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00021-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00022-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00023-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00024-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00025-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00026-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00027-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00028-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00029-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00030-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00031-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00032-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00033-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00034-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00035-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00036-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00037-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00038-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00039-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00040-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00041-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00042-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00043-of-00046.safetensors",
+        "size": 3568770544,
+        "size_mb": 3403.44,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00044-of-00046.safetensors",
+        "size": 3590026352,
+        "size_mb": 3423.72,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00045-of-00046.safetensors",
+        "size": 1059332516,
+        "size_mb": 1010.26,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00046-of-00046.safetensors",
+        "size": 3593956092,
+        "size_mb": 3427.46,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 46,
+    "total_weight_size_gb": 148.655,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": true
+    }
+  },
+  {
+    "path": "/data/magnus/models/DeepSeek-V4-Pro",
+    "name": "DeepSeek-V4-Pro",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/DownloadModel-deepseek-math-7b-base-sft-v1",
+    "name": "DownloadModel-deepseek-math-7b-base-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/Qwen2.5-1.5B",
+    "name": "Qwen2.5-1.5B",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "Qwen2ForCausalLM"
+    ],
+    "model_type": "qwen2",
+    "hidden_size": 1536,
+    "num_hidden_layers": 28,
+    "is_moe": false,
+    "estimated_params_b": 0.79,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model.safetensors",
+        "size": 3087467144,
+        "size_mb": 2944.44,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 1,
+    "total_weight_size_gb": 2.875,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/Qwen2.5-72B-Instruct",
+    "name": "Qwen2.5-72B-Instruct",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "Qwen2ForCausalLM"
+    ],
+    "model_type": "qwen2",
+    "hidden_size": 8192,
+    "num_hidden_layers": 80,
+    "is_moe": false,
+    "estimated_params_b": 64.42,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model-00001-of-00037.safetensors",
+        "size": 3762345336,
+        "size_mb": 3588.05,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00002-of-00037.safetensors",
+        "size": 3995200440,
+        "size_mb": 3810.12,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00003-of-00037.safetensors",
+        "size": 3812769392,
+        "size_mb": 3636.14,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00004-of-00037.safetensors",
+        "size": 3995183944,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00005-of-00037.safetensors",
+        "size": 3995183944,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00006-of-00037.safetensors",
+        "size": 3995200456,
+        "size_mb": 3810.12,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00007-of-00037.safetensors",
+        "size": 3812769424,
+        "size_mb": 3636.14,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00008-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00009-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00010-of-00037.safetensors",
+        "size": 3995200464,
+        "size_mb": 3810.12,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00011-of-00037.safetensors",
+        "size": 3812769424,
+        "size_mb": 3636.14,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00012-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00013-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00014-of-00037.safetensors",
+        "size": 3995200464,
+        "size_mb": 3810.12,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00015-of-00037.safetensors",
+        "size": 3812769424,
+        "size_mb": 3636.14,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00016-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00017-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00018-of-00037.safetensors",
+        "size": 3995200464,
+        "size_mb": 3810.12,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00019-of-00037.safetensors",
+        "size": 3812769424,
+        "size_mb": 3636.14,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00020-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00021-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00022-of-00037.safetensors",
+        "size": 3995200464,
+        "size_mb": 3810.12,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00023-of-00037.safetensors",
+        "size": 3812769424,
+        "size_mb": 3636.14,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00024-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00025-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00026-of-00037.safetensors",
+        "size": 3995200464,
+        "size_mb": 3810.12,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00027-of-00037.safetensors",
+        "size": 3812769424,
+        "size_mb": 3636.14,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00028-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00029-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00030-of-00037.safetensors",
+        "size": 3995200464,
+        "size_mb": 3810.12,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00031-of-00037.safetensors",
+        "size": 3812769424,
+        "size_mb": 3636.14,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00032-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00033-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00034-of-00037.safetensors",
+        "size": 3995200464,
+        "size_mb": 3810.12,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00035-of-00037.safetensors",
+        "size": 3812769424,
+        "size_mb": 3636.14,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00036-of-00037.safetensors",
+        "size": 3995183968,
+        "size_mb": 3810.1,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00037-of-00037.safetensors",
+        "size": 3460317640,
+        "size_mb": 3300.02,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 37,
+    "total_weight_size_gb": 135.426,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/Qwen2.5-72B-Instruct-sft-v1",
+    "name": "Qwen2.5-72B-Instruct-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/Qwen2.5-72B-sft-v1",
+    "name": "Qwen2.5-72B-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/Qwen2.5-7B-Math-sft-v1",
+    "name": "Qwen2.5-7B-Math-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/Qwen2.5-Math-7B-Instruct",
+    "name": "Qwen2.5-Math-7B-Instruct",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "Qwen2ForCausalLM"
+    ],
+    "model_type": "qwen2",
+    "hidden_size": 3584,
+    "num_hidden_layers": 28,
+    "is_moe": false,
+    "estimated_params_b": 4.32,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model-00001-of-00004.safetensors",
+        "size": 3945441440,
+        "size_mb": 3762.67,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00002-of-00004.safetensors",
+        "size": 3864726352,
+        "size_mb": 3685.69,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00003-of-00004.safetensors",
+        "size": 3864726424,
+        "size_mb": 3685.69,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00004-of-00004.safetensors",
+        "size": 3556377672,
+        "size_mb": 3391.63,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 4,
+    "total_weight_size_gb": 14.185,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/Qwen2.5-Math-7B-Instruct-sft-v1",
+    "name": "Qwen2.5-Math-7B-Instruct-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/Qwen2.5-Math-7B-Instructe-sft-v1",
+    "name": "Qwen2.5-Math-7B-Instructe-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/Qwen\\Qwen2.5-Math-7B-Instructe-sft-v1",
+    "name": "Qwen\\Qwen2.5-Math-7B-Instructe-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/deepseek-math-7b-base",
+    "name": "deepseek-math-7b-base",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "LlamaForCausalLM"
+    ],
+    "model_type": "llama",
+    "hidden_size": 4096,
+    "num_hidden_layers": 30,
+    "is_moe": false,
+    "estimated_params_b": 6.04,
+    "weight_format": [
+      ".bin"
+    ],
+    "safetensors_files": [],
+    "bin_files": [
+      {
+        "name": "pytorch_model-00001-of-00002.bin",
+        "size": 9968194327,
+        "size_mb": 9506.41,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "pytorch_model-00002-of-00002.bin",
+        "size": 3852630633,
+        "size_mb": 3674.15,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "weight_files_count": 2,
+    "total_weight_size_gb": 12.872,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/deepseek-math-7b-base-sft-v1",
+    "name": "deepseek-math-7b-base-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/internim2-math-7b-sft-v1",
+    "name": "internim2-math-7b-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/internlm2-math-7b",
+    "name": "internlm2-math-7b",
+    "exists": true,
+    "essential": {
+      "config_json": true,
+      "tokenizer": true,
+      "generation_config": true
+    },
+    "config_ok": true,
+    "architecture": [
+      "InternLM2ForCausalLM"
+    ],
+    "model_type": "internlm2",
+    "hidden_size": 4096,
+    "num_hidden_layers": 32,
+    "is_moe": false,
+    "estimated_params_b": 6.44,
+    "weight_format": [
+      ".safetensors"
+    ],
+    "safetensors_files": [
+      {
+        "name": "model-00001-of-00008.safetensors",
+        "size": 1949337704,
+        "size_mb": 1859.03,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00002-of-00008.safetensors",
+        "size": 1946242696,
+        "size_mb": 1856.08,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00003-of-00008.safetensors",
+        "size": 1979780440,
+        "size_mb": 1888.07,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00004-of-00008.safetensors",
+        "size": 1946242728,
+        "size_mb": 1856.08,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00005-of-00008.safetensors",
+        "size": 1979780456,
+        "size_mb": 1888.07,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00006-of-00008.safetensors",
+        "size": 1946242728,
+        "size_mb": 1856.08,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00007-of-00008.safetensors",
+        "size": 1979780456,
+        "size_mb": 1888.07,
+        "ok": true,
+        "corrupt_reason": null
+      },
+      {
+        "name": "model-00008-of-00008.safetensors",
+        "size": 1748035640,
+        "size_mb": 1667.06,
+        "ok": true,
+        "corrupt_reason": null
+      }
+    ],
+    "bin_files": [],
+    "weight_files_count": 8,
+    "total_weight_size_gb": 14.413,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": true,
+      "lora": true,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/internlm2-math-7b-V1",
+    "name": "internlm2-math-7b-V1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/internlm2-math-7b-sft-v1",
+    "name": "internlm2-math-7b-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/internlm2-sft-v1",
+    "name": "internlm2-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/qwen-sft-v1",
+    "name": "qwen-sft-v1",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  },
+  {
+    "path": "/data/magnus/models/qwen-sft-v2",
+    "name": "qwen-sft-v2",
+    "exists": true,
+    "essential": {
+      "config_json": false,
+      "tokenizer": false,
+      "generation_config": false
+    },
+    "config_ok": false,
+    "config_error": "config.json 不存在",
+    "weight_format": [],
+    "safetensors_files": [],
+    "bin_files": [],
+    "weight_files_count": 0,
+    "total_weight_size_gb": 0.0,
+    "corrupt_files": [],
+    "all_files_ok": true,
+    "capabilities": {
+      "sft": false,
+      "lora": false,
+      "moe": false
+    }
+  }
+]
