@@ -650,9 +650,9 @@ def train(args):
             _policy = _partial(transformer_auto_wrap_policy, transformer_layer_cls={_layer_cls})
         # 使用 auto_wrap_policy 逐层分片，避免 FSDP init 时将完整模型移至单卡
         _bwd = BackwardPrefetch.BACKWARD_POST if args.backward_prefetch == "post" else BackwardPrefetch.BACKWARD_PRE
-        _cpu_offload = CPUOffload(offload_params=False) if args.cpu_offload else None
+        _cpu_offload = CPUOffload(offload_params=True) if args.cpu_offload else None
         if _cpu_offload:
-            log(f"[5/8] CPU offload: 优化器状态将移至 CPU RAM")
+            log(f"[5/8] CPU offload: 参数+优化器状态移至 CPU RAM（每卡释放 ~36GB 显存，训练略慢）")
         model = FSDP(
             model,
             sharding_strategy=ShardingStrategy.FULL_SHARD,
