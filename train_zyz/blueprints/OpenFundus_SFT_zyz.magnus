@@ -1,0 +1,683 @@
+# Magnus Blueprint: OpenFundus_SFT_zyz 
+# 通用大模型 SFT 训练 + 评估
+# 蓝图 ID = 文件名（约定所有 .magnus 以 _zyz 结尾）
+# pip: --no-index 优先本地缓存, 清华源回退
+
+from typing import Annotated, Optional, Literal
+
+# ── 参数类型定义（保持不变）─────────────────────────────────────
+
+ModelPath = Annotated[str, {
+    "label": "模型路径",
+    "description": "集群本地路径（优先）或 HuggingFace/ModelScope Hub ID",
+    "placeholder": "/data/magnus/models/internlm2-math-7b",
+    "allow_empty": False,
+}]
+
+TrainData = Annotated[Optional[str], {
+    "label": "训练集路径（可选）",
+    "description": "留空 = 自动生成30条假数据（用于验证流程）；填路径 = 使用真实数据训练",
+    "placeholder": "留空=假数据 / /data/magnus/training_data/train.json",
+}]
+
+TestData = Annotated[Optional[str], {
+    "label": "测试集路径（可选）",
+    "description": "填路径 = 训练完成后自动评估准确率；留空则跳过",
+    "placeholder": "/data/magnus/training_data/test.json",
+}]
+
+OutputDir = Annotated[str, {
+    "label": "输出目录",
+    "description": (
+        "必须填写 /data/magnus/models/ 下的子目录（持久存储，作业结束后不会消失）。"
+    ),
+    "placeholder": "/data/magnus/models/general-sft-v1",
+    "allow_empty": False,
+}]
+
+Epochs = Annotated[int, {
+    "label": "训练轮数",
+    "scope": "超参数",
+    "min": 1,
+    "max": 20,
+    "default": 3,
+}]
+
+BatchSize = Annotated[int, {
+    "label": "单卡 Batch Size",
+    "scope": "超参数",
+    "description": "每张 GPU 每步实际处理的样本数。显存不足时首先降低此值",
+    "min": 1,
+    "max": 128,
+    "default": 2,
+}]
+
+GradAccum = Annotated[int, {
+    "label": "梯度累积步数",
+    "scope": "超参数",
+    "description": "等效全局 batch = 单卡 batch × 梯度累积 × GPU 数",
+    "min": 1,
+    "max": 32,
+    "default": 4,
+}]
+
+LearningRate = Annotated[Optional[float], {
+    "label": "学习率",
+    "scope": "超参数",
+    "min": 1e-6,
+    "max": 1e-3,
+    "placeholder": "默认 2e-5",
+    "default": 2e-5,
+}]
+
+MaxLength = Annotated[int, {
+    "label": "最大序列长度（token）",
+    "scope": "超参数",
+    "min": 128,
+    "max": 4096,
+    "default": 1024,
+}]
+
+NumWorkers = Annotated[int, {
+    "label": "DataLoader 进程数",
+    "scope": "超参数",
+    "description": "CPU→GPU 数据传输并行 worker 数。0=主进程加载，2-4 可加速数据预处理",
+    "min": 0,
+    "max": 8,
+    "default": 2,
+}]
+
+GpuCount = Annotated[int, {
+    "label": "GPU 数量",
+    "min": 1,
+    "max": 6,
+    "default": 3,
+}]
+
+GpuType = Annotated[Literal["a100", "cpu"], {
+    "label": "GPU 类型",
+    "options": {
+        "a100": "A100 计算卡",
+        "cpu": "仅 CPU（调试用）",
+    },
+    "default": "a100",
+}]
+
+CpuCount = Annotated[int, {
+    "label": "CPU 核心数",
+    "min": 4,
+    "max": 64,
+    "default": 40,
+}]
+
+MemoryDemand = Annotated[str, {
+    "label": "内存需求",
+    "description": "带单位！合法值：1600M、2G、32G、128G、320G",
+    "placeholder": "320G",
+    "default": "320G",
+}]
+
+EphemeralStorage = Annotated[str, {
+    "label": "临时存储",
+    "description": "带单位！用于数据缓存和中间文件",
+    "placeholder": "500G",
+    "default": "500G",
+}]
+
+Priority = Annotated[Literal["A1", "A2", "B1", "B2"], {
+    "label": "作业优先级",
+    "options": {
+        "A1": {"label": "A1 最高", "description": "不可抢占"},
+        "A2": {"label": "A2 高（推荐）", "description": "不可抢占"},
+        "B1": {"label": "B1 低", "description": "可被 A 类抢占"},
+        "B2": {"label": "B2 最低", "description": "可被 A 类抢占"},
+    },
+    "default": "A2",
+}]
+
+ExecuteAction = Annotated[bool, {
+    "label": "立即执行",
+    "description": "关闭则仅生成配置，不提交作业",
+    "default": True,
+}]
+
+Runner = Annotated[Optional[str], {
+    "label": "Runner",
+    "description": "留空使用默认",
+    "placeholder": "leave empty for default",
+}]
+
+ContainerImage = Annotated[Optional[str], {
+    "label": "容器镜像",
+    "description": "自定义 Docker 镜像 URI (docker://registry/name:tag)。留空使用集群默认。",
+    "placeholder": "docker://your-registry/sft-custom:latest",
+}]
+
+ResumeFrom = Annotated[Optional[str], {
+    "label": "从 Checkpoint 恢复（可选）",
+    "description": "填写上次中断的 checkpoint secret 或本地路径，留空则从头开始",
+    "placeholder": "留空 = 从头训练",
+}]
+
+PromptPrefix = Annotated[Optional[str], {
+    "label": "统一提示词前缀（可选）",
+    "description": (
+        "添加到每条样本 instruction 前面的提示词。"
+        "支持 {instruction} 占位符插入原始问题。"
+        "示例：'请以专家的身份回答以下问题：\\n{instruction}'"
+    ),
+    "placeholder": "留空 = 不修改原始 instruction",
+}]
+
+# 提示词前缀 base64 编码（由 submit_sft.py 预编码注入，避免蓝图内 import base64）
+PromptPrefixB64 = Annotated[str, {
+    "label": "prompt_prefix (base64)",
+    "description": "提示词前缀的 base64 编码，由 submit_sft.py 自动生成",
+    "hidden": True,
+    "default": "",
+}]
+
+# ── sft_train.py 由 Magnus 自动从 GitHub 仓库 checkout 到 $MAGNUS_HOME/workspace/repository/ ──
+
+
+# ── Blueprint 主函数（核心修改：添加 pip 镜像源）─────────────────
+def blueprint(
+    model_path:       ModelPath,
+    train_data:       TrainData       = "/data/magnus/training_data/train.json",
+    test_data:        TestData        = "/data/magnus/training_data/test.json",
+    output_dir:       OutputDir       = "/data/magnus/models/general-sft-v1",
+    epochs:           Epochs          = 3,
+    batch_size:       BatchSize       = 2,
+    grad_accum:       GradAccum       = 4,
+    learning_rate:    LearningRate    = 2e-5,
+    max_length:       MaxLength       = 1024,
+    num_workers:      NumWorkers      = 2,
+    gpu_count:        GpuCount        = 3,
+    gpu_type:         GpuType         = "a100",
+    cpu_count:        CpuCount        = 40,
+    memory_demand:    MemoryDemand    = "320G",
+    ephemeral_storage: EphemeralStorage = "500G",
+    priority:         Priority        = "A2",
+    execute_action:   ExecuteAction   = True,
+    runner:           Runner          = None,
+    container_image:  ContainerImage  = None,
+    resume_from:      ResumeFrom      = None,
+    prompt_prefix:    PromptPrefix    = None,
+    prompt_prefix_b64: PromptPrefixB64 = "",
+):
+    use_fake = not train_data
+    model_name = model_path.split("/")[-1]
+
+    ms_model_id = model_path[0].lower() + model_path[1:]
+
+    # ── Resume 设置 ───────────────────────────────────────────
+    def _is_magnus_secret(s):
+        if not s:
+            return False
+        s = s.strip()
+        if s.startswith("magnus-secret:"):
+            return True
+        parts = s.split("-")
+        return len(parts) == 4 and parts[0].isdigit()
+
+    if not resume_from:
+        resume_setup = 'RESUME_ARG=""'
+    elif _is_magnus_secret(resume_from):
+        token = resume_from.strip()
+        resume_setup = (
+            '_log "=== [Resume] 从 Magnus 下载 checkpoint ==="\n'
+            f'magnus receive {token} -o /tmp/resume_ckpt\n'
+            'RESUME_ARG="--resume_from_checkpoint /tmp/resume_ckpt"\n'
+            '_log "[Resume] checkpoint 已下载到 /tmp/resume_ckpt"'
+        )
+    else:
+        resume_setup = f'RESUME_ARG="--resume_from_checkpoint {resume_from.strip()}"'
+
+    # ── 提示词前缀 ────────────────────────────────────────────
+    # base64 编码由 submit_sft.py 预计算，避免蓝图沙箱 import base64 报错
+    if prompt_prefix_b64:
+        prompt_arg = f'PROMPT_ARG="--prompt_prefix_b64 {prompt_prefix_b64}"'
+    else:
+        prompt_arg = 'PROMPT_ARG=""'
+
+    # ── 模型加载 ──────────────────────────────────────────────
+    model_setup = f"""
+_log "=== 加载模型 ==="
+if [ -f "{model_path}/config.json" ]; then
+    ACTUAL_MODEL_PATH="{model_path}"
+    _log "[模型] 使用本地路径: $ACTUAL_MODEL_PATH"
+    _log "[模型] 模型文件列表:"
+    ls -lh "$ACTUAL_MODEL_PATH"/*.safetensors "$ACTUAL_MODEL_PATH"/*.bin "$ACTUAL_MODEL_PATH"/*.json 2>/dev/null | awk '{{printf "  %5s  %s\\n", $5, $NF}}'
+    _log "[模型] 目录总大小: $(du -sh "$ACTUAL_MODEL_PATH" 2>/dev/null | cut -f1)"
+else
+    _log "[模型] 未找到: {model_path}/config.json"
+    case "{model_path}" in
+        /*)
+            _log "[FATAL] 路径以 / 开头，是本地路径但不存在"
+            _log "  原因: 模型尚未下载到该路径，或路径有误"
+            _log "  下载方法: python train/download_model.py --model <模型ID>"
+            _log "  下载后在蓝图填入正确路径（如 /data/<用户名>/models/<模型名>）"
+            exit 1
+            ;;
+        *)
+            _log "[模型] Hub ID，尝试从 ModelScope 下载: {ms_model_id}"
+            pip install -q modelscope -i https://pypi.tuna.tsinghua.edu.cn/simple
+            if python3 -c "
+from modelscope import snapshot_download
+path = snapshot_download('{ms_model_id}', cache_dir='/tmp/models')
+print(path)
+" > /tmp/ms_path.txt 2>/tmp/ms_err.txt; then
+                ACTUAL_MODEL_PATH=$(tail -1 /tmp/ms_path.txt)
+                _log "[模型] ModelScope 完成: $ACTUAL_MODEL_PATH"
+                _log "[模型] 模型文件列表:"
+                ls -lh "$ACTUAL_MODEL_PATH"/*.safetensors "$ACTUAL_MODEL_PATH"/*.bin 2>/dev/null | awk '{{printf "  %5s  %s\\n", $5, $NF}}'
+            else
+                _log "[模型] ModelScope 失败，尝试 HuggingFace..."
+                cat /tmp/ms_err.txt
+                pip install -q huggingface-hub
+                if python3 -c "
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import transformers.modeling_utils; transformers.modeling_utils.check_torch_load_is_safe = lambda: None
+AutoTokenizer.from_pretrained('{model_path}', trust_remote_code=True).save_pretrained('/tmp/model_cache')
+AutoModelForCausalLM.from_pretrained('{model_path}', trust_remote_code=True).save_pretrained('/tmp/model_cache')
+print('HuggingFace 下载完成')
+" 2>/tmp/hf_err.txt; then
+                    ACTUAL_MODEL_PATH=/tmp/model_cache
+                else
+                    cat /tmp/hf_err.txt
+                    _log "[FATAL] 无法从 ModelScope 或 HuggingFace 下载模型"
+                    _log "  请检查模型 ID 是否正确（如 internlm/internlm2-math-7b）"
+                    exit 1
+                fi
+            fi
+            ;;
+    esac
+fi
+"""
+
+    # ── 数据设置 ──────────────────────────────────────────────
+    if use_fake:
+        data_setup = """
+_log "=== 生成假数据（30条通用测试题）==="
+python3 -c "
+import json
+fake_train = [{'instruction': f'题目{i}：请计算 {i}+{i} 的结果。', 'output': f'答案：{i+i}\\n\\n解答：{i} 加 {i} 等于 {i+i}。'} for i in range(30)]
+fake_test  = [{'instruction': f'测试题{i}：请计算 {i}×2 的结果。', 'output': f'答案：{i*2}\\n\\n解答：{i} 乘以 2 等于 {i*2}。'} for i in range(8)]
+with open('/tmp/fake_train.json', 'w') as f: json.dump(fake_train, f, ensure_ascii=False)
+with open('/tmp/fake_test.json',  'w') as f: json.dump(fake_test,  f, ensure_ascii=False)
+print('假数据生成完成：train=30条，test=8条')
+"
+TRAIN_DATA_PATH=/tmp/fake_train.json
+TEST_DATA_PATH=/tmp/fake_test.json
+TRAIN_EPOCHS=1
+TRAIN_BATCH=2
+TRAIN_ACCUM=4
+TRAIN_MAXLEN=256
+TRAIN_LOG=5
+TRAIN_WORKERS=0
+"""
+    else:
+        data_setup = f"""
+TRAIN_DATA_PATH="{train_data}"
+TEST_DATA_PATH="{test_data if test_data else ''}"
+TRAIN_EPOCHS={epochs}
+TRAIN_BATCH={batch_size}
+TRAIN_ACCUM={grad_accum}
+TRAIN_MAXLEN={max_length}
+TRAIN_LOG=10
+TRAIN_WORKERS={num_workers}
+"""
+
+    # ── 评估脚本 ──────────────────────────────────────────────
+    resolved_test = test_data if test_data else "/tmp/fake_test.json"
+    eval_custody = ""  # _on_exit trap 已统一处理所有文件上传
+    eval_section = f"""
+_log "=== [5/5] 测试集推理（生成原始回答，不计算准确率）==="
+python3 ./sft_train.py --eval-only \
+    --model_dir  "{output_dir}/final" \
+    --test_path  "{resolved_test}" \
+    --output_dir "{output_dir}" \
+    --max_length 1024 \
+    --batch_size 4 \
+    $PROMPT_ARG
+"""
+    no_eval_section = '_log "[5/5] 未提供测试集，跳过准确率评估"\n'
+
+    # ── 汇总结果 ──────────────────────────────────────────────
+    result_section = f"""
+python3 -c "
+import json, os
+log_path  = '{output_dir}/training_log.json'
+eval_path = '{output_dir}/eval/eval_results.json'
+last = {{}}
+if os.path.exists(log_path):
+    with open(log_path) as f:
+        log = json.load(f)
+    last = log[-1] if log else {{}}
+eval_count = 0
+if os.path.exists(eval_path):
+    with open(eval_path) as f:
+        ev = json.load(f)
+    eval_count = len(ev) if isinstance(ev, list) else 0
+gen_initial_count = 0
+gen_final_count = 0
+gen_initial_path = '{output_dir}/eval/eval_results_initial.json'
+gen_final_path   = '{output_dir}/eval/eval_results_final.json'
+if os.path.exists(gen_initial_path):
+    with open(gen_initial_path) as f:
+        gen_initial_count = len(json.load(f))
+if os.path.exists(gen_final_path):
+    with open(gen_final_path) as f:
+        gen_final_count = len(json.load(f))
+print(json.dumps({{
+    'status':             'success',
+    'server_path':        '{output_dir}',
+    'final_train_loss':   last.get('train_loss'),
+    'final_eval_loss':    last.get('eval_loss'),
+    'eval_samples':       eval_count,
+    'gen_eval_initial':   gen_initial_count,
+    'gen_eval_final':     gen_final_count,
+}}, ensure_ascii=False))
+" > "$MAGNUS_RESULT"
+"""
+
+    # ── 组装完整 entry_command ────────────────────────────────
+    warmup_section = (
+        '_log "=== [Warmup] 检查本地 pip 缓存 ===="\n'
+        'USERNAME=$(whoami)\n'
+        'WHEEL_DIR="/data/$USERNAME/pip-cache/wheels"\n'
+        'if [ -d "$WHEEL_DIR" ] && ls "$WHEEL_DIR"/*.whl &>/dev/null 2>/dev/null; then\n'
+        '    export PIP_FIND_LINKS="$WHEEL_DIR"\n'
+        '    _log "[Warmup] 命中缓存: $WHEEL_DIR（$(ls "$WHEEL_DIR"/*.whl 2>/dev/null | wc -l) 个 wheel）"\n'
+        'else\n'
+        '    _log "[Warmup] 无本地缓存，使用清华镜像源"\n'
+        'fi\n'
+    )
+
+    entry_command = (
+        "set -e\n"
+        "_log() { echo \"[$(date '+%Y-%m-%d %H:%M:%S')] $*\"; }\n"
+        + warmup_section
+        + "export PYTHONDONTWRITEBYTECODE=1\n"
+        "export PYTHONUNBUFFERED=1\n"
+        "export PYTHONPYCACHEPREFIX=/tmp/.pycache\n"
+        "export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True\n"
+        "# NCCL: 单节点走 NVLink（P2P），禁用 IB\n"
+        "export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=600\n"
+        "export NCCL_DEBUG=WARN\n"
+        "export TORCH_NCCL_AVOID_RECORD_STREAMS=1\n"
+        "export NCCL_P2P_LEVEL=NVL\n"
+        "export NCCL_IB_DISABLE=1\n"
+        "export NCCL_SOCKET_IFNAME=^docker,lo,virbr\n"
+        "# 随机端口避免 EADDRINUSE 冲突\n"
+        "export MASTER_PORT=$((RANDOM % 20000 + 30000))\n"
+        "export RDZV_PORT=$MASTER_PORT\n\n"
+
+        f'_on_exit() {{\n'
+        f'    _log ""\n'
+        f'    _log "=== [退出] 上传结果文件 ==="\n'
+        f'    python3 << \'TRAPEOF\'\n'
+        f'import subprocess, sys, os, glob\n'
+        f'subprocess.run([sys.executable, "-m", "pip", "install", "-q", "magnus-sdk", "-i", "https://pypi.tuna.tsinghua.edu.cn/simple"], check=True)\n'
+        f'import magnus\n'
+        f'\n'
+        f'output_dir = "{output_dir}"\n'
+        f'\n'
+        f'# ── training_log.json ──\n'
+        f'log_path = os.path.join(output_dir, "training_log.json")\n'
+        f'if os.path.exists(log_path):\n'
+        f'    print("")\n'
+        f'    print("===== 训练日志下载命令 =====")\n'
+        f'    secret = magnus.custody_file(log_path, expire_minutes=1440, timeout=60.0)\n'
+        f'    print(f"magnus receive {{secret}} -o ./sft/training_log.json")\n'
+        f'    print("===========================")\n'
+        f'\n'
+        f'# ── 所有 eval_results_*.json（checkpoint + final + initial）──\n'
+        f'eval_dir = os.path.join(output_dir, "eval")\n'
+        f'pattern = os.path.join(eval_dir, "eval_results_*.json")\n'
+        f'eval_files = sorted(glob.glob(pattern))\n'
+        f'if eval_files:\n'
+        f'    print("")\n'
+        f'    print("===== 评估结果下载命令 =====")\n'
+        f'    for fp in eval_files:\n'
+        f'        fn = os.path.basename(fp)\n'
+        f'        secret = magnus.custody_file(fp, expire_minutes=1440, timeout=60.0)\n'
+        f'        print(f"magnus receive {{secret}} -o ./sft/{{fn}}")\n'
+        f'    print("===========================")\n'
+        f'else:\n'
+        f'    print("\\n# eval/ 目录下无 eval_results_*.json 文件")\n'
+        f'TRAPEOF\n'
+        f'}}\n'
+        f'trap _on_exit EXIT\n\n'
+
+        f'_log "=== [0/5] 检查输出目录 ==="\n'
+        f'mkdir -p "{output_dir}" || {{\n'
+        f'    _log "[FATAL] 无法创建输出目录 {output_dir}"\n'
+        f'    _log "  原因：/data/magnus/ 根目录无写权限，请确保父目录已存在"\n'
+        f'    exit 1\n'
+        f'}}\n'
+        f'_log "输出目录可用: {output_dir}"\n\n'
+
+        f'_log "=== [1/5] 环境信息 ==="\n'
+        "nvidia-smi 2>&1 || echo \"[环境] nvidia-smi 不可用（无 NVIDIA runtime 或 GPU 未挂载）\"\n"
+        "python3 --version\n"
+        "# 自动检测实际可用 GPU 数量（与 Magnus 请求数量可能不同）\n"
+        "ACTUAL_GPU=$(python3 -c \"import torch; print(torch.cuda.device_count())\" 2>/dev/null || echo 0)\n"
+        f'_log "[环境] 请求 GPU={gpu_count} 张, 实际可用=$ACTUAL_GPU 张"\n'
+        "if [ \"$ACTUAL_GPU\" -eq 0 ]; then\n"
+        "    _log '[环境] 0 GPU 可用，自动切换为 CPU 训练模式'\n"
+        '    LAUNCHER="python3"\n'
+        '    LOG_DIR_FLAG=""\n'
+        "else\n"
+        f'    if [ "$ACTUAL_GPU" -gt 1 ]; then\n'
+        f'        LAUNCHER="torchrun --nproc_per_node=$ACTUAL_GPU --rdzv_endpoint=localhost:$MASTER_PORT --log-dir \\"$TORCHRUN_LOG_DIR\\""\n'
+        f'    else\n'
+        f'        LAUNCHER="python3"\n'
+        f'    fi\n'
+        "fi\n\n"
+        
+        # ========== 核心修复：添加 pip 国内镜像源 + 显示安装进度 ==========
+        f'_log "=== [2/5] 检查依赖 ==="\n'
+        "python3 - << 'DEPEOF'\n"
+        "import os, sys, subprocess\n"
+        "\n"
+        "def ok(pkg, min_ver=None):\n"
+        "    try:\n"
+        "        m = __import__(pkg)\n"
+        "        if min_ver:\n"
+        "            cur = tuple(int(x) for x in m.__version__.split('.')[:2])\n"
+        "            req = tuple(int(x) for x in min_ver.split('.')[:2])\n"
+        "            return cur >= req\n"
+        "        return True\n"
+        "    except Exception:\n"
+        "        return False\n"
+        "\n"
+        "checks = [\n"
+        "    ('transformers',       'transformers',   None),\n"
+        "    ('datasets',           'datasets',     None),\n"
+        "    ('accelerate',         'accelerate',   None),\n"
+        "    ('pandas',             'pandas',       None),\n"
+        "    ('einops',             'einops',       None),\n"
+        "    ('sentencepiece',      'sentencepiece', None),\n"
+        "    ('protobuf',           'google.protobuf', None),\n"
+        "]\n"
+        "need = []\n"
+        "for spec, pkg, ver in checks:\n"
+        "    if ok(pkg, ver):\n"
+        "        m = __import__(pkg)\n"
+        "        print(f'  [就绪] {pkg} {getattr(m, \"__version__\", \"\")}')\n"
+        "    else:\n"
+        "        need.append(spec)\n"
+        "        print(f'  [缺失] {spec}')\n"
+        "try:\n"
+        "    import magnus; print('  [就绪] magnus (预装 SDK)')\n"
+        "except ImportError:\n"
+        "    print('  [警告] magnus SDK 未找到，custody 上传将失败')\n"
+        "\n"
+        "if need:\n"
+        "    print('安装缺失依赖:', ' '.join(need))\n"
+        "    wheel_dir = os.environ.get('PIP_FIND_LINKS',\n"
+        "        f'/data/{os.environ.get(\"USER\", \"magnus\")}/pip-cache/wheels')\n"
+        "    base = [sys.executable, '-m', 'pip', 'install',\n"
+        "        '--find-links', wheel_dir, '--progress-bar', 'on']\n"
+        "    r = subprocess.run(base + ['--no-index'] + need)\n"
+        "    if r.returncode != 0:\n"
+        "        print('local cache miss, fallback to mirror...')\n"
+        "        r = subprocess.run(base + ['-i', 'https://pypi.tuna.tsinghua.edu.cn/simple'] + need)\n"
+        "    sys.exit(r.returncode)\n"
+        "else:\n"
+        "    print('所有依赖已就绪，跳过 pip install')\n"
+        "DEPEOF\n"
+        "python3 -c \"import torch; print('[环境] torch', torch.__version__, '| CUDA', torch.version.cuda, '| GPU', torch.cuda.device_count(), '张')\"\n\n"
+
+        f'_log "=== [3/5] 准备模型和数据 ==="\n'
+        + model_setup
+        + data_setup
+        + f'\n_log "=== [4/5] 开始 SFT 训练 ==="\n'
+        + resume_setup + "\n"
+        + prompt_arg + "\n\n"
+        + "python3 -c \"compile(open('./sft_train.py').read(), './sft_train.py', 'exec'); print('[诊断] sft_train.py 语法检查通过')\"\n\n"
+        + "# ── 训练前诊断 ──\n"
+        '_log "[诊断] launcher=$LAUNCHER"\n'
+        f'_log "[诊断] ACTUAL_MODEL_PATH=$ACTUAL_MODEL_PATH"\n'
+        f'_log "[诊断] TRAIN_DATA_PATH=$TRAIN_DATA_PATH"\n'
+        f'_log "[诊断] TEST_DATA_PATH=$TEST_DATA_PATH"\n'
+        f'_log "[诊断] CUDA_VISIBLE_DEVICES=${{CUDA_VISIBLE_DEVICES:-<未设置>}}"\n'
+        "python3 -c \"import torch; print(f'[诊断] torch={torch.__version__}, cuda={torch.cuda.is_available()}, gpu_count={torch.cuda.device_count()}')\"\n"
+        "# 验证 Python 脚本语法\n"
+        "python3 -c \"compile(open('./sft_train.py').read(), './sft_train.py', 'exec'); print('[诊断] sft_train.py 语法检查通过')\"\n"
+        "# 测试关键 imports（在 torchrun 外预先检测 import 错误）\n"
+        "python3 -c \"\n"
+        "from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer\n"
+        "print('[诊断] transformers 核心导入 OK')\n"
+        "\"\n"
+        "MAX_RETRIES=3\n"
+        "RETRY_COUNT=0\n"
+        "TRAIN_OK=0\n"
+        "TRAIN_EXIT_CODE=0\n"
+        "TORCHRUN_LOG_DIR=/tmp/torchrun_logs_$$\n"
+        "mkdir -p \"$TORCHRUN_LOG_DIR\"\n"
+        "while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do\n"
+        '    RETRY_COUNT=$((RETRY_COUNT + 1))\n'
+        '    if [ $RETRY_COUNT -gt 1 ]; then\n'
+        f'        export MASTER_PORT=$((RANDOM % 20000 + 30000))\n'
+        f'        export RDZV_PORT=$MASTER_PORT\n'
+        f'        if [ -d "{output_dir}/checkpoint-latest" ]; then\n'
+        f'            RESUME_ARG="--resume_from_checkpoint {output_dir}/checkpoint-latest"\n'
+        f'            _log "[Retry #$((RETRY_COUNT - 1))] 从 checkpoint-latest 恢复训练..."\n'
+        '        else\n'
+        '            RESUME_ARG=""\n'
+        f'            _log "[Retry #$((RETRY_COUNT - 1))] checkpoint 不存在，从头开始..."\n'
+        '        fi\n'
+        '    fi\n'
+        f'    export RETRY_SEED=$RETRY_COUNT\n'
+        '    if $LAUNCHER \\\n'
+        f'        ./sft_train.py \\\n'
+        f'        --model_path    "$ACTUAL_MODEL_PATH" \\\n'
+        f'        --train_data    "$TRAIN_DATA_PATH" \\\n'
+        f'        --test_data     "$TEST_DATA_PATH" \\\n'
+        f'        --output_dir    "{output_dir}" \\\n'
+        f'        --epochs        $TRAIN_EPOCHS \\\n'
+        f'        --batch_size    $TRAIN_BATCH \\\n'
+        f'        --gradient_accumulation_steps $TRAIN_ACCUM \\\n'
+        f'        --learning_rate {learning_rate} \\\n'
+        f'        --max_length    $TRAIN_MAXLEN \\\n'
+        f'        --logging_steps $TRAIN_LOG \\\n'
+        f'        --num_workers   $TRAIN_WORKERS \\\n'
+        f'        $PROMPT_ARG \\\n'
+        f'        $RESUME_ARG 2>&1; then\n'
+        f'        TRAIN_OK=1\n'
+        '        break\n'
+        '    fi\n'
+        '    TRAIN_EXIT_CODE=$?\n'
+        '    _log "[Retry] 第 ${RETRY_COUNT} 次失败 (exit_code=$TRAIN_EXIT_CODE)"\n'
+        '    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then\n'
+        '        _log "[Retry] 将在 10s 后自动重试..."\n'
+        '        sleep 10\n'
+        '    fi\n'
+        'done\n'
+        '# 所有重试均失败：清理损坏 checkpoint 后从头再试一次\n'
+        'if [ $TRAIN_OK -eq 0 ]; then\n'
+        '    _log "[Fatal] ${MAX_RETRIES} 次重试均失败，清理 checkpoint 后从头开始最后一次尝试..."\n'
+        '    rm -rf "{output_dir}/checkpoint-latest" 2>/dev/null || true\n'
+        '    RESUME_ARG=""\n'
+        '    export MASTER_PORT=$((RANDOM % 20000 + 30000))\n'
+        '    export RDZV_PORT=$MASTER_PORT\n'
+        '    if $LAUNCHER \\\n'
+        f'        ./sft_train.py \\\n'
+        f'        --model_path    "$ACTUAL_MODEL_PATH" \\\n'
+        f'        --train_data    "$TRAIN_DATA_PATH" \\\n'
+        f'        --test_data     "$TEST_DATA_PATH" \\\n'
+        f'        --output_dir    "{output_dir}" \\\n'
+        f'        --epochs        $TRAIN_EPOCHS \\\n'
+        f'        --batch_size    $TRAIN_BATCH \\\n'
+        f'        --gradient_accumulation_steps $TRAIN_ACCUM \\\n'
+        f'        --learning_rate {learning_rate} \\\n'
+        f'        --max_length    $TRAIN_MAXLEN \\\n'
+        f'        --logging_steps $TRAIN_LOG \\\n'
+        f'        --num_workers   $TRAIN_WORKERS \\\n'
+        f'        $PROMPT_ARG \\\n'
+        f'        $RESUME_ARG 2>&1; then\n'
+        f'        TRAIN_OK=1\n'
+        '    fi\n'
+        'fi\n'
+        'if [ $TRAIN_OK -eq 0 ]; then\n'
+        '    _log "[FATAL] 训练在 ${MAX_RETRIES} 次尝试后仍然失败"\n'
+        '    _log "[FATAL] torchrun 日志目录: $TORCHRUN_LOG_DIR"\n'
+        '    _log "[FATAL] === 各 rank 日志 ==="\n'
+        '    for f in "$TORCHRUN_LOG_DIR"/*; do\n'
+        '        if [ -f "$f" ]; then\n'
+        '            _log "--- $f ---"\n'
+        '            cat "$f"\n'
+        '            _log "--- end of $f ---"\n'
+        '        fi\n'
+        '    done\n'
+        '    _log "[FATAL] trap 将自动打包已保存的 checkpoint"\n'
+        '    exit 1\n'
+        'fi\n'
+        '_log "=== 训练完成 ==="\n\n'
+        + (eval_section if test_data or use_fake else no_eval_section)
+        + result_section
+    )
+
+    fake_label = "（假数据测试）" if use_fake else ""
+    description = f"""## 通用大模型 SFT 训练 + 准确率评估{fake_label}
+
+| 参数 | 值 |
+|------|----|
+| 模型 | `{model_path}` |
+| 训练集 | `{"自动生成假数据 (30条)" if use_fake else train_data}` |
+| 测试集 | `{"自动生成假数据 (8条)" if use_fake else (test_data or "未提供，跳过评估")}` |
+| 轮数 | {"1 epoch (假数据)" if use_fake else f"{epochs} epochs"} |
+| Batch Size | `{"4" if use_fake else batch_size} × {gpu_count} GPU` |
+| 学习率 | {learning_rate} |
+| 输出目录 | `{output_dir}` |
+| 内存需求 | {memory_demand} |
+| 临时存储 | {ephemeral_storage} |
+"""
+
+    submit_job(
+        task_name         = f"{'FakeTest' if use_fake else 'SFT'}-{model_name}",
+        description       = description,
+        entry_command     = entry_command,
+        system_entry_command = """mounts=(
+    "/home:/home"
+    "/data:/data"
+)
+export APPTAINER_BIND=$(IFS=,; echo "${mounts[*]}")
+export MAGNUS_HOME=/magnus
+unset -f nvidia-smi
+unset VIRTUAL_ENV SSL_CERT_FILE
+""",
+        namespace         = "Rise-AGI",
+        repo_name         = "PHY-LLM-Basic-Algorithm",
+        gpu_count         = gpu_count,
+        gpu_type          = gpu_type,
+        cpu_count         = cpu_count,
+        memory_demand     = memory_demand,
+        ephemeral_storage = ephemeral_storage,
+        job_type          = priority,
+        execute_action    = execute_action,
+        runner            = runner,
+        container_image   = container_image,
+    )
