@@ -43,11 +43,13 @@ def _write_metric(name: str, value: float, step: int, step_domain: str,
     """
     _metrics_dir = _os.environ.get("MAGNUS_METRICS_DIR")
     if not _metrics_dir:
-        return
+        # fallback: Magnus 未设置时使用默认路径
+        _metrics_dir = "/magnus/workspace/metrics"
     if not _math.isfinite(value):
         return
     try:
         _rank = _os.environ.get("LOCAL_RANK", "0")
+        _os.makedirs(_metrics_dir, exist_ok=True)
         _path = _os.path.join(_metrics_dir, f"rank-{_rank}.jsonl")
         _job_id = _os.environ.get("MAGNUS_JOB_ID", "")
         _job_label = _job_id[:8] if _job_id else "local"
