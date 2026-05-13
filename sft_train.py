@@ -503,6 +503,7 @@ def evaluate(model, dataloader, device, n_gpu=1, local_rank=0, global_step=None)
         loss = outputs.loss
         total_loss  += loss.item()
         total_steps += 1
+        del outputs, loss
     # 跨卡汇总（FSDP 下每卡只算了部分数据）
     if n_gpu > 1:
         loss_t = torch.tensor([total_loss], device=device)
@@ -511,6 +512,7 @@ def evaluate(model, dataloader, device, n_gpu=1, local_rank=0, global_step=None)
         dist.all_reduce(cnt_t,  op=dist.ReduceOp.SUM)
         total_loss = loss_t.item()
         total_steps = int(cnt_t.item())
+    torch.cuda.empty_cache()
     model.train()
     avg_loss = total_loss / max(total_steps, 1)
     if local_rank == 0 and global_step is not None:
@@ -729,6 +731,11 @@ def train(args):
     model.train()
     retry_seed = args.retry_seed
 
+    if local_rank == 0:
+        log(f"  [就绪] 优化器/调度器初始化完成，即将开始训练循环")
+        log(f"  [就绪] GPU 显存: {torch.cuda.memory_allocated()/1e9:.1f}GB allocated | "
+            f"{torch.cuda.memory_reserved()/1e9:.1f}GB reserved")
+
     # ── 诊断: 数据质量预检（仅 rank 0）──
     if local_rank == 0:
         bad_samples = 0
@@ -743,49 +750,8 @@ def train(args):
         else:
             log(f"  [数据诊断] 所有 {len(train_dataset.samples)} 条样本 output 均非空 ✓")
 
-    # ── Initial loss @ step=0 ──
-    init_eval_loss = None
-    init_train_loss = None
-    if local_rank == 0:
-        log("  [初始化] 计算 step=0 初始 loss...")
-    if eval_loader:
-        init_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=0)
-    if len(train_loader) > 0:
-        try:
-            first_batch = next(iter(train_loader))
-            input_ids = first_batch["input_ids"].to(device)
-            labels    = first_batch["labels"].to(device)
-            attn_mask = first_batch["attention_mask"].to(device)
-            with torch.no_grad():
-                outputs = model(input_ids=input_ids, attention_mask=attn_mask)
-                logits = outputs.logits
-                shift_logits = logits[..., :-1, :].contiguous().float()
-                shift_labels = labels[..., 1:].contiguous()
-                batch_loss = F.cross_entropy(
-                    shift_logits.view(-1, logits.size(-1)),
-                    shift_labels.view(-1),
-                    ignore_index=-100,
-                ).item()
-            if n_gpu > 1:
-                loss_t = torch.tensor([batch_loss], device=device)
-                dist.all_reduce(loss_t, op=dist.ReduceOp.SUM)
-                batch_loss = loss_t.item() / n_gpu
-            init_train_loss = batch_loss
-        except Exception as e:
-            if local_rank == 0:
-                log(f"  [警告] step=0 train_loss 计算失败: {e}")
-    if local_rank == 0:
-        if init_train_loss is not None:
-            log(f"  [初始化] step=0: train_loss={init_train_loss:.4f}")
-        else:
-            log("  [初始化] step=0: train_loss=None")
-        if init_eval_loss is not None:
-            log(f"  [初始化] step=0: eval_loss={init_eval_loss:.4f}")
-        else:
-            log("  [初始化] step=0: eval_loss=None")
-    train_log.append({"global_step": 0, "epoch": 0.0, "train_loss": round(init_train_loss, 6) if init_train_loss is not None else None, "eval_loss": round(init_eval_loss, 6) if init_eval_loss is not None else None, "lr": round(scheduler.get_last_lr()[0], 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
-
     # 训练前生成式评估已独立为 eval_baseline.py（按需手动执行）
+    # init loss 移至训练结束后计算，避免启动期大 batch forward 占用显存
 
     # ── 性能诊断: 初始化计时器和显存估测 ──
     timer = CUDATimer()
@@ -842,6 +808,8 @@ def train(args):
                     shift_labels.view(-1),
                     ignore_index=-100,
                 )
+                # 释放 logits 显存（gradient checkpointing 会在 backward 时按需重算）
+                del outputs, logits, shift_logits, shift_labels
                 timer.start("fwd_done")
             except Exception as e:
                 _skip_batch = True
@@ -946,6 +914,51 @@ def train(args):
         if _skip_count > 0:
             log(f"  [诊断] Epoch {epoch} 中共 {_skip_count} 个 batch 因错误跳过")
         train_log.append({"global_step": global_step, "epoch": epoch, "train_loss": round(avg_epoch_loss, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "elapsed_sec": round(elapsed, 1), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
+
+    # ── Post-training baseline loss（step=0 等价评估，含显式显存释放）──
+    init_train_loss = None
+    init_eval_loss = None
+    if local_rank == 0:
+        log("  [收尾] 计算 baseline loss...")
+    if eval_loader:
+        init_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=global_step)
+    if len(train_loader) > 0:
+        try:
+            first_batch = next(iter(train_loader))
+            input_ids = first_batch["input_ids"].to(device)
+            labels    = first_batch["labels"].to(device)
+            attn_mask = first_batch["attention_mask"].to(device)
+            with torch.no_grad():
+                outputs = model(input_ids=input_ids, attention_mask=attn_mask)
+                logits = outputs.logits
+                shift_logits = logits[..., :-1, :].contiguous().float()
+                shift_labels = labels[..., 1:].contiguous()
+                batch_loss = F.cross_entropy(
+                    shift_logits.view(-1, logits.size(-1)),
+                    shift_labels.view(-1),
+                    ignore_index=-100,
+                ).item()
+            if n_gpu > 1:
+                loss_t = torch.tensor([batch_loss], device=device)
+                dist.all_reduce(loss_t, op=dist.ReduceOp.SUM)
+                batch_loss = loss_t.item() / n_gpu
+            init_train_loss = batch_loss
+        except Exception as e:
+            if local_rank == 0:
+                log(f"  [收尾] baseline train_loss 计算失败: {e}")
+        finally:
+            del outputs, logits, shift_logits, shift_labels
+            torch.cuda.empty_cache()
+    if local_rank == 0:
+        log(f"  [收尾] baseline: train_loss={init_train_loss:.4f}" if init_train_loss is not None
+            else "  [收尾] baseline: train_loss=None")
+        if init_eval_loss is not None:
+            log(f"  [收尾] baseline: eval_loss={init_eval_loss:.4f}")
+    train_log.append({"global_step": 0, "epoch": 0.0,
+                      "train_loss": round(init_train_loss, 6) if init_train_loss is not None else None,
+                      "eval_loss": round(init_eval_loss, 6) if init_eval_loss is not None else None,
+                      "lr": round(scheduler.get_last_lr()[0], 8),
+                      "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
     save_final(model, tokenizer, args.output_dir, train_log, local_rank=local_rank)
 
