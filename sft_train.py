@@ -200,7 +200,7 @@ os.environ.setdefault("NCCL_SOCKET_IFNAME", "^docker,lo,virbr")
 # NCCL 通讯优化：Ring 算法 + 多通道带宽利用
 os.environ.setdefault("NCCL_ALGO", "Ring")
 os.environ.setdefault("NCCL_PROTO", "Simple")
-os.environ.setdefault("NCCL_MIN_NCHANNELS", "4")
+os.environ.setdefault("NCCL_MIN_NCHANNELS", "2")
 
 # FSDP.state_dict_type() 已弃用但新 DCP get_state_dict 不支持 rank0_only，
 # rank0_only 对 72B 模型至关重要（避免每 rank 各持一份完整 CPU state dict）
@@ -258,6 +258,8 @@ def parse_args():
                     help="FSDP backward prefetch: post 更省显存但略慢")
     p.add_argument("--fused_optimizer", action="store_true", default=True,
                     help="使用 fused AdamW（CUDA 融合内核加速）")
+    p.add_argument("--use_8bit_adam", action="store_true", default=False,
+                    help="使用 8-bit AdamW（大幅降低 CPU 优化器状态显存，需 bitsandbytes）")
     p.add_argument("--perf_metric_steps", type=int, default=50,
                     help="性能指标记录间隔（global_step 倍数），0=禁用")
     p.add_argument("--memory_metric_steps", type=int, default=20,
@@ -650,9 +652,11 @@ def train(args):
             _policy = _partial(transformer_auto_wrap_policy, transformer_layer_cls={_layer_cls})
         # 使用 auto_wrap_policy 逐层分片，避免 FSDP init 时将完整模型移至单卡
         _bwd = BackwardPrefetch.BACKWARD_POST if args.backward_prefetch == "post" else BackwardPrefetch.BACKWARD_PRE
-        _cpu_offload = CPUOffload(offload_params=True) if args.cpu_offload else None
+        _cpu_offload = CPUOffload(offload_params=False) if args.cpu_offload else None
+        _fwd_prefetch = False if _cpu_offload else True  # cpu_offload 时关闭 fwd prefetch 节省 ~1.8GB
         if _cpu_offload:
-            log(f"[5/8] CPU offload: 参数+优化器状态移至 CPU RAM（每卡释放 ~36GB 显存，训练略慢）")
+            log(f"[5/8] CPU offload: 优化器状态移至 CPU RAM（每卡节省 ~54GB 显存）")
+            log(f"[5/8] forward_prefetch={_fwd_prefetch}（关闭以节省显存）")
         model = FSDP(
             model,
             sharding_strategy=ShardingStrategy.FULL_SHARD,
@@ -664,7 +668,7 @@ def train(args):
             ),
             device_id=local_rank,
             limit_all_gathers=True,
-            forward_prefetch=True,
+            forward_prefetch=_fwd_prefetch,
             backward_prefetch=_bwd,
             cpu_offload=_cpu_offload,
         )
@@ -705,9 +709,24 @@ def train(args):
 
     # ── Step 7: Optimizer & Scheduler ──
     t0 = time.time()
-    _fused = args.fused_optimizer and torch.cuda.is_available()
-    log(f"[7/8] 创建 optimizer (AdamW{' fused' if _fused else ''}, lr={args.learning_rate})...")
-    optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, fused=_fused)
+    if args.use_8bit_adam:
+        try:
+            import bitsandbytes as bnb
+            optimizer = bnb.optim.AdamW8bit(model.parameters(), lr=args.learning_rate,
+                                            weight_decay=args.weight_decay)
+            log(f"[7/8] 创建 optimizer (8-bit AdamW, lr={args.learning_rate})...")
+            log(f"[7/8] 8-bit AdamW: 优化器状态 ~2.2 bytes/param (fp32 的 1/5.5)")
+        except ImportError:
+            log("[7/8] bitsandbytes 未安装, 回退到标准 AdamW")
+            _fused = args.fused_optimizer and torch.cuda.is_available()
+            optimizer = AdamW(model.parameters(), lr=args.learning_rate,
+                            weight_decay=args.weight_decay, fused=_fused)
+            log(f"[7/8] 创建 optimizer (AdamW{' fused' if _fused else ''}, lr={args.learning_rate})...")
+    else:
+        _fused = args.fused_optimizer and torch.cuda.is_available()
+        optimizer = AdamW(model.parameters(), lr=args.learning_rate,
+                        weight_decay=args.weight_decay, fused=_fused)
+        log(f"[7/8] 创建 optimizer (AdamW{' fused' if _fused else ''}, lr={args.learning_rate})...")
     accum         = args.gradient_accumulation_steps
     steps_per_epoch = (len(train_loader) + accum - 1) // accum
     total_steps   = steps_per_epoch * args.epochs
