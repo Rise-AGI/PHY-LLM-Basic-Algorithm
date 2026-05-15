@@ -755,6 +755,24 @@ def train(args):
         log(f"  [就绪] GPU 显存: {torch.cuda.memory_allocated()/1e9:.1f}GB allocated | "
             f"{torch.cuda.memory_reserved()/1e9:.1f}GB reserved")
 
+    # ── 预分配优化器 CUDA buffer（避免首次 optimizer.step() 集中分配导致 OOM）──
+    if local_rank == 0:
+        log(f"  [就绪] 预分配优化器显存 buffer...")
+    try:
+        optimizer.step()
+        optimizer.zero_grad()
+        if local_rank == 0:
+            log(f"  [就绪] 优化器 buffer 预分配完成")
+            log(f"  [就绪] GPU 显存: {torch.cuda.memory_allocated()/1e9:.1f}GB allocated | "
+                f"{torch.cuda.max_memory_allocated()/1e9:.1f}GB peak")
+    except (torch.cuda.OutOfMemoryError, RuntimeError) as _prealloc_err:
+        _err_str = str(_prealloc_err)
+        if "out of memory" in _err_str.lower():
+            log(f"  [FATAL] 预分配优化器显存失败: OOM。当前配置无法训练，请降低 grad_accum 或 batch_size")
+            sys.exit(137)
+        else:
+            raise
+
     # ── 诊断: 数据质量预检（仅 rank 0）──
     if local_rank == 0:
         bad_samples = 0
@@ -876,13 +894,38 @@ def train(args):
 
             is_update = (step % accum == 0) or (step == len(train_loader))
             if is_update:
+                # 梯度累积期间 CUDA 内存碎片化，opt step 前整理
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
                 timer.start("opt")
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0) if n_gpu <= 1 else model.clip_grad_norm_(1.0)
-                optimizer.step()
-                scheduler.step()
-                optimizer.zero_grad()
-                timer.start("opt_done")
-                global_step += 1
+                _oom_skip = False
+                try:
+                    if n_gpu > 1:
+                        model.clip_grad_norm_(1.0)
+                    else:
+                        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    optimizer.step()
+                except (torch.cuda.OutOfMemoryError, RuntimeError) as _opt_err:
+                    _err_str = str(_opt_err)
+                    if "out of memory" in _err_str.lower() and n_gpu > 1:
+                        _oom_skip = True
+                        if local_rank == 0:
+                            log(f"  [OOM] optimizer.step() 显存溢出，跳过此累积周期 "
+                                f"(step={step}, global_step={global_step})")
+                            log(f"  [OOM] 详情: {_err_str[:200]}")
+                    else:
+                        raise
+                if _oom_skip:
+                    # 跳过此 optimizer step：清空累积梯度，不更新 global_step
+                    optimizer.zero_grad()
+                    timer.start("opt_done")
+                    if n_gpu > 1:
+                        dist.barrier()
+                else:
+                    scheduler.step()
+                    optimizer.zero_grad()
+                    timer.start("opt_done")
+                    global_step += 1
 
                 # ── 性能指标: 显存明细（所有 rank 写，按 GPU 分选）──
                 if args.memory_metric_steps > 0 and global_step % args.memory_metric_steps == 0:
