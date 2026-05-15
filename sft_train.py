@@ -524,7 +524,7 @@ def evaluate(model, dataloader, device, n_gpu=1, local_rank=0, global_step=None)
 
 def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    n_gpu  = torch.cuda.device_count()
+    n_gpu  = torch.cuda.device_count() if torch.cuda.is_available() else 0
     local_rank = 0
     if n_gpu > 1:
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
@@ -741,7 +741,10 @@ def train(args):
     log(f"  数据: {len(train_samples)} 训练样本 | {len(train_loader)} batches/epoch")
     log(f"  训练: {args.epochs} epochs × {steps_per_epoch} steps = {total_steps} total steps")
     log(f"  保存: 每 {args.save_steps} steps（自动覆盖） | 日志: 每 {args.logging_steps} steps")
-    log(f"  GPU: {n_gpu} × {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'}")
+    if n_gpu > 0:
+        log(f"  GPU: {n_gpu} × {torch.cuda.get_device_name(0)}")
+    else:
+        log(f"  设备: CPU（无可用 GPU）")
     log(f"{'='*60}")
 
     train_log   = []
