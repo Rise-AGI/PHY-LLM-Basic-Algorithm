@@ -1,0 +1,472 @@
+# SFT.skill — SFT/LoRA 训练
+
+> **Level 1 — SFT 训练领域入口。** 涉及训练提交、训练脚本修改、蓝图修改、训练排错时读此文件。
+> 本文件包含 SFT 训练的核心知识。补充细节见二级 skill。
+
+## 元信息
+- **关联 .py**: submit_sft.py(推荐提交入口), magnus_sft.py(CLI版), run_sft_blueprint.py(精简版), sft_train.py(训练引擎), config.py(共享配置)
+- **关联 skill**: README.skill(必读，已有SFT概览), magnus.skill(Magnus平台), config.skill(config详解), eval.skill(训练完后评估), docker.skill(训练镜像), tools.skill→tool_model.skill(下载模型)
+- **关联 .md**: SFT.md(技术细节), LoRA.md(LoRA专题), blue.md(蓝图原理)
+- **子 skill (8个)**: sft_submit, sft_train, sft_lora, sft_blueprint, sft_memory, sft_issues, sft_prompt, sft_metrics
+
+---
+
+## 核心流程
+
+```
+[本地] submit_sft.py 配置参数
+  → save_blueprint() 保存 .magnus 蓝图到 Magnus 服务器
+  → git push sft_train.py 到 GitHub (Rise-AGI/PHY-LLM-Basic-Algorithm)
+  → wait 10s (GitHub CDN 传播)
+  → launch_blueprint() 启动训练任务
+  → [集群] 容器启动 → wget sft_train.py → torchrun 分布式训练
+  → wait_for_job() 本地轮询监控
+  → 训练完成 → 下载报告 + record_storage()
+```
+
+## 3 种提交方式
+
+| 脚本 | 方式 | 适用场景 |
+|------|------|---------|
+| `submit_sft.py` | 配置驱动（编辑文件顶部变量） | **推荐**，日常训练 |
+| `magnus_sft.py` | CLI 参数 (`--model --epochs --batch-size ...`) | 临时/测试 |
+| `run_sft_blueprint.py` | 精简配置 + CLI，`delete_blueprint()` + `save_blueprint()` + `launch_blueprint()` | 快速测试 |
+
+## submit_sft.py 完整工作流
+
+```
+[0/5] 自动推导 model-version → check_model_version_exists() 去重
+[1/5] magnus.configure() 连接服务器
+[2/5] 读取 .magnus 蓝图文件 → save_blueprint() 保存到 Magnus
+[2.5/5] git add/commit/push sft_train.py → GitHub (Rise-AGI/PHY-LLM-Basic-Algorithm)
+[3/5] time.sleep(10) — 等待 GitHub CDN 传播
+[4/5] _build_bp_args() 构建参数 → launch_blueprint() 启动任务
+[5/5] notify_exe() → wait_for_job() 监控 → get_job_result() → record_storage()
+```
+
+## 配置区参数详解
+
+```python
+MODE = "sft"          # "sft"=全参微调 / "lora"=LoRA (决定选哪个蓝图)
+MODEL_PATH = "..."    # 模型路径，本地绝对路径或 Hub ID
+BLUEPRINT_FILE = ""   # 留空自动选择: MODE=sft→OpenFundus_SFT_zyz.magnus, MODE=lora→LoRA_zyz.magnus
+OUTPUT_DIR = ""       # 留空自动: /data/magnus/models/{model_version}
+MODEL_VERSION = None  # None=自动递增; 指定则用指定值
+TRAIN_DATA = None     # None=使用模拟假数据(30条,验证流程用)
+TEST_DATA = None      # None=跳过评估
+EPOCHS = 3
+BATCH_SIZE = 1
+GRAD_ACCUM = 8        # 有效batch = BATCH_SIZE × GRAD_ACCUM × GPU_COUNT
+LEARNING_RATE = 2e-5
+MAX_LENGTH = 1024
+NUM_WORKERS = 4       # DataLoader worker; 假数据时自动=0
+GPU_COUNT = 4
+GPU_TYPE = "a100"
+CPU_COUNT = 40
+MEMORY = "256G"
+STORAGE = "1024G"     # 临时存储(ephemeral_storage)
+PRIORITY = "A2"
+CONTAINER_IMAGE = "docker://crpi-...aliyuncs.com/zyz25/sft-base:v3"
+RESUME_FROM = None    # None=从头训练; 路径=断点续训
+PROMPT_PREFIX = "..."  # 统一提示词前缀，支持{instruction}占位符
+CPU_OFFLOAD = True    # 优化器状态→CPU RAM
+USE_8BIT_ADAM = True  # 8-bit 优化器，配合CPU offload
+BWD_PREFETCH = "post" # "pre"=速度 / "post"=显存
+```
+
+## Version Naming
+
+**规则**: `{模型短名}-{MODE}-zyz-v{编号}`
+- 例：`Qwen2.5-72B-Instruct-sft-zyz-v1`、`Qwen2.5-72B-Instruct-lora-zyz-v1`
+- 模型短名从 `MODEL_PATH` 自动提取，MODE = `"sft"` 或 `"lora"`
+- 不指定版本时自动递增（从 `storage_record.json` 查最大编号 +1）
+- 提交前自动去重（`check_model_version_exists()`）
+
+`_auto_model_version(short_name)`: 从 storage_record.json 读取已有记录 → 匹配前缀 `{short_name}-{MODE}-zyz-v` → 找最大编号 +1 返回。
+
+`_resolve_output_dir(model_version)`: `/data/magnus/models/{model_version}`
+
+## GitHub 同步机制
+
+- 源文件: `train/sft_train.py`
+- 目标仓库: `Rise-AGI/PHY-LLM-Basic-Algorithm` (路径: `PHY-LLM-Basic-Algorithm/sft_train.py`)
+- `shutil.copy2` → `git add` → `git diff --cached --quiet` (检查是否有变化) → `git commit` + `git push`
+- 无变化时跳过提交
+- 蓝图容器内通过 `wget raw.githubusercontent.com/.../sft_train.py` 拉取
+
+---
+
+## 两个蓝图
+
+| 蓝图 | 模式 | 并行策略 | 显存需求(72B) |
+|------|------|---------|-------------|
+| `OpenFundus_SFT_zyz.magnus` | 全参 SFT | FSDP FULL_SHARD | 2×80GB (CPU Offload) / 3×80GB |
+| `LoRA_zyz.magnus` | LoRA/QLoRA | DDP(量化) / FSDP(bf16) | 1×80GB (4-bit QLoRA) |
+
+### 通用参数(两个蓝图共用)
+`model_path`, `train_data`, `test_data`, `output_dir`, `epochs`, `batch_size`, `grad_accum`, `learning_rate`, `max_length`, `num_workers`, `save_steps`, `gpu_count`, `gpu_type`, `cpu_count`, `memory_demand`, `ephemeral_storage`, `priority`, `container_image`, `resume_from`, `prompt_prefix_b64`
+
+### SFT 专属
+`cpu_offload`, `backward_prefetch`, `use_8bit_adam`
+
+### LoRA 专属
+`lora_r`, `lora_alpha`, `lora_dropout`, `quantization`, `target_modules`, `merge_on_save`
+
+### entry_command 构造要点
+
+1. **GPU 自动检测** (shell 层):
+   ```bash
+   ACTUAL_GPU=$(python3 -c "import torch; print(torch.cuda.device_count())")
+   # 0 GPU → LAUNCHER="python3"
+   # 多卡 → LAUNCHER="torchrun --nproc_per_node=$ACTUAL_GPU"
+   # 单卡 → LAUNCHER="python3"
+   ```
+
+2. **训练脚本获取**: `wget -q "https://raw.githubusercontent.com/Rise-AGI/{github_path}" -O /tmp/sft_train.py`
+
+3. **NCCL 优化**: shell 层设置环境变量 (NCCL_ALGO=Ring 等)
+
+4. **prompt_prefix_b64**: 蓝图沙箱禁止 `import base64`，编码在 submit_sft.py 预计算，蓝图透传
+
+5. **nvidia-smi 非致命化**: `nvidia-smi 2>&1 || echo`，无 NVIDIA runtime 时不崩溃
+
+### 蓝图与 sft_train.py 接口
+
+所有蓝图参数最终映射为 sft_train.py 的 argparse 参数：
+```
+python sft_train.py --model_path ... --train_data ... --output_dir ... --epochs ... ...
+```
+
+---
+
+## 训练引擎 (sft_train.py)
+
+### 两种运行模式
+
+- **训练模式**(默认): `torchrun --nproc_per_node=N sft_train.py --model_path ... --train_data ...`
+- **评估模式**: `python sft_train.py --eval-only --model_dir ... --test_path ...`
+- GPU 检测：容器内 `torch.cuda.device_count()` → 0 GPU=python3, 多卡=torchrun, 单卡=python3
+
+### FSDP FULL_SHARD 配置
+
+```python
+model = FSDP(
+    model,
+    sharding_strategy=ShardingStrategy.FULL_SHARD,  # 参数+梯度+优化器全分片
+    mixed_precision=MixedPrecision(
+        param_dtype=torch.bfloat16,
+        reduce_dtype=torch.bfloat16,
+        buffer_dtype=torch.bfloat16,
+    ),
+    cpu_offload=CPUOffload(offload_params=False),  # 仅offload优化器状态
+    backward_prefetch=BackwardPrefetch.BACKWARD_POST,  # or BACKWARD_PRE
+    device_id=local_rank,
+)
+```
+
+**配套组件**: DistributedSampler(每卡处理不同数据子集)、all_reduce 汇总 eval loss、仅 rank 0 保存 checkpoint、FSDP 内置 `model.clip_grad_norm_()` 梯度裁剪。
+
+### 混合精度 + Gradient Checkpointing
+
+- 参数/梯度/通信均用 bf16，减少显存和通信量
+- float32 loss 计算: `shift_logits.float()` → `F.cross_entropy(..., ignore_index=-100)` 防止 bf16 softmax 下溢出 → NaN
+- Gradient Checkpointing 始终开启: 反向传播时重算中间激活值，大幅降低显存（速度损失 ~15-20%）
+- `model.config.use_cache = False` — generation cache 与 checkpointing 不兼容
+
+### NaN Loss 处理 (torch.where)
+
+```python
+if torch.isnan(loss) or torch.isinf(loss):
+    loss = torch.where(
+        torch.isnan(loss) | torch.isinf(loss),
+        torch.zeros_like(loss),  # NaN路径，梯度被截断
+        loss,                     # 正常路径，梯度流通
+    )
+(loss / accum).backward()  # torch.where保留grad_fn，FSDP backward始终触发
+```
+
+### Checkpoint 管理
+
+- **原子保存**: 先写 `.ckpt-tmp-{step}` → `os.rename()` 到 `checkpoint-latest`，被杀时不损坏正式 checkpoint
+- **加载容错**: `_load_safetensors_state()` try/except 兜底，损坏返回 None
+- **Shell 最终兜底**: 3次重试耗尽后，`rm -rf checkpoint-latest` 从头训练
+- 仅 rank 0 执行保存
+
+### DataLoader
+
+- `SFTDataset`: 支持 JSON/JSONL/Parquet，自动处理对话模板(`tokenizer.apply_chat_template()`)
+- `num_workers`: 假数据=0，真数据=2-4 (可配置)
+- `DistributedSampler`: 多卡时每卡处理数据子集
+
+### NCCL 通讯优化 (shell 层)
+
+```bash
+export NCCL_ALGO=Ring NCCL_PROTO=Simple
+```
+不设 `NCCL_P2P_LEVEL`，让 NCCL 自选最优路径（NVLink / PCIe / CPU socket）。Ring 算法对 all-gather 稳定性最优。
+
+---
+
+## LoRA/QLoRA
+
+### 使用方式
+
+在 submit_sft.py 中设置 `MODE = "lora"`，自动使用 `LoRA_zyz.magnus` 蓝图。
+
+### 量化策略对比
+
+| 量化 | 72B 每卡显存 | GPU 推荐 | 精度 | 速度 | 并行策略 |
+|------|-------------|----------|------|------|---------|
+| `4bit` (QLoRA) | ~36 GB | 1-4×A100 | 接近bf16 | 较慢(dequant) | DDP |
+| `8bit` | ~72 GB | 4×A100 | 中等 | 中等 | DDP |
+| `none` (bf16) | ~144 GB | 8+×A100 | 最高 | 最快 | FSDP |
+
+**推荐 QLoRA (4-bit NF4)**：72B 仅需 1-4 卡，adapter 仅几百 MB，精度差异 <1%。
+
+### LoRA 专属参数
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `lora_r` | 64 | rank，越大可学习参数越多 |
+| `lora_alpha` | 128 | 缩放系数，通常 2×rank |
+| `lora_dropout` | 0.05 | dropout 率 |
+| `quantization` | `4bit` | `4bit` / `8bit` / `none` |
+| `target_modules` | 自动 | 逗号分隔的模块名，留空自动检测 |
+| `merge_on_save` | True | 保存时合并 adapter→完整模型 |
+
+### Target Modules 自动检测
+
+| 模型架构 | 自动选择 |
+|----------|---------|
+| Qwen2 | q_proj, k_proj, v_proj, o_proj |
+| LLaMA | q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj |
+| 其他 | q_proj, k_proj, v_proj, o_proj (默认) |
+
+### 多卡策略
+
+- 量化模式(4bit/8bit): DDP — 每卡完整 base + LoRA adapter
+- bf16模式: FSDP FULL_SHARD — LoRA权重跨卡分片
+
+### LoRA vs 全参 SFT
+
+| 维度 | 全参 SFT | LoRA/QLoRA |
+|------|---------|------------|
+| 可训练参数 | 100% (72B) | ~0.1-1% (70-700M) |
+| 72B 显存(4-bit) | >300 GB | ~36 GB/卡 |
+| Adapter 大小 | 无 | 几百 MB |
+| 多任务部署 | 每任务一个完整模型 | 共享base+切换adapter |
+
+---
+
+## 显存优化
+
+### CPU Offload 原理
+
+`CPUOffload(offload_params=False)`: 仅将 **AdamW 优化器状态** (momentum + variance, fp32) 移到 CPU RAM，参数和梯度仍保留在 GPU。
+
+**72B 模型显存分析** (bf16 混合精度, FSDP FULL_SHARD, N 卡):
+
+| 组件 | 无 CPU Offload | 有 CPU Offload |
+|------|---------------|---------------|
+| 参数 (bf16) | 144/N GB | 144/N GB |
+| 梯度 (bf16) | 144/N GB | 144/N GB |
+| 优化器状态 (fp32) | 864/N GB | **0** (移至 CPU) |
+| **GPU 显存合计** | **~1152/N GB** | **~288/N GB** |
+| 72B 最低 GPU | 3×80GB | **2×80GB** |
+
+### BackwardPrefetch
+
+- `"pre"` (默认): 提前预取下一层参数，**速度优先**
+- `"post"`: 等当前层计算完成后才取下一层，**显存优先** (约省 10-15% 峰值显存)
+
+### 8-bit AdamW
+
+`USE_8BIT_ADAM = True`: 使用 bitsandbytes 8-bit 优化器，配合 CPU offload 大幅降低 CPU 内存需求。
+- 无 8-bit: AdamW fp32 状态 = 参数×8 bytes × 2 (m+v) ≈ 72B×8×2 ≈ 1.15 TB
+- 有 8-bit: 参数×1 byte × 2 ≈ 144 GB
+
+### 理论显存估算
+
+`sft_train.py` 在 step=0 时打印 `estimate_memory_components()`:
+- `estimated_params_gb`: 参数量×2 bytes (bf16)
+- `estimated_optimizer_gb`: 参数量×8 bytes (fp32) × 2 (m+v)
+- `estimated_gradients_gb`: 参数量×2 bytes (bf16)
+- `estimated_total_gb`: 三项之和 / N GPUs
+
+### 推荐配置速查表
+
+| 场景 | CPU_OFFLOAD | BWD_PREFETCH | 8BIT_ADAM | 最低GPU数 |
+|------|------------|-------------|-----------|----------|
+| 72B + 3×80GB | False | "pre" | False | 3 |
+| 72B + 2×80GB | **True** | **"post"** | **True** | 2 |
+| 7B + 1×80GB | False | "pre" | False | 1 |
+| 30B + 2×80GB | False | "pre" | False | 2 |
+| 30B + 1×80GB | True | "post" | True | 1 |
+
+---
+
+## PROMPT_PREFIX 提示词系统
+
+### 数据流
+
+```
+submit_sft.py                    Magnus 集群
+    │                                │
+    ├── PROMPT_PREFIX (原始文本)        │
+    ├── base64.b64encode()           │
+    ├── prompt_prefix_b64 参数 ──────→ 蓝图透传(沙箱限制,不 import base64)
+    │                                ├── shell: $PROMPT_ARG
+    │                                └── sft_train.py: base64.b64decode()
+    │                                      ├── SFTDataset.__getitem__ (训练)
+    │                                      ├── run_eval() (eval-only推理)
+    │                                      └── run_generation_eval() (生成式评估)
+```
+
+### 为什么用 base64
+
+Magnus 蓝图沙箱禁止 `import base64`，因此编码必须在 `submit_sft.py` 中预计算，蓝图通过 `prompt_prefix_b64` 参数透传。容器内 `sft_train.py` 解码后使用。
+
+### 当前默认 PROMPT_PREFIX
+
+```
+你是一位数学解题专家。请逐步推理并解答以下问题。
+
+输出格式：
+答案：[最终结果。多问时用 (1)...; (2)... 分别列出。数学公式使用 LaTeX $...$]
+
+解答：[完整推导过程。写明所用的定理、公式或变换方法，关键推导步骤不可省略]
+
+{instruction}
+```
+
+### 3 个应用点
+
+1. **SFTDataset.__getitem__** — 训练数据加载时：`prefix + instruction` → 拼到 messages[user]
+2. **run_eval()** — eval-only 推理时：同样拼接
+3. **run_generation_eval()** — 生成式评估时：同样拼接
+
+`{instruction}` 占位符在运行时被替换为实际 instruction 文本。设置 `PROMPT_PREFIX = None` 可完全禁用。
+
+---
+
+## Magnus Metrics 指标系统
+
+指标以 JSONL 格式写入 `$MAGNUS_METRICS_DIR/rank-0.jsonl`，Magnus 面板自动读取。
+
+### CUDATimer 性能指标
+
+基于 `torch.cuda.Event(enable_timing=True)` 精确 GPU 计时，每 `perf_metric_steps`(默认50)步写入一次(仅 rank 0)：
+
+| 指标名 | 含义 |
+|--------|------|
+| `perf.forward_ms` | 前向传播耗时 |
+| `perf.backward_ms` | 反向传播耗时 |
+| `perf.optimizer_ms` | 优化器 step+zero_grad |
+| `perf.comm_ms` | 通讯耗时(total-fwd-bwd-opt) |
+| `perf.total_ms` | 单步总耗时 |
+| `perf.tokens_per_sec` | 吞吐量 |
+
+### 显存分解指标
+
+每 `memory_metric_steps`(默认20)步写入一次，**所有 rank 均写入**(带 rank 标签)：
+
+| 指标名 | 含义 | labels |
+|--------|------|--------|
+| `memory.allocated_gb` | 当前已分配显存 | `{"rank":"N"}` |
+| `memory.reserved_gb` | 当前已预留显存 | `{"rank":"N"}` |
+| `memory.peak_allocated_gb` | 峰值分配显存 | `{"rank":"N"}` |
+| `memory.fragmentation_pct` | 显存碎片率(%) | `{"rank":"N"}` |
+
+Magnus 面板可按 `rank` 维度分选查看各 GPU 状态。
+
+### train.loss / eval.loss
+
+| 指标 | 写入频率 | step_domain | 说明 |
+|------|---------|-------------|------|
+| `train.loss` | 每 batch | `train` | `_metric_step` 按 batch 递增 |
+| `eval.loss` | 初始/存档步/epoch结束/最终 | `eval` | 全 eval_loader 计算 |
+
+**实现**: `_write_metric()` fail-open(目录缺失不中断)，仅 rank 0 写入，NaN/Inf 自动过滤。
+
+### CLI 参数
+
+- `--perf_metric_steps 50` — CUDATimer 写入间隔
+- `--memory_metric_steps 20` — 显存指标写入间隔
+
+---
+
+## 已知问题排错
+
+### 问题速查表
+
+| 现象 | 根因 | 修复 |
+|------|------|------|
+| NaN loss | bf16 大词表 softmax 下溢出 / 全部 label=-100 | float32 loss + torch.where |
+| NCCL 超时(600s) | NaN 处理破坏计算图 → FSDP REDUCE_SCATTER 不触发 | torch.where 保留 grad_fn |
+| `SafetensorError: incomplete metadata` | 训练被杀时 save_pretrained 写到一半 | 原子保存(.tmp→rename) + 加载容错 |
+| torchrun 无 traceback 直接 Failed | stderr 未被 Magnus 日志捕获 | `2>&1` + `--log-dir` + 失败dump |
+| `tokenizer.chat_template is not set` | DeepSeek 等模型无预置 chat_template | 检测后设置默认模板 |
+| 单卡 `Permission denied` | f-string 拼命令时空行导致 bash 续行断裂 | 用 shell 变量替代 f-string |
+| `nvidia-smi` 崩溃 | 0 GPU 容器无 NVIDIA runtime | `nvidia-smi 2>&1 \|\| echo` |
+| `unrecognized arguments: --test_path` | argparse 只注册了 --test_data | 同时注册 --test_data 和 --test_path |
+| `ValueError: torch.load CVE` | transformers 5.7.0 要求 torch>=2.6 加载 .bin | patch `modeling_utils.check_torch_load_is_safe` |
+| 训练极慢/卡死 | 见下"PCIe NCCL" | 不设 `NCCL_P2P_LEVEL` + `NCCL_ALGO=Ring` |
+| Step 8 OOM 无限循环 | grad_accum 边界首次 optimizer.step() 集中分配 CUDA buffer | 预分配+`empty_cache()`+OOM 捕获跳过 |
+
+### 优化器 OOM 防护 (v17)
+
+grad_accum=8 边界首次 `optimizer.step()` 会集中分配 CUDA buffer（clip_grad_norm all-reduce + 8-bit Adam 量化 buffer），与梯度累积峰值叠加导致 OOM。修复：
+
+1. **预分配**：训练循环前 `optimizer.step()` + `optimizer.zero_grad()` 预分配 8-bit Adam buffer
+2. **碎片整理**：每个 optimizer step 前 `torch.cuda.empty_cache()`
+3. **OOM 跳过**：optimizer step 内 try/except 捕获 CUDA OOM → 清空梯度跳过此累积周期继续训练，不再崩溃重试
+
+### A100 PCIe NCCL 适配 (v18)
+
+**不强制 `NCCL_P2P_LEVEL`，让 NCCL 自选最优路径。** 教训：
+- v16 `NVL` → A100 PCIe 慢速 ~130s/step（回退 CPU socket）
+- v17 `PXB` + `Tree` → 完全卡死，首次 ALLGATHER 600s timeout（ACS/IOMMU 阻止 PCIe P2P）
+- v18 不设 P2P_LEVEL + `Ring` → 预期正常 2-5s/step
+
+NCCL 崩溃后需 GPU 状态恢复：`fuser -k /dev/nvidia*` + `sleep 15`（否则 retry 时 `torch.cuda.device_count()==0`）。
+
+### NaN Loss 完整崩溃链
+
+```
+样本 NaN loss / 全部 label=-100(被截断)
+  → zeros_like 破坏计算图 → backward() 失败
+  → FSDP REDUCE_SCATTER 不执行 → NCCL 死锁
+```
+
+**修复 (v2)**:
+- A: `shift_logits.float()` + 手动 `F.cross_entropy` — 防 NaN 产生
+- B: `torch.where(isnan|isinf, zeros_like, loss)` — 保留 grad_fn，FSDP backward 始终触发
+
+### Checkpoint 损坏修复 (v3)
+
+- 原子保存: 先写 `.ckpt-tmp-{step}` 再 rename
+- 加载容错: `_load_safetensors_state()` try/except 兜底
+- Shell 兜底: 3次重试耗尽后 rm checkpoint 从头训练
+
+### transformers 5.7.0 + torch 2.5.1 CVE
+
+```python
+import transformers.modeling_utils
+transformers.modeling_utils.check_torch_load_is_safe = lambda: None
+```
+必须 patch `modeling_utils`（非 `import_utils`），因为前者用 `from import` 持有本地引用。只影响 `.bin` 模型，`.safetensors` 不受影响。长期方案：升级 torch >= 2.6 或转 safetensors。
+
+---
+
+## 读完本 skill 后
+
+- 修改提交流程细节 → `sft_submit.skill` — submit_sft.py / magnus_sft.py / run_sft_blueprint.py 补充
+- 修改训练引擎内部实现 → `sft_train.skill` — FSDP/checkpoint/DataLoader 补充
+- LoRA 量化深度细节 → `sft_lora.skill` — LoRA/QLoRA 补充
+- 修改蓝图 entry_command 细节 → `sft_blueprint.skill` — .magnus 蓝图补充
+- 显存 OOM 深度分析 → `sft_memory.skill` — 理论估算补充
+- 训练失败深度排查 → `sft_issues.skill` — 已知问题详细记录
+- 修改提示词实现细节 → `sft_prompt.skill` — PROMPT_PREFIX 补充
+- 添加新指标 → `sft_metrics.skill` — Metrics Protocol 补充
+- 训练完要评估 → `eval.skill`
+- 要了解 Magnus 底层 → `magnus.skill`

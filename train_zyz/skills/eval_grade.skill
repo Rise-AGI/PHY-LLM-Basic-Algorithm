@@ -1,0 +1,27 @@
+# eval_grade.skill — auto_grade.py LLM 批改补充
+
+> **Level 2 — eval 子 skill。** eval.skill 已包含批改流程核心内容，本文件补充实现细节。
+> 父 skill: eval.skill
+
+## 元信息
+- **关联 .py**: auto_grade.py
+- **关联 skill**: eval.skill(父), eval_baseline.skill(产生eval_results)
+- **关联 .md**: README.md(auto_grade节)
+- **父 skill**: eval.skill
+
+---
+
+## 审阅模型配置
+
+使用 QLoRA 72B 作为审阅模型（与训练模型分离），逐条对比 ground truth 和 model output。
+
+## 过程分计算
+
+`avg_process_score` 评判维度包括：推导完整性、步骤正确性、公式使用、逻辑连贯性。与答案正确性(accuracy)分开统计。
+
+---
+
+## 读完本 skill 后
+
+- 产生 eval_results → `eval_baseline.skill`
+- 测试集管理 → `eval_testset.skill`

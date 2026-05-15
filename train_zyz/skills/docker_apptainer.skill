@@ -1,0 +1,37 @@
+# docker_apptainer.skill — Apptainer/SIF 运行机制补充
+
+> **Level 2 — docker 子 skill。** docker.skill 已包含 Apptainer 核心内容，本文件补充底层细节。
+> 父 skill: docker.skill
+
+## 元信息
+- **关联 .py**: 无直接关联(平台知识)
+- **关联 skill**: docker.skill(父), docker_traps.skill(运行陷阱)
+- **关联 .md**: docker.md §1
+- **父 skill**: docker.skill
+
+---
+
+## SIF 缓存细节
+
+```
+{magnus_root}/container_cache/
+├── pytorch_pytorch_2.5.1-cuda12.4-cudnn9-runtime.sif
+└── crpi-...aliyuncs.com_zyz25_sft-base_v3.sif
+```
+
+- **文件名规则**: `registry_name_tag.sif` (斜杠/冒号→下划线)
+- **缓存上限**: 80 GB，LRU 淘汰（最久未使用的 .sif 优先删除）
+- **原子写入**: `.sif.tmp` → `chmod 644` → `rename` → `.sif` (崩溃安全，不会产生破损文件)
+
+## 状态转换触发条件
+
+- `cached → refreshing`: 收到 `refresh_image` 请求
+- `cached → missing`: .sif 被手动删除但 DB 记录还在
+- `pulling → failed`: 拉取超时或 registry 不可达
+
+---
+
+## 读完本 skill 后
+
+- 容器运行报错 → `docker_traps.skill`
+- 构建镜像 → `docker_build.skill`

@@ -1,0 +1,37 @@
+# sft_memory.skill — 显存优化补充
+
+> **Level 2 — SFT 子 skill。** SFT.skill 已包含显存优化核心内容，本文件补充理论估算细节。
+> 父 skill: SFT.skill
+
+## 元信息
+- **关联 .py**: submit_sft.py(CPU_OFFLOAD/BWD_PREFETCH/USE_8BIT_ADAM配置), sft_train.py(FSDP配置)
+- **关联 skill**: SFT.skill(父), sft_train.skill(FSDP实现), sft_issues.skill(NaN/OOM排错)
+- **关联 .md**: SFT.md §2.2(FSDP CPU Offload)
+- **父 skill**: SFT.skill
+
+---
+
+## 理论显存估算公式
+
+`sft_train.py` 在 step=0 时打印 `estimate_memory_components()`:
+
+- `estimated_params_gb` = 参数量 × 2 bytes (bf16)
+- `estimated_optimizer_gb` = 参数量 × 8 bytes (fp32) × 2 (m+v)
+- `estimated_gradients_gb` = 参数量 × 2 bytes (bf16)
+- `estimated_total_gb` = (params + optimizer + gradients) / N_GPUs
+
+激活值显存未包含在估算中，实际显存会比估算值高 10-30%（取决于 batch size 和 seq length）。
+
+## 8-bit AdamW 内存详情
+
+- 无 8-bit: AdamW fp32 状态 = 参数×8 bytes × 2 (m+v) ≈ 72B×8×2 ≈ 1.15 TB
+- 有 8-bit: 参数×1 byte × 2 ≈ 144 GB
+- 8-bit 仅在 CPU Offload 时有效（bitsandbytes 8-bit 在 GPU 上表现不佳）
+
+---
+
+## 读完本 skill 后
+
+- 已 OOM/Crash → `sft_issues.skill`
+- FSDP 配置细节 → `sft_train.skill`
+- 提交配置参数 → `sft_submit.skill`

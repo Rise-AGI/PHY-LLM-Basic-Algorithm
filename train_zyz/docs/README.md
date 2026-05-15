@@ -71,7 +71,7 @@ python submit_sft.py
 | 脚本 | 功能 | 命令 |
 |------|------|------|
 | `auto_grade.py` | LLM 批改：用 QLoRA 72B 逐条批改 eval_results | `python auto_grade.py` |
-| `eval_baseline.py` | 基线评估：对测试集做生成式推理并保存结果 | `python eval_baseline.py` |
+| `eval_baseline.py` | **自动化评估启动器** | 扫描 Magnus 服务器模型 → 选择 → 提交评估 → 输出 file secret | `python eval_baseline.py` |
 | `serve_model.py` | 在 Magnus 上启动 OpenAI 兼容 API 推理服务 | `python serve_model.py` |
 
 #### 核心模块
@@ -599,7 +599,10 @@ python submit_sft.py                                   # 编辑配置区后运�
 python magnus_sft.py --model /data/.../Qwen2.5-7B --epochs 5  # CLI 版
 
 # ═══ 评估与分析 ═══
-python eval_baseline.py                                # 基线评估
+python eval_baseline.py                                # 交互式选择模型+评估
+python eval_baseline.py --scan                         # 仅扫描模型列表
+python eval_baseline.py --model Qwen2.5-72B-Instruct   # 指定模型评估
+python eval_baseline.py --all-versions                 # 对所有SFT版本评估
 python auto_grade.py                                   # LLM 批改
 
 # ═══ 推理服务 ═══

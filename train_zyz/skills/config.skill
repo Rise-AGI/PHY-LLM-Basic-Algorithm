@@ -1,0 +1,133 @@
+# config.skill — config.py 共享配置详解
+
+> **Level 1 — 自包含。** 修改 config.py、理解公共接口时读此文件。
+> config.py 是所有其他脚本的依赖基础。本文件包含完整的 API 参考。
+
+## 元信息
+- **关联 .py**: config.py
+- **关联 skill**: README.skill(必读，已有 config 概览), magnus.skill(底层 Magnus SDK 调用)
+- **关联 .md**: SFT.md §3.1
+- **子 skill**: 无（自包含）
+
+---
+
+## 总览
+
+`config.py` 提供所有脚本共享的基础设施。从 `../secret.json` 加载凭证，封装 Magnus SDK 调用和通用工具函数。
+
+---
+
+## 凭证与路径
+
+| 导出 | 类型 | 说明 |
+|------|------|------|
+| `MAGNUS_ADDRESS` | str | Magnus 服务器地址，从 `../secret.json` 的 `magnus_server_address` 加载 |
+| `MAGNUS_TOKEN` | str | 认证 token，从 `../secret.json` 的 `magnus_token` 加载 |
+| `SFT_DATA_DIR` | str | 训练报告下载目录路径 |
+
+---
+
+## 核心函数详解
+
+### `wait_for_job(job_id, poll_interval=60)`
+
+轮询任务直到终态。返回最终 job dict。
+
+- 循环调用 `magnus.get_job(job_id)` 检查状态
+- 状态变化时打印：`Pending → Preparing → Running → Success/Failed`
+- **增量打印 Magnus 日志**：`magnus.get_job_logs(job_id, page=N)` 每次只拉取最新页
+- Ctrl+C 可中断（不终止远程 Job）
+- 训练任务可能运行数小时，轮询间隔 60s
+
+### `notify_exe(job_id)`
+
+记录任务提交。简化为终端 print 输出（历史版本涉及外部 EXE 进程，已弃用）。
+
+### `record_storage(category, entry)`
+
+追加持久存储记录到 `data2/storage_record.json`。
+
+- 分类：`"model-version"` — 由 submit_sft.py 在训练成功时记录
+- entry 格式：`{"time": ISO时间, "model": "版本名", "local_path": "...", "base_model": "...", "status": "success"}`
+
+### `check_model_version_exists(model_version)`
+
+版本去重检查。遍历 `storage_record.json` 中 `model-version` 分类，检查是否已有同名版本。返回 True/False。
+
+### `parse_scan_json(logs_text, sentinel="SCAN_RESULT_JSON")`
+
+从容器日志中提取 sentinel JSON。
+
+- 匹配 `=== {sentinel} ===` / `=== END_{sentinel} ===` 之间的 JSON 行
+- 返回解析后的 dict/list，失败返回 None
+- 被 eval_baseline.py 和 tools/inspect_storage_model.py 使用
+
+### `detect_latest_sft_version(versions, base_model)`
+
+从版本列表中匹配 `{base_model}-sft-zyz-v{N}` 模式。返回最大版本号（int），无匹配返回 0。用于 submit_sft.py 中的自动版本递增。
+
+### `auto_source()`
+
+检查调用栈，返回调用脚本的简短标识（用于日志输出）。帮助在 Magnus 任务日志中快速识别是哪个脚本提交的。
+
+---
+
+## 常量
+
+### `SYSTEM_ENTRY_COMMAND`
+
+Apptainer bind-mount 脚本，必须在所有 `submit_job()` 调用中作为 `system_entry_command` 传入：
+
+```bash
+mounts=("/home:/home" "/data:/data")
+export APPTAINER_BIND=$(IFS=,; echo "${mounts[*]}")
+export MAGNUS_HOME=/magnus
+unset -f nvidia-smi
+unset VIRTUAL_ENV SSL_CERT_FILE
+
+# ── GPU 预检（仅 GPU job 触发）────
+if CUDA_VISIBLE_DEVICES 非空时自动执行:
+    nvidia-smi 硬件查询
+    torch.cuda.is_available() + device_count()
+    逐卡 CUDA tensor 分配验证
+```
+
+**此脚本在宿主机上、容器启动前执行**。关键作用：
+- `APPTAINER_BIND` — 将宿主机的 `/home/` 和 `/data/` 绑定到容器内，使容器可访问持久存储
+- `MAGNUS_HOME` — 设置 Magnus 根路径
+- `unset -f nvidia-smi` — 避免宿主机的 nvidia-smi 函数定义污染容器
+- `unset VIRTUAL_ENV SSL_CERT_FILE` — 避免环境变量泄漏
+- **GPU 预检（v18）** — 当 Magnus 分配了 GPU（`CUDA_VISIBLE_DEVICES` 非空）时，自动执行逐卡 CUDA context 验证。CPU job 零开销跳过（`CUDA_VISIBLE_DEVICES` 为空 → 整个 block 不执行）。输出格式：
+  - 正常：`[Magnus GPU 预检] 逐卡验证: 6/6 可用`
+  - 异常：`[Magnus GPU 预检] FATAL: CUDA context 不可用` + `[Magnus GPU 预检] 逐卡验证 0/6 可用`
+  - GPU 驱动状态损坏时立即可见，无需等到训练脚本崩溃
+
+**忘记传 `system_entry_command` 会导致容器内看不到 `/data/` 目录**，这是最常见的错误。
+
+---
+
+## storage_record.json 格式
+
+```json
+{
+  "model-version": [
+    {
+      "time": "2026-05-14T10:00:00",
+      "model": "Qwen2.5-72B-Instruct-sft-zyz-v1",
+      "local_path": "/data/magnus/models/Qwen2.5-72B-Instruct-sft-zyz-v1",
+      "base_model": "/data/magnus/models/Qwen2.5-72B-Instruct",
+      "status": "success"
+    }
+  ]
+}
+```
+
+用于版本去重、自动递增、存储记录查询。所有操作通过 `record_storage()` / `check_model_version_exists()` 封装，不应直接操作 JSON 文件。
+
+---
+
+## 读完本 skill 后
+
+- 要了解 Magnus SDK 底层调用 → `magnus.skill`
+- 要理解 sentinel JSON / file secret 模式 → `magnus.skill`(§关键模式)
+- config.py 被所有脚本依赖，修改后检查影响范围（见 README.skill §5 .py 速查表）

@@ -1,0 +1,36 @@
+# sft_prompt.skill — PROMPT_PREFIX 提示词系统补充
+
+> **Level 2 — SFT 子 skill。** SFT.skill 已包含提示词系统核心内容，本文件补充实现细节。
+> 父 skill: SFT.skill
+
+## 元信息
+- **关联 .py**: submit_sft.py(PROMPT_PREFIX配置+base64编码), sft_train.py(3个应用点)
+- **关联 skill**: SFT.skill(父), sft_submit.skill(配置入口), sft_train.skill(训练时应用)
+- **关联 .md**: SFT.md §3.5(统一提示词前缀)
+- **父 skill**: SFT.skill
+
+---
+
+## base64 编码实现细节
+
+蓝图沙箱禁止 `import base64`，因此编码必须在 `submit_sft.py` 中预计算：
+```python
+import base64
+prompt_prefix_b64 = base64.b64encode(PROMPT_PREFIX.encode()).decode()
+```
+容器内 sft_train.py 解码：
+```python
+prefix = base64.b64decode(prompt_prefix_b64).decode()
+```
+
+## {instruction} 占位符替换时机
+
+`{instruction}` 在 `SFTDataset.__getitem__()` 中运行时替换，不是在蓝图参数传递时。每次取数据时拼接 `prefix + instruction` 到 messages 的 user 消息中。
+
+---
+
+## 读完本 skill 后
+
+- 配置入口 → `sft_submit.skill`
+- 训练时应用逻辑 → `sft_train.skill`
+- 蓝图透传机制 → `sft_blueprint.skill`

@@ -1,0 +1,28 @@
+# tool_view.skill — JSON 可视化浏览器补充
+
+> **Level 2 — tools 子 skill。** tools.skill 已包含可视化核心内容，本文件补充技术细节。
+> 父 skill: tools.skill
+
+## 元信息
+- **关联 .py**: tools/view_json.py
+- **关联 skill**: tools.skill(父)
+- **关联 .md**: README.md(工具列表)
+- **父 skill**: tools.skill
+
+---
+
+## 技术实现
+
+- Flask Web 服务，默认 `http://127.0.0.1:5000`
+- 左侧文件列表：自动扫描 `json/` 目录下的 JSON 文件
+- 右侧数据展示：表格视图 + 卡片视图切换
+- 字段筛选：动态选择/取消显示特定字段
+- MathJax: 自动渲染 `$...$` (行内) 和 `$$...$$` (块级) LaTeX 公式
+
+---
+
+## 读完本 skill 后
+
+- 批改结果查看 → `eval.skill` → `eval_grade.skill`
+- 模型检查结果 → `tool_model.skill`
+- 其他工具 → `tools.skill`(索引)

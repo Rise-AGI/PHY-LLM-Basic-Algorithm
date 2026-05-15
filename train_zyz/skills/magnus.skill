@@ -1,0 +1,270 @@
+# magnus.skill — Magnus 平台深度知识
+
+> **Level 1 — Magnus 平台知识入口。** 编写新脚本(需了解SDK)、理解任务调度、理解现有代码模式时读此文件。
+> 本文件包含 Magnus 平台的深度知识。README.skill 已有 SDK/Job/Pattern 基础，本文件补充更深入的内容。
+
+## 元信息
+- **关联 .py**: 无直接关联（纯平台知识，被所有脚本使用）
+- **关联 skill**: README.skill(必读，已有 SDK/Job/Pattern 基础), config.skill(config.py 封装了 Magnus 调用)
+- **关联 .md**: AI.md(Magnus源码分析), blue.md(Blueprint引擎), Magnus Platform 系统代码集成指南.md(非技术人员指南)
+- **子 skill (3个)**: magnus_sdk, magnus_job, magnus_pattern
+
+---
+
+## 平台架构
+
+Magnus 是 PKU Plasma + Rise-AGI 的 **HPC 科学计算基础设施平台**，将 SLURM 集群转化为可通过 SDK/Web UI 调用的执行后端。
+
+**三层架构**：
+
+| 层 | 职责 | 与我们的关系 |
+|----|------|------------|
+| **Execution** | 容器化任务在 SLURM 执行 (Apptainer) | 我们提交的所有 Job 都在此层运行 |
+| **Sedimentation** | Blueprint(可执行模板) + Skill(知识包) | 我们的 .magnus 蓝图属于此层 |
+| **Collaboration** | Web UI + SDK/CLI + 鉴权 | 我们通过 `import magnus` SDK 交互 |
+
+**完整交互链路**：
+```
+本地 Python 脚本 → magnus SDK → HTTP POST /api/jobs/submit
+  → Magnus 后端 → 资源准备(镜像+仓库) → 调度决策(四级优先级)
+  → SLURM sbatch → Apptainer 容器执行
+  → wrapper epilogue → .magnus_success / .magnus_oom
+  → 结果回传 (MAGNUS_RESULT / MAGNUS_ACTION)
+```
+
+---
+
+## SDK 连接配置
+
+```python
+import magnus
+magnus.configure(address="http://162.105.151.134:3011/", token="sk-xxx")
+# 或通过环境变量: MAGNUS_ADDRESS, MAGNUS_TOKEN
+# 或通过 ~/.magnus/config.json
+```
+
+---
+
+## SDK 函数完整参考
+
+### submit_job — 提交容器任务
+
+```python
+job_id = magnus.submit_job(
+    task_name="my-task",           # str 必填, 显示名
+    entry_command="python x.py",   # str 必填, 容器内shell命令
+    repo_name="my-repo",           # str 必填, GitHub仓库名
+    namespace="Rise-AGI",          # GitHub组织
+    gpu_type="cpu",                # "cpu"/"a100"/"rtx5090"
+    gpu_count=0,                   # GPU数量
+    cpu_count=None,                # 默认4
+    memory_demand=None,            # "32G"/"1600M"
+    ephemeral_storage=None,        # 默认10G
+    job_type="A2",                 # A1/A2/B1/B2
+    container_image=None,          # docker://...
+    system_entry_command=None,     # bind-mount脚本
+    description=None,              # Markdown描述
+)  # → str (job_id)
+```
+
+### 任务查询
+
+- `magnus.get_job(job_id)` → dict (状态/配置/时间)
+- `magnus.get_job_logs(job_id, page=-1)` → dict (日志内容)
+- `magnus.get_job_result(job_id)` → str|None (file secret 或文本)
+- `magnus.list_jobs(limit=20, skip=0, search=None)` → dict
+
+### 任务控制
+
+- `magnus.terminate_job(job_id)` → dict (终止任务)
+- `magnus.signal_job(job_id)` → dict (发送SIGTERM)
+
+### File Secret
+
+- `magnus.custody_file(path, expire_minutes=60, max_downloads=None)` → str (file secret)
+- `magnus.download_file(file_secret, target_path=None)` → Path (下载文件)
+
+### 蓝图管理
+
+- `magnus.save_blueprint(id, title, description, code)` → dict
+- `magnus.launch_blueprint(id, args={})` → str (job_id)
+- `magnus.get_blueprint(id)` → dict
+- `magnus.delete_blueprint(id)` → None
+- `magnus.list_blueprints(limit=20, skip=0)` → dict
+
+### 镜像管理
+
+- `magnus.pull_image(uri)` → dict (预热镜像)
+- `magnus.list_images(search=None)` → dict
+- `magnus.refresh_image(image_id)` → dict
+- `magnus.remove_image(image_id)` → None
+
+### 异常
+
+- `magnus.APIError` — HTTP错误(status_code, detail)
+- `magnus.AuthenticationError` — 401
+- `magnus.ExecutionError` — 任务Failed/Terminated
+
+---
+
+## Job 生命周期与调度
+
+### 状态机
+
+```
+Pending → Preparing → Running → Success / Failed / Terminated
+              ↓                       (终态)  (终态)  (终态)
+           (拉镜像+克隆仓库)
+```
+
+- `Paused`: 被抢占暂停(仅B1/B2)，非终态，可恢复
+- `Terminated`: 用户主动取消
+
+### 四级优先级
+
+| JobType | 数值 | 可抢占 | 适用 | submit_job 参数 |
+|---------|------|--------|------|----------------|
+| A1 | 4 (最高) | 否 | 生产/紧急 | `job_type="A1"` |
+| A2 | 3 | 否 | 常规训练(推荐) | `job_type="A2"` |
+| B1 | 2 | **是** | 批量任务 | `job_type="B1"` |
+| B2 | 1 (最低) | **是** | 下载/预热/测试 | `job_type="B2"` |
+
+### 容器环境变量 (自动注入)
+
+| 变量 | 值/说明 |
+|------|--------|
+| `MAGNUS_HOME` | `/magnus` — 容器根路径 |
+| `MAGNUS_TOKEN` | 认证token，SDK自动识别 |
+| `MAGNUS_ADDRESS` | 后端API地址 |
+| `MAGNUS_JOB_ID` | 当前Job ID |
+| `MAGNUS_RESULT` | 写入此文件=返回结果给调度器 |
+| `MAGNUS_ACTION` | 写入此文件=客户端执行action命令 |
+| `MAGNUS_METRICS_DIR` | `metrics/` — 指标文件目录 |
+| `APPTAINER_BIND` | bind-mount路径(由system_entry_command设置) |
+
+### 资源上限
+
+| 资源 | 上限 | 默认值 |
+|------|------|--------|
+| CPU | 128核 | 4核 |
+| 内存 | 256 GB | 1.6 GB |
+| 临时磁盘 | — | 10 GB |
+| GPU | 单任务4卡 | 0(CPU) |
+
+### OOM 检测
+
+检查 cgroup: `memory.events` / `memory.oom_control`。OOM 时 Job 状态为 Failed。
+
+### Metrics Protocol
+
+容器内写 JSONL 到 `$MAGNUS_METRICS_DIR/`，Magnus 面板自动读取。指标名建议前缀: `system.` / `train.` / `eval.` / `inference.`。
+
+JSONL 格式:
+```json
+{"name":"train.loss","kind":"gauge","value":1.284,"time_unix_ms":1770000123456,"step":120,"step_domain":"train","unit":"loss"}
+```
+
+---
+
+## 四大关键模式
+
+### 模式 1: Container Job
+
+所有工具/训练/评估均通过 `magnus.submit_job()` 提交容器任务。
+
+- 必须传入 `system_entry_command=SYSTEM_ENTRY_COMMAND` 挂载 `/data/`
+- 训练/评估任务用 A2 优先级 + GPU
+- 工具/扫描任务用 B2 优先级 + CPU
+- `entry_command` 是要在容器内执行的 shell 命令
+
+```python
+from config import SYSTEM_ENTRY_COMMAND
+job_id = magnus.submit_job(
+    task_name="...",
+    entry_command="python script.py",
+    repo_name="OpenFundus",
+    system_entry_command=SYSTEM_ENTRY_COMMAND,
+    gpu_type="cpu", gpu_count=0,
+    job_type="B2",
+)
+```
+
+### 模式 2: Sentinel JSON
+
+容器内输出包含 JSON 的标记块，本地从日志解析。
+
+**容器内输出**:
+```
+=== SCAN_RESULT_JSON ===
+{"key": "value", ...}
+=== END_SCAN_RESULT_JSON ===
+```
+
+**本地解析**: `config.parse_scan_json(logs_text, sentinel="SCAN_RESULT_JSON")`
+
+**使用场景**: 模型扫描(eval_scan)、模型检查(inspect_storage_model)、数据查看(inspect_storage_data)
+
+### 模式 3: File Secret
+
+文件在本地和容器间传递。
+
+**上传**:
+```python
+secret = magnus.custody_file("local_file.json", expire_minutes=60)
+# → "magnus-secret:XXXX-xxxx-xxxx-xxxx"
+```
+
+**容器内下载**:
+```bash
+magnus receive "$SECRET" --output /path/to/file
+```
+
+**容器内上传结果**:
+```bash
+SECRET=$(magnus custody /path/to/result)
+echo "magnus receive $SECRET --output ./result" > "$MAGNUS_ACTION"
+```
+
+**自动上传**: `launch_blueprint()` 检测 `FileSecret` 类型参数，自动 upload 本地路径。
+
+### 模式 4: Blueprint 沙箱
+
+Blueprint 是受限 Python 沙箱中执行的函数。
+
+**限制**: 仅 `typing` 可 import；无 `open/read/write/sys/os/subprocess/eval/exec`
+
+**执行流程**:
+```
+exec(blueprint_code, safe_builtins + execution_globals)
+  → blueprint(**validated_args) 被调用
+  → submit_job(...) 触发 _BlueprintCapture(kwargs)  # 不真提交，捕获payload
+  → 捕获 payload → 构造 JobSubmission → 返回调度器
+```
+
+**参数类型→表单映射**: str→text, int→number, float→float, bool→boolean, Literal→select, FileSecret→file_secret, Optional→可选开关, List→动态列表
+
+### entry_command 构造
+
+```python
+# 直接CLI
+cmd = f"python train.py --lr {lr}"
+
+# 多行脚本
+cmd = f"""set -e
+cd /project
+python main.py --input {data_path}
+"""
+
+# Shell注入防御
+def safe_quote(s): return f"'{str(s).replace(chr(39), chr(39)+chr(92)+chr(39)+chr(39))}'"
+```
+
+---
+
+## 读完本 skill 后
+
+- 查 SDK 函数签名/参数细节 → `magnus_sdk.skill` — 完整签名+所有参数说明
+- 理解 Job 调度/生命周期细节 → `magnus_job.skill` — 状态机/OOM/Metrics Protocol 补充
+- 理解 container/sentinel/secret 模式细节 → `magnus_pattern.skill` — 4大模式+shell注入 补充
+- config.py 封装了 Magnus 调用 → `config.skill`
+- 从零理解 Magnus 平台源码 → AI.md, blue.md

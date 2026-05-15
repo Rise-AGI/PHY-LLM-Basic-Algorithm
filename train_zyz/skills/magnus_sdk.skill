@@ -1,0 +1,47 @@
+# magnus_sdk.skill — Magnus SDK 函数详解
+
+> **Level 2 — magnus 子 skill。** magnus.skill 和 README.skill 已包含 SDK 核心函数，本文件补充完整签名+异常细节。
+> 父 skill: magnus.skill
+
+## 元信息
+- **关联 .py**: 无直接关联(被所有脚本使用)
+- **关联 skill**: magnus.skill(父), magnus_job.skill(Job调度), magnus_pattern.skill(使用模式), config.skill(config封装)
+- **关联 .md**: AI.md, Magnus Platform 系统代码集成指南.md
+- **父 skill**: magnus.skill
+
+---
+
+## 连接配置
+
+```python
+import magnus
+magnus.configure(address="http://162.105.151.134:3011/", token="sk-xxx")
+# 或通过环境变量: MAGNUS_ADDRESS, MAGNUS_TOKEN
+# 或通过 ~/.magnus/config.json
+```
+
+## 完整异常体系
+
+- `magnus.APIError` — HTTP错误，属性 `status_code`, `detail`
+- `magnus.AuthenticationError` — 401 未授权(token过期/无效)
+- `magnus.ExecutionError` — 任务 Failed/Terminated (终态非成功)
+
+所有异常继承自同一基类，可 `except magnus.APIError as e:` 统一捕获。
+
+## submit_job 所有参数默认值
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `cpu_count` | `None` → 4 | Magnus 后端默认4核 |
+| `memory_demand` | `None` → 1.6G | 默认1.6GB |
+| `ephemeral_storage` | `None` → 10G | 默认10GB |
+| `container_image` | `None` → pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime | 平台默认镜像 |
+| `namespace` | 自动 | 从 token 关联的 GitHub 组织推断 |
+
+---
+
+## 读完本 skill 后
+
+- 理解Job生命周期 → `magnus_job.skill`
+- 理解代码模式 → `magnus_pattern.skill`
+- config.py 封装 → `config.skill`

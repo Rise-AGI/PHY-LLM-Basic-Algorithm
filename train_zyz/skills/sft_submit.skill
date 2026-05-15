@@ -1,0 +1,42 @@
+# sft_submit.skill — SFT 训练提交补充
+
+> **Level 2 — SFT 子 skill。** SFT.skill 已包含提交流程核心内容，本文件补充实现细节。
+> 父 skill: SFT.skill
+
+## 元信息
+- **关联 .py**: submit_sft.py(推荐), magnus_sft.py(CLI版), run_sft_blueprint.py(精简版)
+- **关联 skill**: SFT.skill(父), sft_blueprint.skill(蓝图参数), sft_prompt.skill(PROMPT_PREFIX), config.skill(config接口)
+- **关联 .md**: SFT.md §3.5, §5
+- **父 skill**: SFT.skill
+
+---
+
+## GitHub 同步实现细节
+
+- 源文件: `train/sft_train.py` → `shutil.copy2` 复制到本地 git 仓库
+- 目标仓库: `Rise-AGI/PHY-LLM-Basic-Algorithm`，路径 `PHY-LLM-Basic-Algorithm/sft_train.py`
+- `git diff --cached --quiet` 检查是否有变化，无变化时跳过提交
+- 蓝图容器内通过 `wget raw.githubusercontent.com/Rise-AGI/PHY-LLM-Basic-Algorithm/main/sft_train.py` 拉取
+
+## Version Naming 实现
+
+`_auto_model_version(short_name)`:
+1. 从 `storage_record.json` 读取已有 model-version 记录
+2. 匹配前缀 `{short_name}-{MODE}-zyz-v` (MODE来自模块级变量)
+3. 找最大编号 +1 返回
+
+`_resolve_output_dir(model_version)`: `/data/magnus/models/{model_version}`
+
+## magnus_sft.py vs run_sft_blueprint.py
+
+- `magnus_sft.py`: 所有参数通过 CLI 传入 (`--model --epochs --batch-size ...`)，工作流与 submit_sft.py 相同
+- `run_sft_blueprint.py`: 最精简，`delete_blueprint()` + `save_blueprint()` + `launch_blueprint()`，参数较少
+
+---
+
+## 读完本 skill 后
+
+- 蓝图参数定义 → `sft_blueprint.skill`
+- PROMPT_PREFIX 机制 → `sft_prompt.skill`
+- 训练引擎 → `sft_train.skill`
+- 训练 OOM → `sft_memory.skill`

@@ -1,0 +1,38 @@
+# magnus_job.skill — Job 生命周期与调度
+
+> **Level 2 — magnus 子 skill。** magnus.skill 已包含 Job 核心内容，本文件补充 OOM/Metrics/SLURM 细节。
+> 父 skill: magnus.skill
+
+## 元信息
+- **关联 .py**: 无直接关联(平台知识)
+- **关联 skill**: magnus.skill(父), magnus_sdk.skill(SDK接口), magnus_pattern.skill(使用模式)
+- **关联 .md**: AI.md
+- **父 skill**: magnus.skill
+
+---
+
+## OOM 检测细节
+
+Magnus wrapper epilogue 检查 cgroup v1/v2：
+- `memory.events` / `memory.oom_control` 文件
+- OOM 时创建 `.magnus_oom` 标记文件 → Job 状态标记为 Failed
+- 非 OOM 的正常退出创建 `.magnus_success`
+
+## Metrics Protocol 细节
+
+容器内写 JSONL 到 `$MAGNUS_METRICS_DIR/`，Magnus 面板自动读取并绘图。指标名建议前缀: `system.` / `train.` / `eval.` / `inference.`。
+
+## SLURM 集成
+
+Magnus 将 Job 翻译为 SLURM sbatch 作业：
+- GPU 请求: `--gres=gpu:<type>:<count>`
+- CPU/内存: `--cpus-per-task` / `--mem`
+- 优先级映射: A1/A2 → high-priority partition, B1/B2 → low-priority partition (可被抢占)
+
+---
+
+## 读完本 skill 后
+
+- SDK函数调用 → `magnus_sdk.skill`
+- 代码中使用Job的模式 → `magnus_pattern.skill`
+- 训练任务调度 → `SFT.skill`

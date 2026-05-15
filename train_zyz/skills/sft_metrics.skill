@@ -1,0 +1,36 @@
+# sft_metrics.skill — Magnus Metrics 指标系统补充
+
+> **Level 2 — SFT 子 skill。** SFT.skill 已包含指标系统核心内容，本文件补充实现细节。
+> 父 skill: SFT.skill
+
+## 元信息
+- **关联 .py**: sft_train.py(写入指标)
+- **关联 skill**: SFT.skill(父), sft_train.skill(训练循环), magnus.skill→magnus_job.skill(Metrics Protocol)
+- **关联 .md**: SFT.md §2.2(性能指标系统)
+- **父 skill**: SFT.skill
+
+---
+
+## _write_metric() 实现细节
+
+- `_write_metric(name, value, step, **labels)`: 构造 JSONL 行 → append 到 `$MAGNUS_METRICS_DIR/rank-0.jsonl`
+- Fail-open: 目录缺失不中断训练（`try/except OSError: pass`）
+- 仅 rank 0 写入（除显存指标外，显存指标所有 rank 均写入带 rank 标签）
+- NaN/Inf 自动过滤：`if math.isfinite(value)` 检查
+
+## JSONL 格式规范
+
+```json
+{"name":"train.loss","kind":"gauge","value":1.284,"time_unix_ms":1770000123456,"step":120,"step_domain":"train","unit":"loss"}
+```
+
+- `kind`: 始终 `"gauge"`
+- `time_unix_ms`: `int(time.time() * 1000)`
+- `step_domain`: `"train"` 或 `"eval"`，Magnus 面板按此分轴显示
+
+---
+
+## 读完本 skill 后
+
+- 训练循环实现 → `sft_train.skill`
+- Magnus Metrics Protocol 底层 → `magnus.skill` → `magnus_job.skill`

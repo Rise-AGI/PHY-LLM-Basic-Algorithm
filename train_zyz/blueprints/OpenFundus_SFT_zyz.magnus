@@ -197,6 +197,13 @@ BackwardPrefetch = Annotated[Literal["pre", "post"], {
     "default": "pre",
 }]
 
+Use8bitAdam = Annotated[bool, {
+    "label": "8-bit AdamW（降低 CPU 内存）",
+    "scope": "超参数",
+    "description": "使用 bitsandbytes 8-bit 优化器，CPU 优化器状态从 12→2.2 bytes/param",
+    "default": False,
+}]
+
 # ── Blueprint 主函数（核心修改：添加 pip 镜像源）─────────────────
 def blueprint(
     model_path:       ModelPath,
@@ -223,6 +230,7 @@ def blueprint(
     prompt_prefix_b64: PromptPrefixB64 = "",
     cpu_offload:      CpuOffload      = False,
     backward_prefetch: BackwardPrefetch = "pre",
+    use_8bit_adam:    Use8bitAdam     = False,
 ):
     use_fake = not train_data
     model_name = model_path.split("/")[-1]
@@ -269,6 +277,11 @@ def blueprint(
         bwd_arg = f'BWD_ARG="--backward_prefetch post"'
     else:
         bwd_arg = 'BWD_ARG=""'
+
+    if use_8bit_adam:
+        eightbit_arg = 'EIGHTBIT_ARG="--use_8bit_adam"'
+    else:
+        eightbit_arg = 'EIGHTBIT_ARG=""'
 
     # ── 模型加载 ──────────────────────────────────────────────
     model_setup = f"""
@@ -432,19 +445,14 @@ print(json.dumps({{
         "export PYTHONUNBUFFERED=1\n"
         "export PYTHONPYCACHEPREFIX=/tmp/.pycache\n"
         "export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True\n"
-        "# NCCL: 单节点走 NVLink（P2P），禁用 IB\n"
+        "# NCCL: 单机多卡通讯配置（不强制 P2P_LEVEL，让 NCCL 自选最优路径）\n"
         "export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=600\n"
         "export NCCL_DEBUG=WARN\n"
         "export TORCH_NCCL_AVOID_RECORD_STREAMS=1\n"
-        "export NCCL_P2P_LEVEL=NVL\n"
         "export NCCL_IB_DISABLE=1\n"
-        "export NCCL_SOCKET_IFNAME=^docker,lo,virbr\n"
-        "# NCCL 通讯优化：Ring 算法 + 多通道带宽利用\n"
+        "# Ring 算法（all-gather 稳定性优于 Tree，不强制 Tree）\n"
         "export NCCL_ALGO=Ring\n"
         "export NCCL_PROTO=Simple\n"
-        "export NCCL_MIN_NCHANNELS=4\n"
-        "export NCCL_NSOCKS_PERTHREAD=4\n"
-        "export NCCL_SOCKET_NTHREADS=2\n"
         "# 随机端口避免 EADDRINUSE 冲突\n"
         "export MASTER_PORT=$((RANDOM % 20000 + 30000))\n"
         "export RDZV_PORT=$MASTER_PORT\n\n"
@@ -504,13 +512,62 @@ print(json.dumps({{
         f'_log "=== [1/5] 环境信息 ==="\n'
         "nvidia-smi 2>&1 || echo \"[环境] nvidia-smi 不可用（无 NVIDIA runtime 或 GPU 未挂载）\"\n"
         "python3 --version\n"
-        "# 自动检测实际可用 GPU 数量（与 Magnus 请求数量可能不同）\n"
-        "ACTUAL_GPU=$(python3 -c \"import torch; print(torch.cuda.device_count())\" 2>/dev/null || echo 0)\n"
+        "# 检测 GSP-RM firmware 状态（GSP 禁用时 GPU 状态恢复更慢）\n"
+        "GSP_STATUS=$(nvidia-smi -q 2>/dev/null | grep -i 'GSP' | head -1 || echo 'unknown')\n"
+        '_log "[环境] GPU 驱动: $(nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null | head -1 | tr -d \'\\n\' || echo unknown), GSP: ${GSP_STATUS:-unknown}"\n'
+        "# 自动检测实际可用 GPU 数量（逐卡验证 CUDA context 可用性）\n"
+        "_verify_cuda() {\n"
+        "    python3 -c \"\n"
+        "import torch, sys, os\n"
+        "try:\n"
+        "    total = torch.cuda.device_count()\n"
+        "    if total == 0:\n"
+        "        print(0)\n"
+        "        sys.exit(0)\n"
+        "    # 逐卡测试：device_count() 可能返回 5 但个别卡 context 创建失败（GSP 禁用时常见）\n"
+        "    working = 0\n"
+        "    for i in range(total):\n"
+        "        try:\n"
+        "            with torch.cuda.device(i):\n"
+        "                t = torch.zeros(1, device='cuda')\n"
+        "                del t\n"
+        "            torch.cuda.synchronize()\n"
+        "            working += 1\n"
+        "        except Exception as e:\n"
+        "            print(f'  GPU {{i}}: CUDA context 创建失败 - {{e}}', file=sys.stderr)\n"
+        "    torch.cuda.empty_cache()\n"
+        "    print(working)\n"
+        "except Exception as e:\n"
+        "    print(f'[FATAL] CUDA 整体不可用: {{e}}', file=sys.stderr)\n"
+        "    print(0)\n"
+        "\" 2>/dev/null\n"
+        "}\n"
+        "ACTUAL_GPU=0\n"
+        "# GSP-RM firmware 禁用时，驱动级状态恢复慢，增加重试间隔\n"
+        "_gpu_sleep=10\n"
+        "if echo \"$GSP_STATUS\" | grep -qi 'N/A\\|NONE\\|disabled\\|off'; then\n"
+        "    _gpu_sleep=25\n"
+        "    _log '[环境] 检测到 GSP-RM firmware 禁用，GPU 恢复等待延长至 25s'\n"
+        "fi\n"
+        "for _gpu_try in 1 2 3; do\n"
+        "    ACTUAL_GPU=$(_verify_cuda || echo 0)\n"
+        "    if [ \"$ACTUAL_GPU\" -gt 0 ]; then\n"
+        "        break\n"
+        "    fi\n"
+        '    _log "[环境] CUDA 初始化失败 (尝试 $_gpu_try/3)，清理 GPU 状态 (sleep $_gpu_sleep)..."\n'
+        "    # 杀所有可能占用 GPU 的进程\n"
+        "    fuser -k /dev/nvidia* 2>/dev/null || true\n"
+        "    fuser -k /dev/nvidiactl 2>/dev/null || true\n"
+        "    # 尝试触发 GPU 状态刷新（nvidia-smi -pm 可能触发驱动重新评估 GSP 状态）\n"
+        "    nvidia-smi > /dev/null 2>&1 || true\n"
+        "    sleep $_gpu_sleep\n"
+        "done\n"
         f'_log "[环境] 请求 GPU={gpu_count} 张, 实际可用=$ACTUAL_GPU 张"\n'
         "if [ \"$ACTUAL_GPU\" -eq 0 ]; then\n"
         "    _log '[环境] 0 GPU 可用，自动切换为 CPU 训练模式'\n"
         '    LAUNCHER="python3"\n'
         '    LOG_DIR_FLAG=""\n'
+        '    unset CUDA_VISIBLE_DEVICES\n'
         "else\n"
         f'    if [ "$ACTUAL_GPU" -gt 1 ]; then\n'
         f'        LAUNCHER="torchrun --nproc_per_node=$ACTUAL_GPU --rdzv_endpoint=localhost:$MASTER_PORT --log-dir \\"$TORCHRUN_LOG_DIR\\""\n'
@@ -580,7 +637,8 @@ print(json.dumps({{
         + resume_setup + "\n"
         + prompt_arg + "\n"
         + cpu_offload_arg + "\n"
-        + bwd_arg + "\n\n"
+        + bwd_arg + "\n"
+        + eightbit_arg + "\n\n"
         + "python3 -c \"compile(open('./sft_train.py').read(), './sft_train.py', 'exec'); print('[诊断] sft_train.py 语法检查通过')\"\n\n"
         + "# ── 训练前诊断 ──\n"
         '_log "[诊断] launcher=$LAUNCHER"\n'
@@ -632,6 +690,7 @@ print(json.dumps({{
         f'        $PROMPT_ARG \\\n'
         f'        $CPU_OFFLOAD_ARG \\\n'
         f'        $BWD_ARG \\\n'
+        f'        $EIGHTBIT_ARG \\\n'
         f'        $RESUME_ARG 2>&1; then\n'
         f'        TRAIN_OK=1\n'
         '        break\n'
@@ -639,13 +698,16 @@ print(json.dumps({{
         '    TRAIN_EXIT_CODE=$?\n'
         '    _log "[Retry] 第 ${RETRY_COUNT} 次失败 (exit_code=$TRAIN_EXIT_CODE)"\n'
         '    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then\n'
-        '        _log "[Retry] 将在 10s 后自动重试..."\n'
-        '        sleep 10\n'
+        '        _log "[Retry] 清理 GPU 状态 (kill 残余进程 + 等待驱动恢复)..."\n'
+        '        fuser -k /dev/nvidia* 2>/dev/null || true\n'
+        '        sleep 15\n'
         '    fi\n'
         'done\n'
-        '# 所有重试均失败：清理损坏 checkpoint 后从头再试一次\n'
+        '# 所有重试均失败：清理 GPU 状态 + 损坏 checkpoint 后从头再试一次\n'
         'if [ $TRAIN_OK -eq 0 ]; then\n'
-        '    _log "[Fatal] ${MAX_RETRIES} 次重试均失败，清理 checkpoint 后从头开始最后一次尝试..."\n'
+        '    _log "[Fatal] ${MAX_RETRIES} 次重试均失败，清理 GPU + checkpoint 后从头开始..."\n'
+        '    fuser -k /dev/nvidia* 2>/dev/null || true\n'
+        '    sleep 10\n'
         '    rm -rf "{output_dir}/checkpoint-latest" 2>/dev/null || true\n'
         '    RESUME_ARG=""\n'
         '    export MASTER_PORT=$((RANDOM % 20000 + 30000))\n'
@@ -666,6 +728,7 @@ print(json.dumps({{
         f'        $PROMPT_ARG \\\n'
         f'        $CPU_OFFLOAD_ARG \\\n'
         f'        $BWD_ARG \\\n'
+        f'        $EIGHTBIT_ARG \\\n'
         f'        $RESUME_ARG 2>&1; then\n'
         f'        TRAIN_OK=1\n'
         '    fi\n'

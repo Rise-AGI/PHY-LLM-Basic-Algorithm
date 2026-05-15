@@ -38,6 +38,37 @@ export APPTAINER_BIND=$(IFS=,; echo "${mounts[*]}")
 export MAGNUS_HOME=/magnus
 unset -f nvidia-smi
 unset VIRTUAL_ENV SSL_CERT_FILE
+
+# ── GPU 预检（仅 GPU job 触发，CPU job 零开销跳过）──────────
+if [ -n "${CUDA_VISIBLE_DEVICES:-}" ] && [ "$CUDA_VISIBLE_DEVICES" != "NONE" ]; then
+    echo "=== [Magnus GPU 预检] CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES ==="
+    nvidia-smi --query-gpu=index,name,driver_version,memory.total --format=csv,noheader 2>&1 || echo "[Magnus GPU 预检] WARNING: nvidia-smi 不可用"
+    python3 -c "
+import torch, sys
+total = torch.cuda.device_count()
+avail = torch.cuda.is_available()
+print(f'[Magnus GPU 预检] device_count={total}, is_available={avail}')
+if not avail:
+    print('[Magnus GPU 预检] FATAL: CUDA context 不可用 — GPU 驱动状态可能损坏')
+    sys.exit(0)
+ok = 0
+for i in range(total):
+    try:
+        with torch.cuda.device(i):
+            t = torch.zeros(1, device='cuda')
+            del t
+        torch.cuda.synchronize(i)
+        ok += 1
+    except Exception as e:
+        print(f'[Magnus GPU 预检] GPU {i}: FAIL — {e}')
+torch.cuda.empty_cache()
+if ok == total:
+    print(f'[Magnus GPU 预检] 逐卡验证: {ok}/{total} 可用')
+else:
+    print(f'[Magnus GPU 预检] WARNING: 逐卡验证 {ok}/{total} 可用 — 部分 GPU 异常')
+" 2>&1 || echo "[Magnus GPU 预检] WARNING: PyTorch GPU 检测失败"
+    echo "=== [Magnus GPU 预检] 完成 ==="
+fi
 """
 
 # ── Source abbreviations ─────────────────────────────────────
@@ -55,6 +86,7 @@ SOURCE_ABBR = {
     "download_results.py": "dr",
     "warmup_test.py": "wt",
     "run_sft_blueprint.py": "rsb",
+    "diag_gpu.py": "dg",
 }
 
 
@@ -178,3 +210,50 @@ def check_model_version_exists(model_version: str) -> bool:
         if entry.get("model") == model_version:
             return True
     return False
+
+
+# ── Scan result parsing (for eval_baseline.py) ──────────────────
+
+def parse_scan_json(logs_text: str, sentinel: str = "SCAN_RESULT_JSON") -> list[dict] | None:
+    """从容器 job 日志中解析 sentinel JSON 块。
+
+    日志格式:
+        === {sentinel} ===
+        [{...}, ...]
+        === END_{sentinel} ===
+    """
+    start_marker = f"=== {sentinel} ==="
+    end_marker = f"=== END_{sentinel} ==="
+    lines = logs_text.splitlines()
+    capture = False
+    json_lines = []
+    for line in lines:
+        if line.strip() == start_marker:
+            capture = True
+            continue
+        if line.strip() == end_marker:
+            break
+        if capture:
+            json_lines.append(line)
+    if not json_lines:
+        return None
+    try:
+        return json.loads("\n".join(json_lines))
+    except json.JSONDecodeError:
+        return None
+
+
+def detect_latest_sft_version(versions: list[dict], base_model: str) -> int:
+    """从扫描结果中找到指定 base_model 的最新 SFT 版本号。"""
+    max_v = 0
+    suffix = "-sft-zyz-v"
+    for v in versions:
+        name = v.get("name", "")
+        if name.startswith(base_model + suffix):
+            try:
+                num = int(name.split(suffix)[-1])
+                if num > max_v:
+                    max_v = num
+            except ValueError:
+                pass
+    return max_v

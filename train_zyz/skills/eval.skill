@@ -1,0 +1,179 @@
+# eval.skill — 模型评估与批改
+
+> **Level 1 — 评估领域入口。** 评估模型、批改评估结果、修改评估流程时读此文件。
+> 本文件包含评估的核心知识。补充细节见二级 skill。
+
+## 元信息
+- **关联 .py**: eval_baseline.py(自动化评估启动器), auto_grade.py(LLM批改), config.py(共享配置)
+- **关联 skill**: README.skill(必读，已有评估概览), SFT.skill(理解version naming), magnus.skill(magnus_pattern — sentinel JSON/file secret模式), tools.skill(tool_model — 查看模型列表)
+- **关联 .md**: SFT.md §5(version naming)
+- **子 skill (4个)**: eval_baseline, eval_scan, eval_grade, eval_testset
+
+---
+
+## 评估流程（eval_baseline.py）
+
+```
+[1/6] _submit_scan_job() → magnus.submit_job(CPU,B2) 运行 _SCAN_MODELS_PY
+[2/6] wait_for_job() → parse_scan_json() → 缓存到 json/scan_cache.json
+[3/6] 交互式选择 或 --model 直接指定
+[4/6] magnus.custody_file(test_set_path) → magnus-secret:...
+[5/6] _build_eval_entry() → magnus.submit_job(GPU,A2) 运行 _EVAL_INFER_PY
+[6/6] wait_for_job() → get_job_result() → 输出 magnus receive 下载命令
+```
+
+### CLI 参数
+
+| 参数 | 说明 |
+|------|------|
+| `--scan` | 仅扫描模型列表，不提交评估 |
+| `--model NAME` | 直接指定模型名(base或SFT版本) |
+| `--all-versions` | 对指定base model的所有SFT版本评估 |
+| `--test-set PATH` | 本地测试集JSON路径 |
+| `--test-secret SECRET` | 已上传的magnus-secret(跳过本地上传) |
+| `--no-scan` | 使用本地缓存，跳过扫描 |
+| `--poll-interval N` | 轮询间隔(默认60s) |
+
+### 交互式模型选择
+
+- base models 和 SFT versions 分组显示
+- SFT versions 按 base_model 分组，每组内按 version_num 排序
+- 用户输入编号选择
+
+### GPU 自动配置 (`_auto_gpu_config`)
+
+| 参数量 | GPU配置 |
+|--------|---------|
+| ≤7B | 1×A100 |
+| 7B-32B | 1×A100 |
+| 32B-72B | 2×A100 |
+| >72B | 4×A100 |
+
+从 scan 结果的 `estimated_params_b` 字段读取。
+
+### _EVAL_INFER_PY 推理脚本
+
+容器内执行：通过 `magnus-secret:` 下载测试集 → 加载模型 → 推理 → `magnus custody` 上传结果 → 写入 `$MAGNUS_RESULT`。
+
+---
+
+## 模型扫描 (_SCAN_MODELS_PY)
+
+容器内 Python 脚本，作为 CPU job (B2优先级) 执行。
+
+**扫描路径**:
+- `/data/*/models/` — 所有用户的模型目录
+- `/data/magnus/models/` — Magnus 公共模型目录
+
+**识别规则**:
+
+| 类型 | 条件 |
+|------|------|
+| Base model | 有 `config.json` + 权重文件(.safetensors 或 .bin) → 不以 `-sft-zyz-v` 或 `-lora-zyz-v` 结尾 |
+| SFT version | 目录名匹配 `{base}-sft-zyz-v{N}` 或 `{base}-lora-zyz-v{N}` → 包含 `final/` 子目录 |
+
+**提取信息**: name, path, base_model, version_num, estimated_params_b(从 config.json), has_safetensors, is_moe
+
+### Sentinel JSON 输出
+
+```
+=== SCAN_RESULT_JSON ===
+{
+  "base_models": [
+    {"name": "Qwen2.5-72B-Instruct", "path": "/data/...", "estimated_params_b": 72, ...}
+  ],
+  "sft_versions": [
+    {"name": "Qwen2.5-72B-Instruct-sft-zyz-v1", "path": "/data/...", "base_model": "Qwen2.5-72B-Instruct", "version_num": 1}
+  ]
+}
+=== END_SCAN_RESULT_JSON ===
+```
+
+本地通过 `config.parse_scan_json(logs_text)` 解析。
+
+### scan_cache.json
+
+扫描结果缓存到 `train/json/scan_cache.json`，`--no-scan` 时直接使用缓存。`--scan` 仅扫描不提交。
+
+---
+
+## LLM 批改 (auto_grade.py)
+
+### 批改流程
+
+```
+1. 上传 eval_results JSON 到 Magnus → magnus.custody_file() → file secret
+2. 提交 GPU job (A2, 1×A100, QLoRA 72B 审阅模型)
+3. 容器内: 下载 eval_results → 加载审阅模型 → 逐条批改
+4. 批改维度: 答案正确性 + 解题过程质量(过程分)
+5. 输出:
+   - eval_results_graded.json — 完整批改报告(逐条含 question/gt_answer/model_answer/grading)
+   - eval_results_summary.json — 摘要(accuracy, avg_process_score, 错误分类统计)
+6. 上传结果 → 输出 magnus receive 下载命令
+```
+
+### 输出示例
+
+```json
+// eval_results_summary.json
+{
+  "accuracy": 0.158,
+  "avg_process_score": 51.73,
+  "total_samples": 101,
+  "error_categories": {
+    "计算错误": 35, "逻辑错误": 22, "概念错误": 15, "格式问题": 8, "其他": 5
+  }
+}
+```
+
+审阅模型使用 QLoRA 72B，逐条对比 ground truth 和 model output。
+
+---
+
+## 测试集管理
+
+### 两份测试集
+
+| 文件 | 默认路径 | 用途 |
+|------|---------|------|
+| 测试集 1 | `train/test.json` | 主要评估 |
+| 测试集 2 | `train/test_2.json` | 补充/独立评估 |
+
+### 使用方式
+
+**本地文件（推荐）**:
+```bash
+python eval_baseline.py --model Qwen2.5-72B-Instruct --test-set train/test.json
+```
+流程：本地读取 → `magnus.custody_file()` 上传 → 获取 `magnus-secret:...` → 作为蓝图参数传入
+
+**已上传 secret（跳过上传）**:
+```bash
+python eval_baseline.py --model ... --test-secret magnus-secret:XXXX-xxxx-xxxx-xxxx
+```
+
+### File Secret 生命周期
+
+- 上传时指定 `expire_minutes`（默认60分钟）
+- 可在 Magnus 上设置 `max_downloads` 限制下载次数
+- 容器内通过 `magnus receive $SECRET --output /path/` 下载
+
+---
+
+## 关键设计决策
+
+- **扫描与评估分离**：扫描是 CPU job(B2低优先级)，评估是 GPU job(A2)。扫描结果缓存到本地 JSON，避免重复扫描
+- **测试集通过 file secret 传递**：本地 `magnus.custody_file()` 上传 → 获取 secret → 通过蓝图参数传入容器 → 容器内 `magnus receive` 下载
+- **GPU 自动配置**：从模型 config.json 提取参数量，自动决定 GPU 数量
+- **双测试集支持**：train/test.json 和 train/test_2.json 两份独立测试集
+
+---
+
+## 读完本 skill 后
+
+- 修改评估启动器细节 → `eval_baseline.skill` — eval_baseline.py 交互选择/推理脚本补充
+- 修改模型扫描实现 → `eval_scan.skill` — _SCAN_MODELS_PY 补充
+- 修改批改实现细节 → `eval_grade.skill` — auto_grade.py 审阅模型补充
+- 管理测试数据细节 → `eval_testset.skill` — file secret 生命周期补充
+- 评估的模型是 SFT 产物 → `SFT.skill`(理解版本命名)
+- 理解 sentinel JSON / file secret 底层 → `magnus.skill`

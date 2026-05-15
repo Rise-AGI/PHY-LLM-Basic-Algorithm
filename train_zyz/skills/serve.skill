@@ -1,0 +1,96 @@
+# serve.skill — 模型推理服务
+
+> **Level 1 — 推理服务领域入口。** 部署模型 API 服务、配置 ngrok 公网隧道时读此文件。
+> 本文件包含推理服务的核心知识。补充细节见二级 skill。
+
+## 元信息
+- **关联 .py**: serve_model.py(OpenAI兼容API服务)
+- **关联 skill**: README.skill(必读), docker.skill(推理镜像), eval.skill(评估后的模型)
+- **关联 .md**: README.md(推理服务节)
+- **子 skill (2个)**: serve_api, serve_deploy
+
+---
+
+## 架构
+
+`serve_model.py` 在 Magnus 集群上启动一个 **OpenAI 兼容的 HTTP API 推理服务**。
+
+**技术栈**：FastAPI + uvicorn + ngrok(公网隧道)
+- 在 Magnus GPU 容器内启动 FastAPI 服务(默认端口 8000)
+- ngrok 创建公网 URL → 外部可直接调用
+- 支持鉴权(API key)
+
+---
+
+## API 端点
+
+### `POST /v1/chat/completions`
+OpenAI Chat Completions 格式：
+```json
+// Request
+{"model": "qwen", "messages": [{"role": "user", "content": "Hello"}], "stream": false}
+
+// Response
+{"id": "...", "object": "chat.completion", "choices": [{"message": {"content": "..."}}]}
+```
+支持 `stream=true` (Server-Sent Events)。
+
+### `POST /v1/completions`
+传统 Completions 格式：
+```json
+// Request
+{"model": "qwen", "prompt": "Hello", "max_tokens": 100}
+
+// Response
+{"id": "...", "object": "text_completion", "choices": [{"text": "..."}]}
+```
+
+### 鉴权
+
+API key 通过环境变量或配置传入，验证通过后返回 200，未授权返回 401。
+
+---
+
+## 调用示例
+
+```python
+from openai import OpenAI
+client = OpenAI(
+    api_key="your-key",
+    base_url="https://xxxx.ngrok-free.app/v1"
+)
+response = client.chat.completions.create(
+    model="qwen",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+```
+
+---
+
+## Magnus Job 部署配置
+
+serve_model.py 通过 `magnus.submit_job()` 提交 GPU 任务：
+- GPU: 1×A100 (或按需)
+- 容器镜像: 含 FastAPI/uvicorn/transformers 的镜像
+- system_entry_command: 挂载 `/data/` (加载模型权重)
+- 启动命令: `uvicorn serve:app --host 0.0.0.0 --port 8000`
+
+### ngrok 公网隧道
+
+容器内安装 ngrok → `ngrok config add-authtoken <token>` → `ngrok http 8000` → 获取公网 URL (如 `https://xxxx.ngrok-free.app`)。
+
+### 使用流程
+
+1. 修改 serve_model.py 中的模型路径和配置
+2. `python serve_model.py` → 提交 Magnus Job
+3. 从日志中获取 ngrok 公网 URL
+4. 用 OpenAI SDK 或 curl 调用
+
+---
+
+## 读完本 skill 后
+
+- 修改 API 逻辑细节 → `serve_api.skill` — 端点请求/响应格式补充
+- 部署配置细节 → `serve_deploy.skill` — Magnus 配置/ngrok 补充
+- 修改容器镜像 → `docker.skill`
+- 评估模型后再部署 → `eval.skill`

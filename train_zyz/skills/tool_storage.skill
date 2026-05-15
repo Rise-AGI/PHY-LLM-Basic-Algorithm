@@ -1,0 +1,30 @@
+# tool_storage.skill — 结果下载 + 存储清理补充
+
+> **Level 2 — tools 子 skill。** tools.skill 已包含存储管理核心内容，本文件补充安全细节。
+> 父 skill: tools.skill
+
+## 元信息
+- **关联 .py**: tools/download_results.py, tools/remove_storage.py
+- **关联 skill**: tools.skill(父), eval.skill(评估结果下载)
+- **关联 .md**: README.md(工具列表)
+- **父 skill**: tools.skill
+
+---
+
+## download_results.py 细节
+
+从 Magnus job 日志中正则提取 `magnus receive <secret> --output ...` 命令 → 本地执行下载。需要 job 已完成且结果已上传。
+
+## remove_storage.py 安全机制
+
+- 路径白名单：只能删除 `/data/` 下的路径
+- 交互式确认：`input("确认删除? [y/N]: ")`
+- 提交轻量 CPU job 执行 `rm -rf`（不在本地执行）
+
+---
+
+## 读完本 skill 后
+
+- 评估结果下载 → `eval.skill`
+- 训练结果下载 → `SFT.skill`
+- 其他工具 → `tools.skill`(索引)

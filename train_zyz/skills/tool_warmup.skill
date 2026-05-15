@@ -1,0 +1,30 @@
+# tool_warmup.skill — pip 预热 + 存储测试补充
+
+> **Level 2 — tools 子 skill。** tools.skill 已包含预热/测试核心内容，本文件补充实现细节。
+> 父 skill: tools.skill
+
+## 元信息
+- **关联 .py**: tools/warmup_packages.py, tools/warmup_test.py
+- **关联 skill**: tools.skill(父), docker.skill→docker_build.skill(自定义镜像相关)
+- **关联 .md**: README.md(工具列表)
+- **父 skill**: tools.skill
+
+---
+
+## warmup_packages.py 细节
+
+下载 wheel 文件到 `/data/<user>/pip-cache/wheels/`。蓝图使用 `PIP_FIND_LINKS=/data/$USERNAME/pip-cache/wheels` + `--no-index` 优先本地。
+
+## warmup_test.py 两步验证
+
+1. Write job: 在 `/data/<user>/` 写入标记文件
+2. Read job: 在新容器中验证标记文件存在
+
+用于验证不同容器间 `/data/` 持久存储的一致性。
+
+---
+
+## 读完本 skill 后
+
+- 自定义镜像构建 → `docker.skill` → `docker_build.skill`
+- 其他工具脚本 → `tools.skill`(索引)

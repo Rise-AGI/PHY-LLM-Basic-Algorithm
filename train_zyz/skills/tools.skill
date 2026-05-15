@@ -1,0 +1,166 @@
+# tools.skill — 工具脚本
+
+> **Level 1 — 工具脚本总入口。** 使用任何 tools/ 下脚本时读此文件。
+> 本文件包含所有工具的完整使用说明。补充细节见二级 skill。
+
+## 元信息
+- **关联 .py**: tools/ 下全部 10 个脚本
+- **关联 skill**: README.skill(必读，已有工具速查), magnus.skill(magnus_pattern — 工具的共同模式), config.skill(config接口), docker.skill(镜像工具)
+- **关联 .md**: README.md(文件总览表)
+- **子 skill (5个)**: tool_warmup, tool_model, tool_data, tool_storage, tool_view
+
+---
+
+## 共同模式
+
+所有工具脚本遵循相同模式：
+- 通过 `magnus.submit_job()` 提交**低优先级 CPU job** (B2)
+- 使用 `SYSTEM_ENTRY_COMMAND` 挂载 `/data/`
+- 容器内执行 Python 脚本 → 输出 sentinel JSON → `wait_for_job()` 轮询完成
+- 结果通过 `get_job_result()` 或 `get_job_logs()` + `parse_scan_json()` 获取
+
+---
+
+## 工具详解
+
+### pip 预热 (warmup_packages.py)
+
+**目的**: 将 20+ 常用 Python 包下载到集群持久存储 `/data/<user>/pip-cache/wheels/`，训练时通过 `PIP_FIND_LINKS` 直接使用，无需从公网下载。
+
+**实现**: 提交 CPU job (B2) → 容器内 `pip download` 下载 wheel 文件 → 保存到 `/data/` 持久存储。
+
+**蓝图使用方式**: 蓝图中设置 `PIP_FIND_LINKS=/data/$USERNAME/pip-cache/wheels` + `--no-index` 优先本地。
+
+### 存储连通性测试 (warmup_test.py)
+
+**目的**: 验证持久存储在新容器中是否可读写。
+
+**两步验证模式**:
+1. Write job: 在 `/data/<user>/` 下写入标记文件
+2. Read job: 在新容器中验证标记文件是否存在
+
+这是排查 `/data/` bind-mount 问题的标准方式。
+
+### 模型下载 (download_model_auto.py)
+
+**目的**: 从 ModelScope 下载模型到集群持久存储 `/data/<user>/models/`。
+
+**使用**:
+```bash
+python tools/download_model_auto.py --model Qwen/Qwen2.5-72B-Instruct
+```
+
+**实现**: 提交 CPU job (B2) → 容器内 `modelscope snapshot_download` → 移动到 `/data/<user>/models/<model-name>/`。
+
+### 模型完整性检查 (inspect_storage_model.py)
+
+**目的**: 扫描集群上所有模型，检查文件完整性、估算参数量、判定微调能力。
+
+**检测项**:
+- **safetensors 损坏**: 尝试验证每个 safetensors 文件头
+- **参数量估算**: 从 config.json 读取 hidden_size/num_layers 等估算
+- **MoE 检测**: 检查 config.json 中 MoE 相关字段
+- **SFT/LoRA 能力**: 判定模型是否可用于 SFT 全参微调 / LoRA
+
+**输出**: 结果写入 `train/json/model_magnus.json`，使用 sentinel JSON 模式。
+
+### 训练数据查看 (inspect_storage_data.py)
+
+**目的**: 采样查看 Magnus 持久存储上的训练数据文件内容。
+
+**支持格式**: JSON / JSONL / Parquet
+
+**功能**: 统计字段长度分布、均匀采样（避免只看头部数据）、返回完整样本内容（通过 sentinel JSON 模式）。
+
+**使用**: 提交 CPU job (B2) → 读取指定路径的数据文件 → 采样 → 输出 sentinel JSON。
+
+### 结果下载 (download_results.py)
+
+**目的**: 从已完成的 Magnus 任务下载训练产物（日志、checkpoint、报告等）。
+
+**使用**:
+```bash
+python tools/download_results.py <job_id>
+```
+
+**实现**: 从 Magnus job 日志中提取 `magnus receive <secret>` 命令 → 本地执行下载。
+
+### 存储清理 (remove_storage.py)
+
+**目的**: 删除 Magnus 持久存储中的文件/目录。
+
+**安全限制**: 只能删除 `/data/` 下的路径、需要用户确认、提交轻量 CPU job 执行 `rm -rf`。
+
+**使用**:
+```bash
+python tools/remove_storage.py /data/magnus/models/old-model
+```
+
+### JSON 可视化 (view_json.py)
+
+**目的**: 在浏览器中以表格/卡片形式浏览 JSON 数据文件，支持 LaTeX 数学公式渲染。
+
+**技术栈**: Flask + MathJax
+
+**功能**: 左侧文件列表（自动发现 `json/` 目录）、右侧数据展示（表格+卡片视图）、字段筛选、MathJax 渲染 `$...$` 和 `$$...$$`。
+
+**使用**:
+```bash
+python tools/view_json.py
+# → 浏览器打开 http://127.0.0.1:5000
+```
+
+**典型场景**: 查看 `eval_results_graded.json`(批改结果) 或 `model_magnus.json`(模型检查结果)。
+
+### GPU 诊断 (diag_gpu.py)
+
+**目的**: 在 GPU 故障后或 `nvidia-smi -r` 后，提交 Magnus job 逐层验证 GPU 恢复状态。
+
+**7 层诊断**:
+| 层 | 内容 | 能发现的问题 |
+|---|------|------------|
+| 0 | `nvidia-smi` 硬件清单 + 进程 + 拓扑 | GPU 是否被识别、残留进程、NUMA 拓扑 |
+| 1 | GSP-RM firmware 状态 | GSP 是否启用（影响恢复能力） |
+| 2 | `torch.cuda.device_count()` vs `is_available()` | 驱动报 N 张卡 vs 实际能否创建 CUDA context |
+| 3 | 逐卡 CUDA context 创建 | 哪些卡的 context 创建失败 |
+| 4 | 逐卡 tensor 分配 + 计算 | context 正常但显存/TLB 是否有问题 |
+| 5 | NCCL 双卡 all_reduce（30s 超时）| NCCL 通信是否恢复 |
+| 6 | `fuser /dev/nvidia*` + `CUDA_VISIBLE_DEVICES` | 僵尸进程 + 环境变量 |
+
+**使用**:
+```bash
+python tools/diag_gpu.py                        # 默认 6 卡
+python tools/diag_gpu.py --gpu-count 8 --gpu-type a100
+```
+
+**实现**: 提交 GPU job (A2, 6×A100) → 容器内运行 7 层检测脚本 → `wait_for_job()` 查看日志。
+
+**典型场景**: `nvidia-smi -r` 后验证恢复 / 训练 NCCL 崩溃后排查 / 定期 GPU 健康巡检。
+
+---
+
+## 选择指南
+
+| 你想做什么 | 工具 |
+|-----------|------|
+| 首次使用集群，需要预热 pip 依赖 | warmup_packages.py |
+| 排查 /data/ 存储不可见问题 | warmup_test.py |
+| 下载新模型(Qwen/DeepSeek等)到集群 | download_model_auto.py |
+| 检查已有模型文件是否完整 | inspect_storage_model.py |
+| 查看训练数据的样本内容 | inspect_storage_data.py |
+| 从已完成任务下载训练结果 | download_results.py |
+| 删除过期模型/清理存储空间 | remove_storage.py |
+| 在浏览器中可视化 JSON 数据 | view_json.py |
+| GPU 故障后验证恢复状态 / 训练崩溃后排查 | diag_gpu.py |
+
+---
+
+## 读完本 skill 后
+
+- 预热/测试存储细节 → `tool_warmup.skill` — warmup_packages/warmup_test 补充
+- 下载/检查模型细节 → `tool_model.skill` — download_model_auto/inspect_storage_model 补充
+- 查看数据细节 → `tool_data.skill` — inspect_storage_data 补充
+- 管理存储细节 → `tool_storage.skill` — download_results/remove_storage 补充
+- 可视化 JSON 细节 → `tool_view.skill` — view_json Flask+MathJax 补充
+- 理解工具的共同模式底层 → `magnus.skill`
+- 理解 config.py 的 wait_for_job/parse_scan_json → `config.skill`

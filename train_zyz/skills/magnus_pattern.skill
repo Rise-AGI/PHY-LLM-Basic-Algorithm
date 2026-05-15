@@ -1,0 +1,37 @@
+# magnus_pattern.skill — Magnus 关键模式专题
+
+> **Level 2 — magnus 子 skill。** magnus.skill 已包含4大模式核心内容，本文件补充 shell 注入防御和 Blueprint 沙箱细节。
+> 父 skill: magnus.skill
+
+## 元信息
+- **关联 .py**: 全部脚本(均使用以下模式)
+- **关联 skill**: magnus.skill(父), magnus_sdk.skill(函数签名), magnus_job.skill(Job调度), config.skill(SYSTEM_ENTRY_COMMAND)
+- **关联 .md**: blue.md(Blueprint沙箱)
+- **父 skill**: magnus.skill
+
+---
+
+## Shell 注入防御
+
+```python
+def safe_quote(s):
+    """安全引用 shell 字符串"""
+    return f"'{str(s).replace(chr(39), chr(39)+chr(92)+chr(39)+chr(39))}'"
+```
+此函数转义单引号，防止用户输入通过 `entry_command` 注入 shell 命令。在构造 `entry_command` 时对所有外部参数使用。
+
+## Blueprint 沙箱细节
+
+- 受限 builtins: `open/read/write/sys/os/subprocess/eval/exec/__import__` 全部移除
+- 仅 `typing` 可 import（用于类型标注）
+- `submit_job()` 被 hijack 为 `_BlueprintCapture`: 不真正提交，而是捕获参数 payload
+- 参数类型→表单映射: str→text, int→number, float→float, bool→boolean, Literal→select, FileSecret→file_secret, Optional→可选开关, List→动态列表
+
+---
+
+## 读完本 skill 后
+
+- 具体函数签名 → `magnus_sdk.skill`
+- Job调度机制 → `magnus_job.skill`
+- config.py中的实现 → `config.skill`
+- 蓝图详细 → `sft_blueprint.skill`

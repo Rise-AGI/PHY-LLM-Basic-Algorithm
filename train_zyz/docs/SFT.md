@@ -38,7 +38,7 @@
 | `run_sft_blueprint.py` | SFT 提交（蓝图版 v2） | 直接注册蓝图 + 一键提交（更简洁） |
 | `serve_model.py` | **API 推理服务** | 在 Magnus 上启动 OpenAI 兼容 API，支持 ngrok 公网隧道 |
 | `auto_grade.py` | **LLM 批改** | 上传 eval_results，用 QLoRA 72B 逐条批改，输出正确率 + 过程分 |
-| `eval_baseline.py` | 基线评估 | 独立评估脚本，对测试集做生成式推理并保存结果 |
+| `eval_baseline.py` | **自动化评估启动器** | 扫描 Magnus 服务器模型（base + SFT 版本） → 交互式/命令行选择 → 上传测试集 → 提交评估 job → 输出 file secret |
 
 ### sft_train.py 架构说明
 
@@ -509,7 +509,7 @@ submit_sft.py (base64 编码) → blueprint (透传,无 import) → shell $PROMP
 ```json
 {
     "model-version": [
-        {"time": "2026-04-26T20:00:00", "model": "Qwen2.5-7B-v1", "local_path": "/data/magnus/models/general-sft-v1", "status": "success"}
+        {"time": "2026-04-26T20:00:00", "model": "Qwen2.5-7B-sft-zyz-v1", "local_path": "/data/magnus/models/Qwen2.5-7B-sft-zyz-v1", "status": "success"}
     ]
 }
 ```
@@ -524,14 +524,15 @@ submit_sft.py (base64 编码) → blueprint (透传,无 import) → shell $PROMP
 
 ### 命名规则
 
-格式：`{模型短名}-v{版本号}`
+格式：`{模型短名}-{MODE}-zyz-v{版本号}`
 
-- `Qwen2.5-7B-v1`, `Qwen2.5-7B-v2`, ...
-- 模型短名从 `--model` 路径自动提取（最后一个 `/` 后的部分）
+- `Qwen2.5-72B-Instruct-sft-zyz-v1`, `Qwen2.5-72B-Instruct-sft-zyz-v2`, ...
+- `Qwen2.5-72B-Instruct-lora-zyz-v1` (LoRA 模式)
+- 模型短名从 `MODEL_PATH` 自动提取；MODE 为 `"sft"` 或 `"lora"`
 
 ### 自动递增
 
-不指定 `--model-version` 时，自动查找 `storage_record.json` 中该模型已有的最高版本号，+1。
+不指定 `--model-version` 时，自动查找 `storage_record.json` 中该模型+MODE 已有的最高版本号，+1。
 
 ### 去重保护
 

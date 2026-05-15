@@ -1,0 +1,31 @@
+# tool_model.skill — 模型下载 + 完整性检查补充
+
+> **Level 2 — tools 子 skill。** tools.skill 已包含模型工具核心内容，本文件补充实现细节。
+> 父 skill: tools.skill
+
+## 元信息
+- **关联 .py**: tools/download_model_auto.py, tools/inspect_storage_model.py
+- **关联 skill**: tools.skill(父), SFT.skill(训练需要模型)
+- **关联 .md**: README.md(工具列表)
+- **父 skill**: tools.skill
+
+---
+
+## download_model_auto.py 细节
+
+`modelscope snapshot_download` → 下载到临时目录 → 移动到 `/data/<user>/models/<model-name>/`。ModelScope 比 HF 在国内网络更快。
+
+## inspect_storage_model.py 检测项
+
+- safetensors 文件头验证（不加载完整数据，仅验证头部）
+- 参数量估算（从 config.json 的架构参数推算）
+- MoE 检测（检查 config.json 中的 expert 相关字段）
+- SFT/LoRA 能力判定（模型架构是否支持 FSDP/LoRA）
+
+---
+
+## 读完本 skill 后
+
+- 下载完模型后训练 → `SFT.skill`
+- 其他工具 → `tools.skill`(索引)
+- sentinel JSON 模式 → `magnus.skill` → `magnus_pattern.skill`

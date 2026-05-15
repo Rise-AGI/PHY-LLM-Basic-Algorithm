@@ -1,0 +1,31 @@
+# docker_build.skill — Dockerfile + ACR 推送补充
+
+> **Level 2 — docker 子 skill。** docker.skill 已包含构建推送核心内容，本文件补充实现细节。
+> 父 skill: docker.skill
+
+## 元信息
+- **关联 .py**: tools/push_to_acr.py, Dockerfile.sft
+- **关联 skill**: docker.skill(父), docker_traps.skill(构建陷阱)
+- **关联 .md**: docker.md §5, §8
+- **父 skill**: docker.skill
+
+---
+
+## push_to_acr.py 完整参数
+
+```bash
+python tools/push_to_acr.py -u <user> -p <password> --tag v4 [--no-push]
+```
+流程：`docker login` → `docker build -t sft-base:v4 .` → `docker tag` → `docker push`
+
+## Dockerfile.sft 预装依赖清单
+
+transformers, datasets, accelerate, peft, bitsandbytes, torchvision, scipy, einops, sentencepiece, nltk, rouge_score 等。基础镜像 `pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime`。
+
+---
+
+## 读完本 skill 后
+
+- 构建中遇到问题 → `docker_traps.skill`
+- Apptainer 运行原理 → `docker_apptainer.skill`
+- 训练镜像使用者 → `SFT.skill`

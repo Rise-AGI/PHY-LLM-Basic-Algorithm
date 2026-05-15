@@ -1,0 +1,32 @@
+# serve_api.skill — API 端点与鉴权补充
+
+> **Level 2 — serve 子 skill。** serve.skill 已包含 API 核心内容，本文件补充请求/响应细节。
+> 父 skill: serve.skill
+
+## 元信息
+- **关联 .py**: serve_model.py
+- **关联 skill**: serve.skill(父), serve_deploy.skill(部署配置)
+- **关联 .md**: README.md(推理服务节)
+- **父 skill**: serve.skill
+
+---
+
+## Stream 响应格式 (SSE)
+
+`stream=true` 时使用 Server-Sent Events：
+```
+data: {"choices": [{"delta": {"content": "Hello"}}]}
+data: {"choices": [{"delta": {"content": " world"}}]}
+data: [DONE]
+```
+
+## 鉴权实现
+
+API key 通过 `Authorization: Bearer <key>` header 传入，验证失败返回 401 `{"error": "Unauthorized"}`。
+
+---
+
+## 读完本 skill 后
+
+- 部署/配置服务 → `serve_deploy.skill`
+- 修改容器镜像 → `docker.skill`

@@ -1,0 +1,31 @@
+# eval_baseline.skill — eval_baseline.py 补充
+
+> **Level 2 — eval 子 skill。** eval.skill 已包含评估工作流核心内容，本文件补充实现细节。
+> 父 skill: eval.skill
+
+## 元信息
+- **关联 .py**: eval_baseline.py
+- **关联 skill**: eval.skill(父), eval_scan.skill(扫描逻辑), eval_testset.skill(测试集), eval_grade.skill(批改)
+- **关联 .md**: SFT.md §5(version naming)
+- **父 skill**: eval.skill
+
+---
+
+## 交互式模型选择实现
+
+- base models 和 SFT versions 分组显示
+- SFT versions 按 base_model 分组，每组内按 version_num 排序
+- 用户输入编号选择
+
+## _EVAL_INFER_PY 推理脚本细节
+
+容器内执行流程：通过 `magnus-secret:` 下载测试集 → 加载模型 → 推理 → `magnus custody` 上传结果 → 写入 `$MAGNUS_RESULT`。
+
+---
+
+## 读完本 skill 后
+
+- 修改扫描逻辑 → `eval_scan.skill`
+- 管理测试集 → `eval_testset.skill`
+- 用 LLM 批改 → `eval_grade.skill`
+- 理解 version naming → `SFT.skill`

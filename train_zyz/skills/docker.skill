@@ -1,0 +1,181 @@
+# docker.skill — 容器镜像管理
+
+> **Level 1 — 容器镜像领域入口。** 构建/推送镜像、修改 Dockerfile、容器环境排错时读此文件。
+> 本文件包含容器镜像的核心知识。补充细节见二级 skill。
+
+## 元信息
+- **关联 .py**: tools/push_to_acr.py(一键构建推送), Dockerfile.sft(镜像定义)
+- **关联 skill**: README.skill(必读，已有Docker概览), SFT.skill(训练镜像使用者), serve.skill(推理镜像使用者)
+- **关联 .md**: docker.md(容器镜像完整笔记)
+- **子 skill (3个)**: docker_build, docker_apptainer, docker_traps
+
+---
+
+## 三层镜像管理
+
+Magnus 集群通过 **Apptainer 容器**执行任务。容器镜像管理涉及三个层面：
+
+1. **构建**：写 Dockerfile → docker build → 产生镜像
+2. **分发**：docker push 到 ACR(阿里云容器镜像仓库) → Magnus 集群通过 `docker://` URI 拉取
+3. **运行**：集群将 docker 镜像转为 Apptainer .sif squashfs 文件 → 容器启动执行
+
+**当前项目镜像**：`docker://crpi-32rssczyu25r10yu.cn-beijing.personal.cr.aliyuncs.com/zyz25/sft-base:v3`
+- 基础镜像：`pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime`
+- 预装：transformers, datasets, accelerate, peft, bitsandbytes, torchvision, scipy, einops, sentencepiece, nltk, rouge_score 等
+
+---
+
+## Dockerfile.sft 结构
+
+```dockerfile
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+RUN pip install transformers datasets accelerate peft bitsandbytes ...
+# 预装: torchvision, scipy, einops, sentencepiece, nltk, rouge_score, etc.
+```
+
+基础镜像 + pip 预装训练所需全部依赖。当前版本 v3。
+
+---
+
+## ACR 配置
+
+| 配置项 | 值 |
+|--------|-----|
+| Registry URL | `crpi-32rssczyu25r10yu.cn-beijing.personal.cr.aliyuncs.com` |
+| 命名空间 | `zyz25` |
+| 仓库名 | `sft-base` |
+| 当前 tag | v3 |
+| 完整 URI | `docker://crpi-...aliyuncs.com/zyz25/sft-base:v3` |
+| VPC 内网 | `crpi-32rssczyu25r10yu-vpc.cn-beijing.personal.cr.aliyuncs.com` |
+
+---
+
+## 常用命令
+
+```bash
+# 构建+推送（Python 版，推荐）
+python tools/push_to_acr.py -u nick0634872703 -p <password> --tag v4
+
+# 仅构建不推送（调试）
+python tools/push_to_acr.py -u nick0634872703 -p <password> --tag v4 --no-push
+
+# Windows 批处理版
+push_to_acr.cmd -u nick0634872703 -p <password>
+
+# 手动 Docker 命令
+docker build -t sft-base:v4 .
+docker tag sft-base:v4 crpi-...aliyuncs.com/zyz25/sft-base:v4
+docker push crpi-...aliyuncs.com/zyz25/sft-base:v4
+
+# Magnus 预热镜像（避免首次使用时等待拉取）
+# Python: magnus.pull_image("docker://crpi-...aliyuncs.com/zyz25/sft-base:v4")
+```
+
+### 在 Magnus 中使用新镜像
+
+1. 构建推送后，更新 `submit_sft.py` 中的 `CONTAINER_IMAGE`
+2. 或预热：`magnus.pull_image("docker://crpi-...aliyuncs.com/zyz25/sft-base:v4")`
+3. 首次使用未缓存镜像时，作业会 PENDING 直到拉取完成
+
+---
+
+## Apptainer/SIF 运行机制
+
+### Apptainer vs Docker
+
+Magnus HPC 集群使用 Apptainer 而非 Docker：
+- Docker daemon 需要 root 权限 → HPC 环境不允许
+- Apptainer 专为 HPC 设计，不需要 root daemon
+- docker 镜像 → 拉取为 **只读 squashfs .sif 文件** → 容器启动
+
+### SIF 缓存
+
+```
+{magnus_root}/container_cache/
+├── pytorch_pytorch_2.5.1-cuda12.4-cudnn9-runtime.sif
+└── crpi-...aliyuncs.com_zyz25_sft-base_v3.sif
+```
+
+- **文件名规则**: `registry_name_tag.sif` (斜杠/冒号→下划线)
+- **缓存上限**: 80 GB，LRU 淘汰
+- **原子写入**: `.sif.tmp` → `chmod 644` → `rename` → `.sif` (崩溃安全)
+
+### 镜像状态机
+
+```
+unregistered → pulling → cached ⇄ refreshing
+                  ↓          ↓
+               failed     missing (DB有记录但.sif丢失)
+```
+
+| 状态 | 颜色 | 含义 |
+|------|------|------|
+| `cached` | 绿 | .sif就绪，可用 |
+| `pulling` | 蓝 | 正在拉取 |
+| `refreshing` | 黄 | 后台更新中(旧版仍可用) |
+| `failed` | 红 | 拉取失败 |
+| `missing` | 红 | DB有记录但文件丢失 |
+
+### 容器环境变量
+
+容器启动时自动注入：
+- `MAGNUS_HOME=/magnus` — 容器根路径
+- `MAGNUS_JOB_ID` — 当前 Job ID
+- `MAGNUS_RESULT` — 写入此文件=返回结果
+- `MAGNUS_ACTION` — 写入此文件=客户端执行命令(如 magnus receive)
+- `MAGNUS_METRICS_DIR` — 指标文件目录
+
+---
+
+## 容器常见陷阱
+
+### 陷阱 1: /root/ 空目录 (rootlesskit)
+
+**现象**: 容器内 `/root/` 是空 tmpfs，安装到 `/root/` 的二进制消失。
+
+**原因**: HPC 模式下 Apptainer 使用 rootlesskit，containall 将 `/root/` 挂载为空 tmpfs。
+
+**解决**: 所有工具/二进制安装到 `/usr/local/bin/` 或 `/opt/`：
+```dockerfile
+# 错误
+RUN curl ... | sh    # 安装到 /root/.local/bin/
+# 正确
+COPY uv /usr/local/bin/uv
+```
+
+### 陷阱 2: 跨文件系统硬链接 (UV_LINK_MODE)
+
+**现象**: `uv sync` 报 cross-device link 错误。
+
+**原因**: uv 缓存位于 SIF(squashfs,只读)，venv 在可写 bind mount 上，不同文件系统不支持硬链接。
+
+**解决**: `ENV UV_LINK_MODE=copy`
+
+### 陷阱 3: uv warmup 缓存不命中
+
+**现象**: warmup 阶段安装了依赖，但作业运行时重新下载。
+
+**原因**: `uv pip install` 和 `uv sync` 使用不同缓存格式。
+
+**解决**: warmup 必须用 `uv sync --frozen`：
+```dockerfile
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-install-workspace
+```
+
+### 陷阱 4: torch 2.5.1 + transformers 5.7.0 CVE
+
+**现象**: 加载 `.bin` 模型报 `ValueError: require users to upgrade torch to at least v2.6`
+
+**临时修复**: patch `modeling_utils.check_torch_load_is_safe = lambda: None`
+**长期方案**: 升级基础镜像到 `pytorch/pytorch:2.6.0-cuda12.4-...` 或转 `.safetensors`
+
+---
+
+## 读完本 skill 后
+
+- 构建/推送镜像细节 → `docker_build.skill` — Dockerfile.sft + push_to_acr 补充
+- 理解 Apptainer 底层 → `docker_apptainer.skill` — SIF缓存/状态机补充
+- 容器环境深度排错 → `docker_traps.skill` — 4个陷阱详细记录
+- 训练相关镜像使用 → `SFT.skill`
+- 推理服务镜像 → `serve.skill`

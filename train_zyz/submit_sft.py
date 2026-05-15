@@ -41,7 +41,7 @@ MODEL_PATH  = "/data/magnus/models/Qwen2.5-72B-Instruct"
 # 蓝图文件（留空=根据 MODE 自动选择 .magnus）
 BLUEPRINT_FILE  = ""         # 留空自动
 
-# 输出目录（留空=自动: {model_short_name}-{mode}-v{version}）
+# 输出目录（留空=自动: /data/magnus/models/{model_version}）
 OUTPUT_DIR      = ""         # 留空自动
 
 # 模型版本  # None = 自动递增
@@ -61,12 +61,12 @@ GRAD_ACCUM      = 8
 # 学习率
 LEARNING_RATE   = 2e-5
 # 最大序列长度
-MAX_LENGTH      = 4096
+MAX_LENGTH      = 1024
 # DataLoader worker 进程数（0=主进程加载，2-4 可加速）
 NUM_WORKERS     = 4
 # -- 硬件资源与任务调度 --
 # GPU数量
-GPU_COUNT       = 4
+GPU_COUNT       = 5
 # GPU型号  # "a100"（英伟达A100显卡） 或 "cpu"（仅CPU）
 GPU_TYPE        = "a100"        
 # CPU核心数
@@ -77,7 +77,7 @@ MEMORY          = "160G"
 STORAGE         = "1024G"
 # 任务优先级  # A1 / A2 / B1 / B2（优先级依次降低）
 PRIORITY        = "A2"          
-# 容器镜像地址  # 预装pip依赖环境
+# 容器镜像地址  # 预装pip依赖环境 (含 bitsandbytes 8-bit AdamW)
 CONTAINER_IMAGE = "docker://crpi-32rssczyu25r10yu.cn-beijing.personal.cr.aliyuncs.com/zyz25/sft-base:v2"  
 # 断点续训路径  # None = 从头训练
 RESUME_FROM     = None
@@ -94,8 +94,10 @@ PROMPT_PREFIX   = (
 )
 
 # -- 显存 / 通讯优化 --
-# CPU Offload  # False = 优化器状态保留在 GPU, True = 移到 CPU RAM (节省显存)
+# CPU Offload  # True = 参数+优化器移到 CPU RAM（每卡释放 ~36GB，训练略慢）
 CPU_OFFLOAD     = True
+# 8-bit AdamW  # True = 使用 8-bit 优化器（配合 CPU offload，大幅降低 CPU 内存需求）
+USE_8BIT_ADAM   = True
 # FSDP Backward Prefetch  # "pre" = 提前预取(速度优先), "post" = 延迟预取(显存优先)
 BWD_PREFETCH    = "post"
 
@@ -109,16 +111,17 @@ GITHUB_PATH      = "PHY-LLM-Basic-Algorithm/sft_train.py"
 
 def _auto_model_version(short_name: str) -> str:
     record = _ensure_record()
+    prefix = f"{short_name}-{MODE}-zyz-v"
     existing = [e for e in record.get("model-version", [])
-                if e.get("model", "").startswith(short_name + "-v")]
+                if e.get("model", "").startswith(prefix)]
     max_v = 0
     for e in existing:
-        m = re.search(r'-v(\d+)$', e.get("model", ""))
+        m = re.search(re.escape(prefix) + r"(\d+)$", e.get("model", ""))
         if m:
             v = int(m.group(1))
             if v > max_v:
                 max_v = v
-    return f"{short_name}-v{max_v + 1}"
+    return f"{prefix}{max_v + 1}"
 
 
 def _download_report(model_version: str, secret_or_text: str) -> Optional[str]:
@@ -155,9 +158,7 @@ def _resolve_blueprint() -> str:
 def _resolve_output_dir(model_version: str) -> str:
     if OUTPUT_DIR:
         return OUTPUT_DIR
-    short = _model_short_name()
-    version_suffix = f"-v{model_version.split('-v')[-1]}" if '-v' in model_version else ""
-    return f"/data/magnus/models/{short}-{MODE}{version_suffix}"
+    return f"/data/magnus/models/{model_version}"
 
 
 def _task_prefix() -> str:
@@ -197,6 +198,8 @@ def _build_bp_args(resolved_output_dir: str) -> dict:
         ).decode("ascii")
     if CPU_OFFLOAD:
         args["cpu_offload"] = True
+    if USE_8BIT_ADAM:
+        args["use_8bit_adam"] = True
     if BWD_PREFETCH != "pre":
         args["backward_prefetch"] = BWD_PREFETCH
     return args

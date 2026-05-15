@@ -1,0 +1,804 @@
+# README.skill — 项目总索引（必读，~700 行）
+
+> **Level 0 — 所有 Agent 的第一个入口。本文件是项目最全面的知识参考。**
+> 读完此文件后，大多数常规任务可直接执行，复杂任务再按 §7 导航到对应一级/二级 skill。
+> **不要读完此文件后盲目加载所有 skill。** 大多数任务只需 README + 0~1 个 skill。
+
+---
+
+## 0. 你在干什么（Agent Mission）
+
+你是**用户的 AI 编程助手**，正在协助开发和维护 `train/` 目录下的 **Magnus GPU 集群 LLM 训练工具链**。
+
+**这个 train/ 文件夹在干什么**：
+- 把大语言模型（主要是 Qwen2.5 系列，7B~72B）的**SFT 微调训练**提交到远程 Magnus 集群执行
+- 提供**模型评估**、**自动批改**、**API 推理服务**等配套功能
+- 管理**Docker 容器镜像**、**持久存储**、**模型下载/检查**等基础设施
+
+**典型的用户请求场景**：
+- "帮我提交 SFT 训练" → 读 §13 + SFT.skill
+- "训练 OOM 了怎么办" → 读 §11 + SFT.skill
+- "评估一下刚训练好的模型" → 读 §14 + eval.skill
+- "构建新镜像推到 ACR" → 读 docker.skill
+- "下载个新模型到集群" → 读 tools.skill
+
+**你的工作模式**：用户发起请求 → 你读 README.skill → 根据目标选择对应 skill 阅读 → 执行修改/排错。修改 .py 后必须同步更新 .md 和 .skill。
+
+**关键心智模型**：
+- 你本地没有 GPU，所有训练/推理都在远程 Magnus 集群上运行
+- 你的角色是**编排者**：配置参数 → 提交 Job → 监控 → 收集结果
+- 容器内运行的 Python 脚本（sft_train.py 等）通过 `wget` 从 GitHub 拉取
+- 本地脚本（submit_sft.py 等）负责保存蓝图、GitHub 同步、提交 Job、等待结果
+
+---
+
+## 1. Magnus 是什么（概念理解）
+
+Magnus 是 PKU Plasma + Rise-AGI 的 **HPC 科学计算平台**。通俗理解：
+
+- **你本地没有 GPU**。所有训练/推理都在**远程集群**上运行。
+- 你通过 Python SDK (`import magnus`) 提交 **Job**（容器任务）到集群。
+- 集群收到 Job 后：排队 → 拉取 Docker 镜像 → 启动 Apptainer 容器 → 执行你的命令 → 返回结果。
+- **Blueprint** = 预定义的 Job 模板（参数化），可以从 Web UI 或 SDK 调用。
+- **容器默认看不到宿主机 `/data/` 目录**（持久存储），需要通过 `system_entry_command` 显式挂载。
+
+**关键概念**：
+
+| 概念 | 说明 |
+|------|------|
+| Job | 一次容器执行任务，有状态(Pending→Running→Success/Failed) |
+| Blueprint | 可复用的 Job 模板，定义参数 schema + `submit_job()` 调用 |
+| File Secret | 文件上传/下载的临时凭证，格式 `magnus-secret:XXXX-xxxx-xxxx-xxxx` |
+| `/data/` | 集群持久存储（NFS），模型/数据/产出都存在这里 |
+| Apptainer | 容器运行时（类似 Docker，但面向 HPC），镜像转为 .sif squashfs 文件 |
+
+### Magnus 三层架构
+
+| 层 | 职责 | 与我们的关系 |
+|----|------|------------|
+| **Execution** | 容器化任务在 SLURM 执行 (Apptainer) | 我们提交的所有 Job 都在此层运行 |
+| **Sedimentation** | Blueprint(可执行模板) + Skill(知识包) | 我们的 .magnus 蓝图属于此层 |
+| **Collaboration** | Web UI + SDK/CLI + 鉴权 | 我们通过 `import magnus` SDK 交互 |
+
+### 完整交互链路
+
+```
+本地 Python 脚本 → magnus SDK → HTTP POST /api/jobs/submit
+  → Magnus 后端 → 资源准备(镜像+仓库) → 调度决策(四级优先级)
+  → SLURM sbatch → Apptainer 容器执行
+  → wrapper epilogue → .magnus_success / .magnus_oom
+  → 结果回传 (MAGNUS_RESULT / MAGNUS_ACTION)
+```
+
+### Job 状态机与优先级
+
+```
+Pending → Preparing → Running → Success / Failed / Terminated
+              ↓                       (终态)  (终态)  (终态)
+           (拉镜像+克隆仓库)
+```
+
+- `Paused`: 被抢占暂停(仅B1/B2)，非终态，可恢复
+- `Terminated`: 用户主动取消
+
+| JobType | 数值 | 可抢占 | 适用 | submit_job 参数 |
+|---------|------|--------|------|----------------|
+| A1 | 4 (最高) | 否 | 生产/紧急 | `job_type="A1"` |
+| A2 | 3 | 否 | 常规训练(推荐) | `job_type="A2"` |
+| B1 | 2 | **是** | 批量任务 | `job_type="B1"` |
+| B2 | 1 (最低) | **是** | 下载/预热/测试 | `job_type="B2"` |
+
+### 容器环境变量 (自动注入)
+
+| 变量 | 值/说明 |
+|------|--------|
+| `MAGNUS_HOME` | `/magnus` — 容器根路径 |
+| `MAGNUS_TOKEN` | 认证token，SDK自动识别 |
+| `MAGNUS_ADDRESS` | 后端API地址 |
+| `MAGNUS_JOB_ID` | 当前Job ID |
+| `MAGNUS_RESULT` | 写入此文件=返回结果给调度器 |
+| `MAGNUS_ACTION` | 写入此文件=客户端执行action命令 |
+| `MAGNUS_METRICS_DIR` | `metrics/` — 指标文件目录 |
+| `APPTAINER_BIND` | bind-mount路径(由system_entry_command设置) |
+
+### 资源上限
+
+| 资源 | 上限 | 默认值 |
+|------|------|--------|
+| CPU | 128核 | 4核 |
+| 内存 | 256 GB | 1.6 GB |
+| 临时磁盘 | — | 10 GB |
+| GPU | 单任务4卡 | 0(CPU) |
+
+---
+
+## 2. 强制规则
+
+1. **修改 .py 程序文件后，必须同步更新**：
+   - 相关的 `.md` 文件（`train/docs/` 下，面向人类用户和同事）
+   - 相关的 `.skill` 文件（`train/skills/` 下，面向后续 Agent）
+2. **新增/删除 .py 文件时**，必须同步更新本文件中的 §4 `.py 速查表`
+3. **新增/删除 .skill 文件时**，必须同步更新本文件中的 §5 `.skill 速查表`
+4. **修改 `config.py` 公共接口时**，必须同步更新 `config.skill`
+
+---
+
+## 3. Skill 编写规范
+
+### 强制要求
+
+- 每个 skill 文件**头部**写明：关联 .py、关联 skill、关联 .md、父 skill(二级)、子 skill(一级)、阅读建议
+- 使用本文件 §5 中的文件名，确保索引一致
+- 一级 skill 必须列出所有二级子 skill 的索引（总分关系）
+
+### 软性建议
+
+- **内容允许重复**：Agent 可能只加载某一个 skill，关键信息（如 version naming 规则）可在多处出现
+- **先总后分**：先给一两句话的概述，再展开细节。Agent 可能扫一眼就够，不需要全读
+- **README 最厚，一级次之，二级按需**：不要把 README 和一级当目录写。README 应包含足够知识以完成大多数常规任务
+- **何时拆分新 skill**：当一个 skill 超过 ~400 行，或其中某个小节被多个场景独立需要时，考虑拆为子 skill
+- **关联写明原因**：不要只列文件名，要一句话说清"为什么关联"
+- **代码片段精简**：只引用关键逻辑，不要整段复制源码。Agent 会自己读 .py 文件
+- **每个 skill 结尾写交叉关联**：格式见 §3.1
+
+### 3.1 交叉关联（每个 skill 必须包含）
+
+每个 skill 文件结尾，用小节列出"读完本 skill 后你可能还需要读"：
+
+```markdown
+## 读完本 skill 后
+
+- 如果涉及 [场景A] → 读 `xxx.skill` — [简述]
+- 如果涉及 [场景B] → 读 `yyy.skill` — [简述]
+- 常见搭配 → `zzz.skill` — [简述]
+```
+
+---
+
+## 4. 目录结构
+
+```
+train/
+├── config.py                 # 共享配置（所有脚本的依赖）
+├── sft_train.py              # 训练引擎（FSDP + CPU Offload + NCCL）
+├── submit_sft.py             # SFT 训练提交（推荐入口，配置驱动）
+├── magnus_sft.py             # SFT 训练提交（CLI 参数版）
+├── run_sft_blueprint.py      # SFT 训练提交（精简版）
+├── eval_baseline.py          # 自动化评估启动器（扫描→选择→评估→输出secret）
+├── auto_grade.py             # LLM 逐条批改工具
+├── serve_model.py            # OpenAI 兼容 API 推理服务
+├── Dockerfile.sft            # SFT 容器镜像定义
+├── push_to_acr.cmd           # Windows Docker 推送脚本
+├── blueprints/               # Magnus 蓝图（Job 模板）
+│   ├── OpenFundus_SFT_zyz.magnus   # SFT 全参微调蓝图
+│   └── LoRA_zyz.magnus             # LoRA/QLoRA 蓝图
+├── tools/                    # 辅助工具脚本
+│   ├── warmup_packages.py    # 预热 pip 包到集群
+│   ├── warmup_test.py        # 持久存储连通性验证
+│   ├── download_model_auto.py # ModelScope → 集群模型下载
+│   ├── inspect_storage_model.py # 模型完整性检查
+│   ├── inspect_storage_data.py # 训练数据样本查看
+│   ├── download_results.py   # 下载训练结果
+│   ├── remove_storage.py     # 删除持久存储文件
+│   ├── push_to_acr.py        # Docker 构建+推送 ACR
+│   ├── view_json.py          # Flask JSON 浏览器
+│   └── diag_gpu.py           # GPU 诊断工具（7层逐卡验证）
+├── docs/                     # .md 人类文档
+├── skills/                   # .skill Agent 知识包（本目录）
+├── json/                     # 自动生成数据
+├── data1/ data2/             # 任务日志 + storage_record
+└── SFT_data/                 # 训练报告下载
+```
+
+---
+
+## 5. .py 文件速查表
+
+> 文件名 → 一句话功能 → 去哪读详情
+
+| .py 文件 | 功能 | 一级 skill | 二级 skill(补充) |
+|----------|------|-----------|-----------------|
+| `config.py` | 共享配置：Magnus连接、`wait_for_job()`、`SYSTEM_ENTRY_COMMAND`、sentinel JSON解析 | config.skill | — |
+| `submit_sft.py` | SFT 训练提交入口（推荐）：读蓝图→保存→GitHub同步→启动→监控 | SFT.skill | sft_submit.skill |
+| `magnus_sft.py` | 同上，CLI 参数版 | SFT.skill | sft_submit.skill |
+| `run_sft_blueprint.py` | 同上，精简版（直接注册蓝图+一键提交） | SFT.skill | sft_submit.skill |
+| `sft_train.py` | 训练引擎：FSDP FULL_SHARD + CPU Offload + 8bit AdamW + NCCL + 性能指标 | SFT.skill | sft_train.skill |
+| `eval_baseline.py` | 自动化评估：扫描模型→选择→上传测试集→评估→file secret | eval.skill | eval_baseline.skill |
+| `auto_grade.py` | LLM 批改：用模型逐条批改 eval_results | eval.skill | eval_grade.skill |
+| `serve_model.py` | OpenAI API 推理服务（FastAPI + ngrok） | serve.skill | serve_api.skill |
+| `Dockerfile.sft` | SFT 容器镜像定义 | docker.skill | docker_build.skill |
+| `tools/push_to_acr.py` | Docker 镜像构建+推送 ACR | docker.skill | docker_build.skill |
+| `tools/warmup_packages.py` | 预热 pip 包到集群持久存储 | tools.skill | tool_warmup.skill |
+| `tools/warmup_test.py` | 持久存储连通性验证（write→read 两步） | tools.skill | tool_warmup.skill |
+| `tools/download_model_auto.py` | 从 ModelScope 下载模型到集群 | tools.skill | tool_model.skill |
+| `tools/inspect_storage_model.py` | 模型完整性检查(safetensors/参数量/MoE) | tools.skill | tool_model.skill |
+| `tools/inspect_storage_data.py` | 查看训练数据样本内容 | tools.skill | tool_data.skill |
+| `tools/download_results.py` | 从 Magnus 任务下载训练结果 | tools.skill | tool_storage.skill |
+| `tools/remove_storage.py` | 安全删除持久存储文件 | tools.skill | tool_storage.skill |
+| `tools/view_json.py` | Flask Web JSON 可视化浏览器 | tools.skill | tool_view.skill |
+| `tools/diag_gpu.py` | GPU 7层诊断：nvidia-smi→GSP→CUDA context→tensor→NCCL→进程→环境变量 | tools.skill | — |
+
+---
+
+## 6. .skill 文件速查表
+
+### Level 1 — 领域入口
+
+| Skill | 功能域 | 何时读 | 子 skill 数 |
+|-------|--------|--------|------------|
+| `SFT.skill` | SFT/LoRA 训练全流程（含提交/引擎/蓝图/显存/排错/提示词/指标） | 提交训练、修改训练脚本、训练排错 | 8 |
+| `eval.skill` | 模型评估与 LLM 批改（含扫描/评估/批改/测试集） | 评估模型、批改结果、修改评估流程 | 4 |
+| `docker.skill` | 容器镜像管理（含构建/ACR推送/Apptainer/陷阱排错） | 构建/推送镜像、修改 Dockerfile、容器排错 | 3 |
+| `serve.skill` | 模型推理服务（含API端点/鉴权/ngrok部署） | 部署 API 服务、配置 ngrok | 2 |
+| `tools.skill` | 工具脚本（含预热/模型/数据/存储/可视化） | 使用任何 tools/ 下脚本时 | 5 |
+| `config.skill` | config.py 详解 | 修改公共配置、理解 wait_for_job 内部逻辑 | 0 |
+| `magnus.skill` | Magnus 平台深度知识（含SDK/Job调度/关键模式） | 编写新脚本、理解任务调度 | 3 |
+
+### Level 2 — 各领域子 skill（补充内容，按需阅读）
+
+| 领域 | 子 skill | 内容 | 何时读 |
+|------|---------|------|--------|
+| SFT | `sft_submit.skill` | submit_sft/magnus_sft/run_sft_blueprint 提交逻辑补充 | 修改提交流程细节 |
+| SFT | `sft_train.skill` | sft_train.py FSDP/checkpoint/DataLoader 补充 | 修改训练引擎内部实现 |
+| SFT | `sft_lora.skill` | LoRA/QLoRA 量化/rank/target_modules 补充 | 使用 LoRA 模式细节 |
+| SFT | `sft_blueprint.skill` | .magnus 蓝图 entry_command 补充 | 修改/新建蓝图 |
+| SFT | `sft_memory.skill` | 显存优化理论估算补充 | OOM排错深度分析 |
+| SFT | `sft_issues.skill` | 已知问题排错详细记录 | 训练失败深度排查 |
+| SFT | `sft_prompt.skill` | PROMPT_PREFIX 数据流补充 | 修改提示词实现 |
+| SFT | `sft_metrics.skill` | Magnus Metrics 指标细节补充 | 添加新指标 |
+| eval | `eval_baseline.skill` | eval_baseline.py 交互选择/推理脚本补充 | 修改评估启动器细节 |
+| eval | `eval_scan.skill` | _SCAN_MODELS_PY 扫描脚本补充 | 修改扫描逻辑细节 |
+| eval | `eval_grade.skill` | auto_grade.py 审阅模型细节补充 | 修改批改实现 |
+| eval | `eval_testset.skill` | 测试集 file secret 生命周期补充 | 管理测试数据细节 |
+| docker | `docker_build.skill` | Dockerfile.sft + push_to_acr 补充 | 构建/推送镜像细节 |
+| docker | `docker_apptainer.skill` | Apptainer/SIF 缓存/状态机补充 | 理解容器底层 |
+| docker | `docker_traps.skill` | 4个容器陷阱详细记录 | 容器环境深度排错 |
+| serve | `serve_api.skill` | API 端点请求/响应格式补充 | 修改 API 逻辑细节 |
+| serve | `serve_deploy.skill` | Magnus 部署配置/ngrok 补充 | 部署新服务细节 |
+| tools | `tool_warmup.skill` | warmup_packages/warmup_test 补充 | 预热/测试存储细节 |
+| tools | `tool_model.skill` | download_model_auto/inspect_storage_model 补充 | 下载/检查模型细节 |
+| tools | `tool_data.skill` | inspect_storage_data 补充 | 查看数据细节 |
+| tools | `tool_storage.skill` | download_results/remove_storage 补充 | 管理存储细节 |
+| tools | `tool_view.skill` | view_json Flask+MathJax 补充 | 可视化 JSON 细节 |
+| magnus | `magnus_sdk.skill` | SDK 函数完整签名+参数+异常 | 写新脚本调用 Magnus |
+| magnus | `magnus_job.skill` | Job 生命周期+OOM检测+Metrics Protocol | 理解任务执行机制 |
+| magnus | `magnus_pattern.skill` | 4大关键模式+shell注入防御+entry_command | 理解/复用代码模式 |
+
+---
+
+## 7. 常见任务 → 推荐阅读路径
+
+| 用户请求 | 阅读路径 |
+|---------|---------|
+| 提交 SFT 训练 | README → SFT.skill |
+| LoRA 微调 | README → SFT.skill |
+| 修改训练参数/超参 | README → SFT.skill |
+| 训练 OOM | README §11 + SFT.skill |
+| 训练 NaN/Crash | README §11 + SFT.skill |
+| 修改 sft_train.py | README + SFT.skill → sft_train.skill |
+| 评估模型 | README §14 + eval.skill |
+| 批改评估结果 | README §14 + eval.skill |
+| 构建 Docker 镜像 | README + docker.skill |
+| 容器启动报错 | README §11 + docker.skill |
+| 部署推理 API | README + serve.skill |
+| 下载新模型 | README + tools.skill |
+| 检查模型文件 | README + tools.skill |
+| 预热 pip 依赖 | README + tools.skill |
+| 查看训练数据 | README + tools.skill |
+| 下载训练产物 | README + tools.skill |
+| 清理存储空间 | README + tools.skill |
+| 写新的 Magnus 脚本 | README §8-§9 + magnus.skill |
+| 理解 config.py | README §12 + config.skill |
+
+---
+
+## 8. Magnus SDK 完整参考
+
+所有脚本通过 `import magnus` 调用。连接配置：
+
+```python
+import magnus
+magnus.configure(address="http://162.105.151.134:3011/", token="sk-xxx")
+# 或通过环境变量: MAGNUS_ADDRESS, MAGNUS_TOKEN
+# 或通过 ~/.magnus/config.json
+```
+
+### submit_job — 提交容器任务
+
+```python
+job_id = magnus.submit_job(
+    task_name="my-task",           # str 必填, 显示名
+    entry_command="python x.py",   # str 必填, 容器内shell命令
+    repo_name="my-repo",           # str 必填, GitHub仓库名
+    namespace="Rise-AGI",          # GitHub组织
+    gpu_type="cpu",                # "cpu"/"a100"/"rtx5090"
+    gpu_count=0,                   # GPU数量
+    cpu_count=None,                # 默认4
+    memory_demand=None,            # "32G"/"1600M"
+    ephemeral_storage=None,        # 默认10G
+    job_type="A2",                 # A1/A2/B1/B2
+    container_image=None,          # docker://...
+    system_entry_command=None,     # bind-mount脚本，必须传 SYSTEM_ENTRY_COMMAND
+    description=None,              # Markdown描述
+)  # → str (job_id)
+```
+
+### 任务查询
+
+- `magnus.get_job(job_id)` → dict (状态/配置/时间)
+- `magnus.get_job_logs(job_id, page=-1)` → dict (日志内容)
+- `magnus.get_job_result(job_id)` → str|None (file secret 或文本)
+- `magnus.list_jobs(limit=20, skip=0, search=None)` → dict
+
+### 任务控制
+
+- `magnus.terminate_job(job_id)` → dict (终止任务)
+- `magnus.signal_job(job_id)` → dict (发送SIGTERM)
+
+### File Secret
+
+- `magnus.custody_file(path, expire_minutes=60, max_downloads=None)` → str (file secret)
+- `magnus.download_file(file_secret, target_path=None)` → Path (下载文件)
+
+### 蓝图管理
+
+- `magnus.save_blueprint(id, title, description, code)` → dict
+- `magnus.launch_blueprint(id, args={})` → str (job_id)
+- `magnus.get_blueprint(id)` → dict
+- `magnus.delete_blueprint(id)` → None
+- `magnus.list_blueprints(limit=20, skip=0)` → dict
+
+### 镜像管理
+
+- `magnus.pull_image(uri)` → dict (预热镜像)
+- `magnus.list_images(search=None)` → dict
+- `magnus.refresh_image(image_id)` → dict
+- `magnus.remove_image(image_id)` → None
+
+### 异常
+
+- `magnus.APIError` — HTTP错误(status_code, detail)
+- `magnus.AuthenticationError` — 401
+- `magnus.ExecutionError` — 任务Failed/Terminated
+
+---
+
+## 9. 四大关键模式（所有脚本的基础）
+
+### 模式 1: Container Job
+
+所有工具/训练/评估均通过 `magnus.submit_job()` 提交容器任务。
+
+**关键要点**:
+- 必须传入 `system_entry_command=SYSTEM_ENTRY_COMMAND` 挂载 `/data/`
+- 训练/评估任务用 A2 优先级 + GPU
+- 工具/扫描任务用 B2 优先级 + CPU
+- `entry_command` 是要在容器内执行的 shell 命令
+
+**典型代码**:
+```python
+from config import SYSTEM_ENTRY_COMMAND
+job_id = magnus.submit_job(
+    task_name="...",
+    entry_command="python script.py",
+    repo_name="OpenFundus",
+    system_entry_command=SYSTEM_ENTRY_COMMAND,
+    gpu_type="cpu", gpu_count=0,
+    job_type="B2",
+)
+```
+
+### 模式 2: Sentinel JSON
+
+容器内 Python 脚本输出包含 JSON 的标记块，本地从日志解析。
+
+**容器内输出**:
+```
+=== SCAN_RESULT_JSON ===
+{"key": "value", ...}
+=== END_SCAN_RESULT_JSON ===
+```
+
+**本地解析**: `config.parse_scan_json(logs_text, sentinel="SCAN_RESULT_JSON")`
+
+**使用场景**: 模型扫描(eval_scan)、模型检查(inspect_storage_model)、数据查看(inspect_storage_data)
+
+### 模式 3: File Secret
+
+文件在本地和容器间传递。
+
+**上传**:
+```python
+secret = magnus.custody_file("local_file.json", expire_minutes=60)
+# → "magnus-secret:XXXX-xxxx-xxxx-xxxx"
+```
+
+**容器内下载**:
+```bash
+magnus receive "$SECRET" --output /path/to/file
+```
+
+**容器内上传结果**:
+```bash
+SECRET=$(magnus custody /path/to/result)
+echo "magnus receive $SECRET --output ./result" > "$MAGNUS_ACTION"
+```
+
+**自动上传**: `launch_blueprint()` 检测 `FileSecret` 类型参数，自动 upload 本地路径。
+
+### 模式 4: Blueprint 沙箱
+
+Blueprint 是受限 Python 沙箱中执行的函数。
+
+**限制**: 仅 `typing` 可 import；无 `open/read/write/sys/os/subprocess/eval/exec`
+
+**执行流程**:
+```
+exec(blueprint_code, safe_builtins + execution_globals)
+  → blueprint(**validated_args) 被调用
+  → submit_job(...) 触发 _BlueprintCapture(kwargs)  # 不真提交，捕获payload
+  → 捕获 payload → 构造 JobSubmission → 返回调度器
+```
+
+**参数类型→表单映射**: str→text, int→number, float→float, bool→boolean, Literal→select, FileSecret→file_secret, Optional→可选开关, List→动态列表
+
+### entry_command 构造
+
+```python
+# 直接CLI
+cmd = f"python train.py --lr {lr}"
+
+# 多行脚本
+cmd = f"""set -e
+cd /project
+python main.py --input {data_path}
+"""
+
+# Shell注入防御
+def safe_quote(s): return f"'{str(s).replace(chr(39), chr(39)+chr(92)+chr(39)+chr(39))}'"
+```
+
+---
+
+## 10. 集群硬件约束
+
+| 资源 | 上限 | 默认值 |
+|------|------|--------|
+| CPU | 128 核 | 4 核 |
+| 内存 | 256 GB | 1.6 GB |
+| 临时磁盘 | — | 10 GB |
+| GPU | 单任务最多 4×A100 | 0 (CPU) |
+| 默认镜像 | `pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime` | — |
+
+**OOM 检测**: 检查 cgroup `memory.events` / `memory.oom_control`。OOM 时 Job 状态为 Failed。
+
+---
+
+## 11. 全局已知问题
+
+### SFT 训练问题
+
+| 现象 | 根因 | 修复 |
+|------|------|------|
+| NaN loss | bf16 大词表 softmax 下溢出 / 全部 label=-100 | float32 loss + torch.where(isnan, zeros_like, loss) |
+| NCCL 超时(600s) | NaN 处理破坏计算图 → FSDP REDUCE_SCATTER 不触发 | torch.where 保留 grad_fn |
+| `SafetensorError: incomplete metadata` | 训练被杀时 save_pretrained 写到一半 | 原子保存(.tmp→rename) + 加载容错 |
+| torchrun 无 traceback 直接 Failed | stderr 未被 Magnus 日志捕获 | `2>&1` + `--log-dir` + 失败dump |
+| `tokenizer.chat_template is not set` | DeepSeek 等模型无预置 chat_template | 检测后设置默认模板 |
+| 单卡 `Permission denied` | f-string 拼命令时空行导致 bash 续行断裂 | 用 shell 变量替代 f-string |
+| `nvidia-smi` 崩溃 | 0 GPU 容器无 NVIDIA runtime | `nvidia-smi 2>&1 \|\| echo` |
+| `unrecognized arguments: --test_path` | argparse 只注册了 --test_data | 同时注册 --test_data 和 --test_path |
+| 训练极慢/卡死 | 强制 `NCCL_P2P_LEVEL` (NVL→慢, PXB→卡死) | 不设 P2P_LEVEL + `NCCL_ALGO=Ring` (v18) |
+| Step N OOM 无限循环 | grad_accum 边界首次 optimizer.step() 集中分配 CUDA buffer | 预分配+`empty_cache()`+OOM 捕获跳过 (v17) |
+
+**NaN Loss 完整崩溃链**:
+```
+样本 NaN loss / 全部 label=-100(被截断)
+  → zeros_like 破坏计算图 → backward() 失败
+  → FSDP REDUCE_SCATTER 不执行 → NCCL 死锁
+```
+
+**修复 (v2)**: A: `shift_logits.float()` + 手动 `F.cross_entropy` — 防 NaN 产生。B: `torch.where(isnan|isinf, zeros_like, loss)` — 保留 grad_fn，FSDP backward 始终触发。
+
+**Checkpoint 损坏修复 (v3)**: 原子保存先写 `.ckpt-tmp-{step}` 再 rename。加载容错 `_load_safetensors_state()` try/except 兜底。Shell 兜底 3次重试耗尽后 rm checkpoint 从头训练。
+
+### 容器环境问题
+
+| 现象 | 根因 | 解决 |
+|------|------|------|
+| 容器内 `/root/` 空目录 | rootlesskit 将 `/root/` 挂载为空 tmpfs | 安装到 `/usr/local/bin/` 或 `/opt/` |
+| `uv sync` cross-device link | uv 缓存(squashfs)和 venv(bind mount)不同文件系统 | `ENV UV_LINK_MODE=copy` |
+| uv warmup 缓存不命中 | `uv pip install` 和 `uv sync` 缓存格式不同 | warmup 用 `uv sync --frozen` |
+| 加载 `.bin` 模型报 CVE | torch 2.5.1 + transformers 5.7.0 | patch `check_torch_load_is_safe` 或转 `.safetensors` |
+
+### transformers 5.7.0 + torch 2.5.1 CVE
+
+```python
+import transformers.modeling_utils
+transformers.modeling_utils.check_torch_load_is_safe = lambda: None
+```
+必须 patch `modeling_utils`（非 `import_utils`），因为前者用 `from import` 持有本地引用。只影响 `.bin` 模型，`.safetensors` 不受影响。
+
+---
+
+## 12. config.py 核心接口
+
+所有脚本共享的基础设施，从 `../secret.json` 加载凭证。
+
+**凭证与路径**:
+- `MAGNUS_ADDRESS` — Magnus 服务器地址
+- `MAGNUS_TOKEN` — 认证 token
+- `SFT_DATA_DIR` — 训练报告下载目录
+
+**`wait_for_job(job_id, poll_interval=60)`** — 轮询任务直到终态
+- 循环调用 `magnus.get_job(job_id)` 检查状态
+- 增量打印 Magnus 日志（`magnus.get_job_logs(job_id, page=N)`）
+- Ctrl+C 可中断，返回最终 job dict
+
+**`record_storage(category, entry)`** — 追加持久存储记录到 `data2/storage_record.json`
+- 分类：`"model-version"` — 训练成功时记录
+
+**`check_model_version_exists(model_version)`** — 版本去重检查，遍历 storage_record.json
+
+**`parse_scan_json(logs_text, sentinel="SCAN_RESULT_JSON")`** — 从容器日志解析 sentinel JSON，返回 dict/list
+
+**`detect_latest_sft_version(versions, base_model)`** — 匹配 `{base}-sft-zyz-v{N}`，返回最大版本号
+
+**`SYSTEM_ENTRY_COMMAND`** — Apptainer bind-mount 脚本，必须在所有 `submit_job()` 中传入：
+```bash
+mounts=("/home:/home" "/data:/data")
+export APPTAINER_BIND=$(IFS=,; echo "${mounts[*]}")
+export MAGNUS_HOME=/magnus
+unset -f nvidia-smi
+unset VIRTUAL_ENV SSL_CERT_FILE
+
+# GPU 预检（v18）：CUDA_VISIBLE_DEVICES 非空时自动逐卡验证 CUDA context
+# CPU job 零开销跳过。输出 → [Magnus GPU 预检] 逐卡验证: N/N 可用
+```
+
+**storage_record.json 格式**:
+```json
+{
+  "model-version": [
+    {
+      "time": "2026-05-14T10:00:00",
+      "model": "Qwen2.5-72B-Instruct-sft-zyz-v1",
+      "local_path": "/data/magnus/models/Qwen2.5-72B-Instruct-sft-zyz-v1",
+      "base_model": "/data/magnus/models/Qwen2.5-72B-Instruct",
+      "status": "success"
+    }
+  ]
+}
+```
+
+---
+
+## 13. SFT 训练快速参考
+
+### 核心流程
+
+```
+[本地] submit_sft.py 配置参数
+  → save_blueprint() 保存蓝图到 Magnus 服务器
+  → git push sft_train.py 到 GitHub (Rise-AGI/PHY-LLM-Basic-Algorithm)
+  → wait 10s (GitHub CDN 传播)
+  → launch_blueprint() 启动训练任务
+  → [集群] 容器启动 → wget sft_train.py → torchrun 分布式训练
+  → wait_for_job() 本地轮询监控
+  → 训练完成 → 下载报告 + record_storage()
+```
+
+### 3 种提交方式
+
+| 脚本 | 方式 | 适用场景 |
+|------|------|---------|
+| `submit_sft.py` | 配置驱动（编辑文件顶部变量） | **推荐**，日常训练 |
+| `magnus_sft.py` | CLI 参数 | 临时/测试 |
+| `run_sft_blueprint.py` | 精简配置 + CLI | 快速测试 |
+
+### Version Naming 规则
+
+`{模型短名}-{MODE}-zyz-v{编号}`
+- 例：`Qwen2.5-72B-Instruct-sft-zyz-v1`、`Qwen2.5-72B-Instruct-lora-zyz-v1`
+- 不指定版本时自动递增（从 `storage_record.json` 查最大编号 +1）
+- 提交前自动去重（`check_model_version_exists()`）
+
+### 两个蓝图
+
+| 蓝图 | 模式 | 并行策略 | 显存需求(72B) |
+|------|------|---------|-------------|
+| `OpenFundus_SFT_zyz.magnus` | 全参 SFT | FSDP FULL_SHARD | 2×80GB (CPU Offload) / 3×80GB |
+| `LoRA_zyz.magnus` | LoRA/QLoRA | DDP(量化) / FSDP(bf16) | 1×80GB (4-bit QLoRA) |
+
+### submit_sft.py 关键配置
+
+```python
+MODE        = "sft"          # "sft" | "lora"
+MODEL_PATH  = "/data/magnus/models/Qwen2.5-72B-Instruct"
+EPOCHS      = 3
+BATCH_SIZE  = 1
+GRAD_ACCUM  = 8              # 有效batch = BATCH_SIZE × GRAD_ACCUM × GPU_COUNT
+LEARNING_RATE = 2e-5
+MAX_LENGTH  = 1024
+NUM_WORKERS = 4
+GPU_COUNT   = 4
+GPU_TYPE    = "a100"
+CPU_COUNT   = 40
+MEMORY      = "256G"
+STORAGE     = "1024G"
+PRIORITY    = "A2"
+CONTAINER_IMAGE = "docker://crpi-...aliyuncs.com/zyz25/sft-base:v3"
+CPU_OFFLOAD = True           # 72B+2卡必备
+USE_8BIT_ADAM = True         # 配合 CPU offload
+BWD_PREFETCH = "post"        # "pre"=速度 / "post"=显存
+RESUME_FROM = None           # None=从头训练; 路径=断点续训
+```
+
+### 显存优化速查
+
+| 场景 | CPU_OFFLOAD | BWD_PREFETCH | 8BIT_ADAM | 最低GPU |
+|------|------------|-------------|-----------|---------|
+| 72B + 3×80GB | False | "pre" | False | 3 |
+| 72B + 2×80GB | **True** | **"post"** | **True** | 2 |
+| 7B + 1×80GB | False | "pre" | False | 1 |
+| 30B + 2×80GB | False | "pre" | False | 2 |
+| 30B + 1×80GB | True | "post" | True | 1 |
+
+**CPU Offload 原理**: `CPUOffload(offload_params=False)` 仅将 AdamW 优化器状态(momentum+variance, fp32)移到 CPU RAM。72B 模型：无 Offload ~1152/N GB，有 Offload ~288/N GB。
+
+**BackwardPrefetch**: `"pre"` 速度优先，`"post"` 显存优先(约省 10-15%)。
+
+### LoRA/QLoRA 量化对比
+
+| 量化 | 72B 每卡显存 | GPU 推荐 | 并行策略 |
+|------|-------------|----------|---------|
+| `4bit` (QLoRA) | ~36 GB | 1-4×A100 | DDP |
+| `8bit` | ~72 GB | 4×A100 | DDP |
+| `none` (bf16) | ~144 GB | 8+×A100 | FSDP |
+
+**LoRA 专属参数**: `lora_r=64`, `lora_alpha=128`, `lora_dropout=0.05`, `quantization="4bit"`, `target_modules`(自动检测), `merge_on_save=True`
+
+### FSDP 训练引擎要点
+
+- **FULL_SHARD**: 参数+梯度+优化器全分片
+- **混合精度**: bf16 参数/梯度/通信，float32 loss 计算
+- **Gradient Checkpointing**: 始终开启，显存大幅降低，速度损失~15-20%
+- **Checkpoint 原子保存**: `.ckpt-tmp-{step}` → `rename` → `checkpoint-latest`
+- **NCCL 优化**: `NCCL_ALGO=Ring` + `NCCL_PROTO=Simple`，不设 P2P_LEVEL 让 NCCL 自选 (v18)
+- **GPU 状态恢复**: NCCL 崩溃后 `fuser -k /dev/nvidia*` + `sleep 15` 清理 GPU 状态 (v18)
+- **OOM 防护**: 训练循环前预分配优化器 buffer + optimizer step 前 `empty_cache()` + OOM 捕获跳过 (v17)
+
+### PROMPT_PREFIX 系统
+
+数据流：`submit_sft.py` 中 `PROMPT_PREFIX` 文本 → `base64.b64encode()` → `prompt_prefix_b64` 蓝图参数(沙箱限制不能import base64) → shell `$PROMPT_ARG` → `sft_train.py` 解码 → 应用到 SFTDataset / run_eval / run_generation_eval。`{instruction}` 占位符在运行时替换。`PROMPT_PREFIX = None` 禁用。
+
+---
+
+## 14. 模型评估快速参考
+
+### 评估流程（eval_baseline.py）
+
+```
+[1/6] 提交 CPU 扫描 job → 发现集群上所有模型(base + SFT版本)
+[2/6] 等待扫描完成，解析 sentinel JSON → 缓存到 json/scan_cache.json
+[3/6] 展示模型列表(交互式)或用 --model 直接指定
+[4/6] 上传测试集到 Magnus → 获取 file secret
+[5/6] 提交 GPU 评估 job → 容器内加载模型 → 推理 → 上传结果
+[6/6] 监控 + 输出 magnus receive 下载命令
+```
+
+### CLI 快速参考
+
+```bash
+python eval_baseline.py                          # 交互式选择
+python eval_baseline.py --scan                   # 仅扫描模型
+python eval_baseline.py --model Qwen2.5-72B-Instruct --test-set test.json
+python eval_baseline.py --model Qwen2.5-72B-Instruct-sft-zyz-v1
+python eval_baseline.py --model Qwen2.5-72B-Instruct --all-versions  # 批量
+python eval_baseline.py --model ... --test-secret magnus-secret:...   # 用已上传测试集
+```
+
+### GPU 自动配置
+
+| 参数量 | GPU配置 |
+|--------|---------|
+| ≤7B | 1×A100 |
+| 7B-32B | 1×A100 |
+| 32B-72B | 2×A100 |
+| >72B | 4×A100 |
+
+### 模型扫描规则
+
+扫描路径：`/data/*/models/` 和 `/data/magnus/models/`。
+- **Base model**: 有 `config.json` + 权重文件，不以 `-sft-zyz-v` 或 `-lora-zyz-v` 结尾
+- **SFT version**: 目录名匹配 `{base}-sft-zyz-v{N}` 或 `{base}-lora-zyz-v{N}`，包含 `final/` 子目录
+
+### LLM 批改（auto_grade.py）
+
+```
+上传 eval_results → GPU job (A2, 1×A100) → QLoRA 72B 审阅模型
+→ 逐条批改(正确性+过程分) → 输出 eval_results_graded.json + summary.json
+```
+
+输出包含：`accuracy`(正确率), `avg_process_score`(平均过程分), `error_categories`(错误分类统计)。
+
+### 测试集
+
+| 文件 | 默认路径 | 用途 |
+|------|---------|------|
+| 测试集 1 | `train/test.json` | 主要评估 |
+| 测试集 2 | `train/test_2.json` | 补充/独立评估 |
+
+支持 `--test-set` 本地文件或 `--test-secret` 已上传 secret。
+
+---
+
+## 15. Docker / ACR / Apptainer 快速参考
+
+**当前项目镜像**: `docker://crpi-32rssczyu25r10yu.cn-beijing.personal.cr.aliyuncs.com/zyz25/sft-base:v3`
+- 基础镜像：`pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime`
+- 预装：transformers, datasets, accelerate, peft, bitsandbytes 等
+
+**ACR 配置**:
+
+| 配置项 | 值 |
+|--------|-----|
+| Registry | `crpi-32rssczyu25r10yu.cn-beijing.personal.cr.aliyuncs.com` |
+| 命名空间 | `zyz25` |
+| 仓库 | `sft-base` |
+| VPC 内网 | `crpi-32rssczyu25r10yu-vpc.cn-beijing.personal.cr.aliyuncs.com` |
+
+**常用命令**:
+```bash
+# 构建+推送
+python tools/push_to_acr.py -u nick0634872703 -p <password> --tag v4
+
+# 仅构建不推送
+python tools/push_to_acr.py -u <user> -p <pass> --tag v4 --no-push
+
+# Magnus 预热镜像
+# Python: magnus.pull_image("docker://crpi-...aliyuncs.com/zyz25/sft-base:v4")
+```
+
+**Apptainer 要点**:
+- docker 镜像 → 拉取为只读 squashfs .sif 文件
+- 缓存目录：`{magnus_root}/container_cache/`，上限 80 GB，LRU 淘汰
+- 文件名规则：`registry_name_tag.sif` (斜杠/冒号→下划线)
+- 原子写入：`.sif.tmp` → `rename` → `.sif`
+
+---
+
+## 16. 工具脚本速查
+
+| 工具 | .py 文件 | 功能 | 命令示例 |
+|------|---------|------|---------|
+| pip预热 | warmup_packages.py | 下载 20+ 常用包到集群持久存储 | `python tools/warmup_packages.py` |
+| 存储测试 | warmup_test.py | 验证持久存储连通性(write→read两步) | `python tools/warmup_test.py` |
+| 模型下载 | download_model_auto.py | ModelScope → 集群下载模型 | `python tools/download_model_auto.py --model Qwen/Qwen2.5-72B-Instruct` |
+| 模型检查 | inspect_storage_model.py | 扫描所有模型完整性/参数量/MoE | `python tools/inspect_storage_model.py` |
+| 数据查看 | inspect_storage_data.py | 采样查看训练数据(JSON/JSONL/Parquet) | `python tools/inspect_storage_data.py` |
+| 结果下载 | download_results.py | 从 Magnus 任务下载训练产物 | `python tools/download_results.py <job_id>` |
+| 存储清理 | remove_storage.py | 安全删除 /data/ 下文件(需确认) | `python tools/remove_storage.py /data/.../old-model` |
+| JSON浏览 | view_json.py | Flask Web JSON 可视化(LaTeX渲染) | `python tools/view_json.py` → 浏览器 |
+| GPU诊断 | diag_gpu.py | GPU 7层诊断：nvidia-smi→GSP→CUDA context→tensor→NCCL→进程 | `python tools/diag_gpu.py --gpu-count 6` |
+
+所有工具通过 `magnus.submit_job()` 提交 **B2 优先级 CPU job**（GPU 诊断除外：A2 + GPU）。
+
+---
+
+## 读完本 skill 后
+
+- 开始任何编码任务前 → 根据 §7 选择对应的一级 skill
+- 提交/修改 SFT 训练 → `SFT.skill`
+- 模型评估/批改 → `eval.skill`
+- 容器镜像相关 → `docker.skill`
+- 推理服务部署 → `serve.skill`
+- 使用工具脚本 → `tools.skill`
+- 修改 config.py → `config.skill`
+- 编写新 Magnus 脚本 → `magnus.skill`
+- 不确定该读哪个 → 重读 §7 常见任务表，或向用户确认具体目标
+- 本文件内容有误或过时 → 编辑本文件并同步更新相关 skill
+
+---
+
+*本文件是 Agent 知识入口。修改任何 .py 后请检查是否需要同步。*

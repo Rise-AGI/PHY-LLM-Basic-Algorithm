@@ -1,0 +1,42 @@
+# docker_traps.skill — 容器陷阱与排错补充
+
+> **Level 2 — docker 子 skill。** docker.skill 已包含4个陷阱核心内容，本文件补充排错步骤。
+> 父 skill: docker.skill
+
+## 元信息
+- **关联 .py**: Dockerfile.sft(镜像构建)
+- **关联 skill**: docker.skill(父), docker_build.skill(构建相关), sft_issues.skill(训练时容器问题)
+- **关联 .md**: docker.md §6
+- **父 skill**: docker.skill
+
+---
+
+## 陷阱 1 排错: /root/ 空目录
+
+排查步骤：
+1. 容器内 `ls /root/` — 确认是空目录
+2. 检查 Dockerfile 中是否有 `RUN curl ... | sh` 类型安装（默认安装到 /root/.local/bin/）
+3. 修改：所有工具安装到 `/usr/local/bin/` 或 `/opt/`
+
+## 陷阱 2 排错: UV_LINK_MODE
+
+排查步骤：
+1. 报错信息包含 "cross-device link"
+2. 确认 `ENV UV_LINK_MODE=copy` 已设置
+3. 检查 `uv sync` 而非 `uv pip install`
+
+## 陷阱 3 排错: uv warmup 缓存不命中
+
+必须用 `uv sync --frozen`：
+```dockerfile
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-install-workspace
+```
+
+---
+
+## 读完本 skill 后
+
+- 构建新镜像 → `docker_build.skill`
+- 训练容器问题 → `sft_issues.skill`
+- Apptainer 原理 → `docker_apptainer.skill`

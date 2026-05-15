@@ -1,0 +1,114 @@
+# sft_blueprint.skill — .magnus 蓝图补充
+
+> **Level 2 — SFT 子 skill。** SFT.skill 已包含蓝图核心内容，本文件补充实现细节。
+> 父 skill: SFT.skill
+
+## 元信息
+- **关联 .py**: 无直接关联(蓝图是 .magnus 文件)，影响 submit_sft.py 和 sft_train.py
+- **关联 skill**: SFT.skill(父), sft_submit.skill(蓝图使用者), sft_train.skill(被调用方), magnus.skill→magnus_pattern.skill(Blueprint沙箱原理)
+- **关联 .md**: blue.md(Blueprint引擎), SFT.md §2
+- **父 skill**: SFT.skill
+
+---
+
+## 蓝图参数全量对比
+
+| 维度 | OpenFundus_SFT_zyz | LoRA_zyz |
+|------|-------------------|----------|
+| 模式 | 全参 SFT | LoRA/QLoRA |
+| 并行 | FSDP FULL_SHARD | DDP(量化) / FSDP(bf16) |
+| 参数量 | 22+ | 20+ |
+| 量化支持 | 无 | 4-bit/8-bit/bf16 |
+| SFT 专属参数 | cpu_offload, backward_prefetch, use_8bit_adam | — |
+| LoRA 专属参数 | — | lora_r, lora_alpha, lora_dropout, quantization, target_modules, merge_on_save |
+
+## prompt_prefix_b64 透传细节
+
+蓝图沙箱禁止 `import base64`，因此编码必须在 submit_sft.py 中预计算。蓝图参数 `prompt_prefix_b64` 为 str 类型，透传到 entry_command 的 `$PROMPT_ARG` 变量。
+
+## NCCL 拓扑适配 (v18)
+
+**核心原则：不强制 `NCCL_P2P_LEVEL`，让 NCCL 自选最优路径。**
+
+- `NCCL_ALGO=Ring` + `NCCL_PROTO=Simple`（all-gather 稳定性最优）。
+- **不设 `NCCL_P2P_LEVEL`**：NCCL 自动检测 NVLink/PCIe/CPU socket。
+- **不设 `NCCL_SOCKET_IFNAME`**：该变量过度过滤可能导致 NCCL 找不到通讯接口。
+- **不设 channel/socket 微调**：`NCCL_MIN_NCHANNELS`/`NCCL_NSOCKS_PERTHREAD` 等实验性参数可能与拓扑冲突。
+
+### 历史教训
+
+| 尝试 | 设置 | 结果 |
+|------|------|------|
+| v16 (旧) | `NCCL_P2P_LEVEL=NVL` | 6×A100 PCIe: ~117s/step（慢但能跑） |
+| v17 | `NCCL_P2P_LEVEL=PXB` + `NCCL_ALGO=Tree` | 完全卡死，首次 ALLGATHER 600s timeout |
+| v18 (当前) | 不设 P2P_LEVEL + `NCCL_ALGO=Ring` | 预期正常 2-5s/step |
+
+**节点拓扑** (2026-05-15 确认)：6×A100 80GB PCIe，GPU 0-1 在 NUMA 0（PIX），GPU 2-5 在 NUMA 1（PIX），跨 NUMA 为 SYS。
+
+### GPU 状态恢复 (v18)
+
+NCCL 崩溃后（SIGABRT/EXITCODE -6），CUDA 驱动状态可能损坏，`torch.cuda.device_count()` 返回 0。Shell 重试前必须：
+```bash
+fuser -k /dev/nvidia* 2>/dev/null || true  # 杀残余 GPU 进程
+sleep 15  # 等待驱动恢复（10s 不够）
+```
+
+### GPU 检测验证 (v18)
+
+`torch.cuda.device_count()` **不可靠**：可能返回 5 但 CUDA context 创建仍然失败（`CUDA initialization: CUDA unknown error`）。必须逐卡用实际 CUDA tensor 分配验证：
+
+```bash
+_verify_cuda() {
+    python3 -c "
+import torch, sys
+try:
+    total = torch.cuda.device_count()
+    if total == 0:
+        print(0); sys.exit(0)
+    working = 0
+    for i in range(total):
+        try:
+            with torch.cuda.device(i):
+                t = torch.zeros(1, device='cuda')
+                del t
+            torch.cuda.synchronize()
+            working += 1
+        except Exception as e:
+            print(f'GPU {i}: context fail', file=sys.stderr)
+    torch.cuda.empty_cache()
+    print(working)
+except Exception:
+    print(0)
+" 2>/dev/null
+}
+```
+
+### GSP-RM Firmware 禁用
+
+`NVreg_EnableGpuFirmware=0` → GSP-RM firmware 禁用，GPU 状态管理完全由 host driver 负责：
+- **恢复更慢**：NCCL 崩溃后 GPU 状态恢复需 20-30s（GSP 启用时只需 5-10s）
+- **检测需更长间隔**：蓝图自适应将 sleep 从 10s 延长至 25s
+- **诊断方法**：`nvidia-smi -q | grep -i GSP` 查看状态
+- 容器内无法 `nvidia-smi -r` (需 root)，只能 `fuser -k /dev/nvidia*` 清理进程 + 等待驱动自愈
+
+直接使用 `device_count()` 会导致 torchrun 启动后所有 worker 报 `ProcessGroupNCCL: no GPUs found`。
+
+### CPU Fallback 时清理 CUDA_VISIBLE_DEVICES (v18)
+
+当 `ACTUAL_GPU=0` 切换到 CPU 训练模式时，必须 `unset CUDA_VISIBLE_DEVICES`。Magnus 平台根据 `gpu_count` 参数自动注入 `CUDA_VISIBLE_DEVICES=0,1,2,...`，即使蓝图检测到 0 张可用 GPU，该变量仍然存在，导致 `torch.cuda.device_count()` 返回 >0（驱动级别查询）而 `torch.cuda.is_available()` 返回 False（实际 CUDA context 创建失败）。`sft_train.py` 已同步修复：`n_gpu = torch.cuda.device_count() if torch.cuda.is_available() else 0`。
+
+```bash
+if [ "$ACTUAL_GPU" -eq 0 ]; then
+    _log '[环境] 0 GPU 可用，自动切换为 CPU 训练模式'
+    LAUNCHER="python3"
+    unset CUDA_VISIBLE_DEVICES  # 清除 Magnus 注入的 GPU 列表
+fi
+```
+
+---
+
+## 读完本 skill 后
+
+- 蓝图沙箱原理 → `magnus.skill` → `magnus_pattern.skill`
+- 蓝图参数如何被填充 → `sft_submit.skill`
+- sft_train.py 接收的参数 → `sft_train.skill`

@@ -1,0 +1,27 @@
+# tool_data.skill — 训练数据查看补充
+
+> **Level 2 — tools 子 skill。** tools.skill 已包含数据查看核心内容，本文件补充格式细节。
+> 父 skill: tools.skill
+
+## 元信息
+- **关联 .py**: tools/inspect_storage_data.py
+- **关联 skill**: tools.skill(父), SFT.skill(训练数据相关)
+- **关联 .md**: README.md(工具列表)
+- **父 skill**: tools.skill
+
+---
+
+## 支持格式与采样策略
+
+- JSON: 标准 JSON 对象/数组，按 key 均匀采样
+- JSONL: 行式 JSON，按行号均匀采样（避免只看头部）
+- Parquet: 列式格式，按 row_group 均匀采样
+
+统计每个字段的长度分布（min/mean/max），返回完整样本内容通过 sentinel JSON。
+
+---
+
+## 读完本 skill 后
+
+- 数据用于训练 → `SFT.skill`
+- 其他工具 → `tools.skill`(索引)

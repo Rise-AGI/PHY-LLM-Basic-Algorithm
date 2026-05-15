@@ -1,0 +1,112 @@
+# sft_issues.skill — SFT 已知问题排错补充
+
+> **Level 2 — SFT 子 skill。** SFT.skill 已包含已知问题速查表，本文件补充详细排错步骤。
+> 父 skill: SFT.skill
+
+## 元信息
+- **关联 .py**: sft_train.py(训练引擎), submit_sft.py(提交配置)
+- **关联 skill**: SFT.skill(父), sft_train.skill(训练实现), sft_memory.skill(显存), sft_blueprint.skill(蓝图shell层)
+- **关联 .md**: SFT.md §8(已知问题排错), LoRA.md §6
+- **父 skill**: SFT.skill
+
+---
+
+## torchrun 静默失败排错步骤
+
+1. 检查日志中 `2>&1` 是否生效（stderr 合并到 stdout）
+2. 检查 `--log-dir /tmp/torchrun_logs_$$` 各 rank 独立日志
+3. 失败时自动 dump 所有 rank 日志：`cat /tmp/torchrun_logs_*/rank-*.log`
+4. 训练前预检：`python -c "import torch; ..."` 验证 CUDA/语法
+
+## 单卡 Permission Denied 详情
+
+根因：f-string 拼接多行命令时，空行导致 bash 续行符 `\` 断裂，后续行被解释为新命令。解决：使用 shell 变量 (`CMD="..."; eval $CMD`) 替代 f-string。
+
+## NCCL 超时不是根因
+
+NCCL 超时是 NaN loss 处理不当的**症状**。修复 NaN 的 torch.where 方案后 NCCL 超时自动消失。不要在 NCCL 层面排查，先检查 loss 是否有 NaN。
+
+## A100 PCIe NCCL 慢速/卡死排错 (v18)
+
+**现象 A — 慢速（v16）**：每 step 耗时 >100s（正常 2-5s），所有 rank 耗时完全一致。`NCCL_P2P_LEVEL=NVL` 导致 NCCL 回退 CPU socket 通信。
+
+**现象 B — 完全卡死（v17）**：首次 FSDP ALLGATHER 600s timeout（`SeqNum=1, last completed=-1`），所有 rank 同时 timeout。`NCCL_P2P_LEVEL=PXB` + `NCCL_ALGO=Tree` 强制 PCIe P2P，但 ACS/IOMMU 阻止导致 hang。
+
+**根因**：单机多卡 NCCL 应**不设置 `NCCL_P2P_LEVEL`**，让 NCCL 自选。任何强制设置（NVL 或 PXB）都有风险。
+
+**当前方案 (v18)**：`NCCL_ALGO=Ring` + `NCCL_PROTO=Simple`，不设 P2P_LEVEL。
+
+### 节点拓扑确认 (v18 诊断)
+
+2026-05-15 通过 `diag_gpu.py` 确认节点实际为 **6×A100 80GB PCIe**（非之前认为的 5 张）：
+
+```
+NUMA 0: GPU 0,1  (PIX — 同一 PCIe bridge，无需经过 host bridge)
+NUMA 1: GPU 2,3,4,5  (PIX — 同一 PCIe bridge)
+跨 NUMA: SYS (经过 SMP/QPI interconnect)
+```
+
+这直接解释了为什么 `NCCL_P2P_LEVEL=PXB` 导致完全死锁：PXB 要求所有 GPU 通过 PCIe bridge 直连，但跨 NUMA 的 GPU 之间只有 SYS 路径。Tree 算法下，跨 NUMA 链路阻塞导致整个树结构死锁。Ring 算法（v18）容错性更高，自动绕过不可用链路。
+
+**诊断工具**：`tools/diag_gpu.py` — 提交 Magnus GPU job，逐层检测 nvidia-smi → GSP → CUDA context → tensor → NCCL → 僵尸进程。GPU 故障后或 `nvidia-smi -r` 后运行以确认恢复状态。
+
+### GPU 状态损坏 (v18)
+
+**现象**：NCCL 崩溃后（`ProcessGroupNCCL watchdog timeout` → `SIGABRT -6`），重试时 `torch.cuda.device_count()` 返回 0，日志显示 `CUDA initialization: CUDA unknown error`。
+
+**根因**：NCCL watchdog 触发 SIGABRT 后，`/dev/nvidia*` 设备文件被僵尸进程持有，CUDA 驱动无法重新初始化。
+
+**修复** (blueprint shell 层)：
+```bash
+fuser -k /dev/nvidia* 2>/dev/null || true  # 杀所有 GPU 残余进程
+sleep 15  # 等待 NVIDIA 驱动恢复（10s 不够，需要 15s+）
+```
+
+此修复同时应用于：
+- 每次 shell 重试前（训练失败 → 杀 GPU 进程 → sleep 15 → 重试）
+- 最终兜底尝试前（3 次重试均失败 → 杀 GPU 进程 → sleep 10 → 清 checkpoint → 最终尝试）
+
+## CUDA 初始化失败 (v18)
+
+**现象**：`nvidia-smi` 正常显示 5 张 GPU，但 torchrun worker 全部报 `CUDA initialization: CUDA unknown error` → `ProcessGroupNCCL is only supported with GPUs, no GPUs found!`。`torch.cuda.device_count()` 返回 5 但 `torch.cuda.is_available()` 返回 False。
+
+**根因**：
+1. `torch.cuda.device_count()` 从驱动查询 GPU 数量，但实际 CUDA context 创建失败（上次 NCCL 崩溃后 GPU 状态损坏）
+2. **GSP-RM firmware 禁用** (`NVreg_EnableGpuFirmware=0`) 时，GPU 状态管理完全由 host driver 软件完成，崩溃后状态恢复慢（20-30s vs 正常 5-10s），详见 `sft_blueprint.skill`
+
+**修复** (blueprint shell 层)：
+1. GPU 检测逐卡验证 CUDA context（`with torch.cuda.device(i): torch.zeros(1, device='cuda')`）
+2. 自适应重试间隔：GSP 禁用时 sleep 25s，否则 10s
+3. 检测失败时 `fuser -k /dev/nvidia*` + `fuser -k /dev/nvidiactl`，最多 3 次重试
+
+**容器限制**：无法 `nvidia-smi -r`（需 root 权限），持久化 GPU 损坏只能等驱动自行恢复或节点重启。
+
+### device_count() vs is_available() 不一致 (v18)
+
+**现象**：蓝图 GPU 检测正确识别 0 张可用 GPU → 切换 `LAUNCHER=python3`，但 `sft_train.py` 仍尝试 `dist.init_process_group(backend="nccl")` → 报错 `RANK expected, but not set`（因 torchrun 未启动，无分布式环境变量）。同时 `torch.cuda.device_count()` 返回 5 但 `torch.cuda.is_available()` 返回 False。
+
+**根因**：`sft_train.py` 中 `n_gpu = torch.cuda.device_count()` 仅查询驱动级别 GPU 数量（返回 5），不验证 CUDA context 是否可创建。即使蓝图正确设置 `LAUNCHER=python3`，`n_gpu > 1` 条件仍为 True，触发 `dist.init_process_group(backend="nccl")`。
+
+**修复** (`sft_train.py`)：`n_gpu = torch.cuda.device_count() if torch.cuda.is_available() else 0`，确保 CUDA 不可用时 n_gpu=0，完全跳过分布式初始化 + FSDP 包装。
+
+**关联修复** (blueprint)：CPU fallback 时 `unset CUDA_VISIBLE_DEVICES`，防止 Magnus 注入的 `CUDA_VISIBLE_DEVICES=0,1,2,3,4` 干扰诊断。
+
+## 优化器 OOM 无限循环 (v17)
+
+**现象**：grad_accum 边界（如 step 8/16/...）OOM，shell 重试从 step 1 重新开始 → 遇到同一 step 继续 OOM → 死循环。
+
+**根因**：首次 optimizer.step() 集中分配 CUDA buffer（clip_grad_norm all-reduce + 8-bit Adam 量化 buffer），与梯度累积峰值叠加。
+
+**修复** (sft_train.py)：
+1. 训练循环前预分配：`optimizer.step()` + `optimizer.zero_grad()`
+2. optimizer step 前 `torch.cuda.empty_cache()` 碎片整理
+3. optimizer step 内 try/except 捕获 OOM → 清空梯度跳过此累积周期继续训练
+
+---
+
+## 读完本 skill 后
+
+- 显存不足 → `sft_memory.skill`
+- FSDP/checkpoint 实现 → `sft_train.skill`
+- 蓝图 shell 层排错 → `sft_blueprint.skill`
+- 容器环境问题 → `docker.skill` → `docker_traps.skill`

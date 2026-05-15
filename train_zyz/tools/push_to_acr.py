@@ -17,13 +17,28 @@
 
 import argparse
 import getpass
+import json
 import os
 import subprocess
 import sys
 from pathlib import Path
 
 
+def _load_secret_acr() -> dict:
+    """从项目根目录 secret.json 加载 ACR 配置段。"""
+    secret_path = Path(__file__).resolve().parent.parent.parent / "secret.json"
+    if secret_path.exists():
+        try:
+            data = json.loads(secret_path.read_text(encoding="utf-8"))
+            return data.get("acr", {})
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    acr_secret = _load_secret_acr()
+
     parser = argparse.ArgumentParser(
         description="构建并推送 SFT Docker 镜像到阿里云 ACR",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -31,17 +46,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
 
     # ── ACR 登录信息 ────────────────────────────────────────────
-    parser.add_argument("-u", "--username", default=os.getenv("ACR_USERNAME"),
-                        help="ACR 登录用户名 (或设置 ACR_USERNAME 环境变量)")
-    parser.add_argument("-p", "--password", default=os.getenv("ACR_PASSWORD"),
-                        help="ACR Registry 密码 (或设置 ACR_PASSWORD 环境变量)")
+    parser.add_argument("-u", "--username",
+                        default=os.getenv("ACR_USERNAME") or acr_secret.get("username"),
+                        help="ACR 登录用户名 (自动从 secret.json 或 ACR_USERNAME 环境变量读取)")
+    parser.add_argument("-p", "--password",
+                        default=os.getenv("ACR_PASSWORD") or acr_secret.get("password"),
+                        help="ACR Registry 密码 (自动从 secret.json 或 ACR_PASSWORD 环境变量读取)")
 
     # ── 镜像参数 ────────────────────────────────────────────────
-    parser.add_argument("--registry", default="crpi-32rssczyu25r10yu.cn-beijing.personal.cr.aliyuncs.com",
+    parser.add_argument("--registry",
+                        default=acr_secret.get("registry_public") or "crpi-32rssczyu25r10yu.cn-beijing.personal.cr.aliyuncs.com",
                         help="ACR 域名")
-    parser.add_argument("--namespace", default="zyz25",
+    parser.add_argument("--namespace",
+                        default=acr_secret.get("namespace") or "zyz25",
                         help="ACR 命名空间")
-    parser.add_argument("--repo", default="sft-base",
+    parser.add_argument("--repo",
+                        default=acr_secret.get("repo") or "sft-base",
                         help="仓库名称 (默认: sft-base)")
     parser.add_argument("--tag", default="v1",
                         help="镜像标签 (默认: v1)")

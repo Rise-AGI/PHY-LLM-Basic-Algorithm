@@ -1,0 +1,31 @@
+# serve_deploy.skill — Magnus 部署 + ngrok 补充
+
+> **Level 2 — serve 子 skill。** serve.skill 已包含部署核心内容，本文件补充配置细节。
+> 父 skill: serve.skill
+
+## 元信息
+- **关联 .py**: serve_model.py
+- **关联 skill**: serve.skill(父), serve_api.skill(API逻辑), docker.skill(推理镜像)
+- **关联 .md**: README.md(推理服务节)
+- **父 skill**: serve.skill
+
+---
+
+## Magnus Job 配置参考
+
+- GPU: 1×A100
+- 容器镜像: 含 FastAPI/uvicorn/transformers 的镜像
+- system_entry_command: 挂载 `/data/` (加载模型权重)
+- 启动命令: `uvicorn serve:app --host 0.0.0.0 --port 8000`
+
+## ngrok 配置
+
+容器内安装 ngrok → `ngrok config add-authtoken <token>` → `ngrok http 8000` → 获取公网 URL。URL 从 Magnus 日志中提取。
+
+---
+
+## 读完本 skill 后
+
+- API 端点逻辑 → `serve_api.skill`
+- 镜像管理 → `docker.skill`
+- 评估模型 → `eval.skill`

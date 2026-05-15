@@ -1,0 +1,118 @@
+{
+  "scanned_at": "2026-05-15T14:08:08.842569",
+  "job_id": "49157dcd792cb1b9",
+  "models": [
+    {
+      "name": "DeepSeek-R1-Distill-Qwen-7B",
+      "path": "/data/dingchenyi/models/DeepSeek-R1-Distill-Qwen-7B",
+      "model_type": "qwen2",
+      "estimated_params_b": 4.32,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "Qwen2.5-1.5B",
+      "path": "/data/dingchenyi/models/Qwen2.5-1.5B",
+      "model_type": "qwen2",
+      "estimated_params_b": 0.79,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "Qwen2.5-0.5B",
+      "path": "/data/zhouzihan/models/Qwen2.5-0.5B",
+      "model_type": "qwen2",
+      "estimated_params_b": 0.23,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "gpt2",
+      "path": "/data/zhouzihan/models/gpt2",
+      "model_type": "gpt2",
+      "estimated_params_b": null,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "pythia-160m",
+      "path": "/data/zhouzihan/models/pythia-160m",
+      "model_type": "gpt_neox",
+      "estimated_params_b": 0.08,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "pythia-410m",
+      "path": "/data/zhouzihan/models/pythia-410m",
+      "model_type": "gpt_neox",
+      "estimated_params_b": 0.3,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "pythia-70m",
+      "path": "/data/zhouzihan/models/pythia-70m",
+      "model_type": "gpt_neox",
+      "estimated_params_b": 0.02,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "DeepSeek-R1-Distill-Llama-70B",
+      "path": "/data/magnus/models/DeepSeek-R1-Distill-Llama-70B",
+      "model_type": "llama",
+      "estimated_params_b": 64.42,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "DeepSeek-V4-Flash",
+      "path": "/data/magnus/models/DeepSeek-V4-Flash",
+      "model_type": "deepseek_v4",
+      "estimated_params_b": 8.66,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "Qwen2.5-32B-Instruct",
+      "path": "/data/magnus/models/Qwen2.5-32B-Instruct",
+      "model_type": "qwen2",
+      "estimated_params_b": 20.13,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "Qwen2.5-72B-Instruct",
+      "path": "/data/magnus/models/Qwen2.5-72B-Instruct",
+      "model_type": "qwen2",
+      "estimated_params_b": 64.42,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "Qwen2.5-Math-7B-Instruct",
+      "path": "/data/magnus/models/Qwen2.5-Math-7B-Instruct",
+      "model_type": "qwen2",
+      "estimated_params_b": 4.32,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "deepseek-math-7b-base",
+      "path": "/data/magnus/models/deepseek-math-7b-base",
+      "model_type": "llama",
+      "estimated_params_b": 6.04,
+      "has_weights": true,
+      "kind": "base"
+    },
+    {
+      "name": "internlm2-math-7b",
+      "path": "/data/magnus/models/internlm2-math-7b",
+      "model_type": "internlm2",
+      "estimated_params_b": 6.44,
+      "has_weights": true,
+      "kind": "base"
+    }
+  ]
+}

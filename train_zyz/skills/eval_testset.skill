@@ -1,0 +1,28 @@
+# eval_testset.skill — 测试集管理补充
+
+> **Level 2 — eval 子 skill。** eval.skill 已包含测试集管理核心内容，本文件补充 file secret 细节。
+> 父 skill: eval.skill
+
+## 元信息
+- **关联 .py**: eval_baseline.py(测试集上传/使用), auto_grade.py(测试集结果)
+- **关联 skill**: eval.skill(父), eval_baseline.skill(评估流程), magnus.skill→magnus_pattern.skill(file secret模式)
+- **关联 .md**: 无专属文档
+- **父 skill**: eval.skill
+
+---
+
+## File Secret API 参数
+
+```python
+magnus.custody_file(path, expire_minutes=60, max_downloads=None)
+```
+- `expire_minutes`: 过期时间（默认60分钟），评估任务可能超时运行，按需调大
+- `max_downloads`: 限制下载次数（None=无限次）
+- 容器内: `magnus receive $SECRET --output /path/to/file`
+
+---
+
+## 读完本 skill 后
+
+- 评估流程 → `eval_baseline.skill`
+- file secret 底层原理 → `magnus.skill` → `magnus_pattern.skill`

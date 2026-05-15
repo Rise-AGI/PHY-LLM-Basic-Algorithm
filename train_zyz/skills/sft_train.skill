@@ -1,0 +1,62 @@
+# sft_train.skill — 训练引擎补充
+
+> **Level 2 — SFT 子 skill。** SFT.skill 已包含训练引擎核心内容，本文件补充实现细节。
+> 父 skill: SFT.skill
+
+## 元信息
+- **关联 .py**: sft_train.py(训练引擎, ~1200行)
+- **关联 skill**: SFT.skill(父), sft_memory.skill(显存优化), sft_metrics.skill(性能指标), sft_issues.skill(排错), sft_prompt.skill(提示词)
+- **关联 .md**: SFT.md §2.2
+- **父 skill**: SFT.skill
+
+---
+
+## GPU 检测与启动逻辑
+
+容器内 `torch.cuda.device_count()` 检测：0 GPU → `python3`，多卡 → `torchrun --nproc_per_node=N`，单卡 → `python3`。此逻辑在蓝图 entry_command 的 shell 层实现，不在 sft_train.py 内。
+
+## Checkpoint 原子保存细节
+
+```python
+# 仅 rank 0 执行
+tmp_path = f"{checkpoint_dir}/.ckpt-tmp-{step}"
+model.save_pretrained(tmp_path)
+os.rename(tmp_path, f"{checkpoint_dir}/checkpoint-latest")  # 原子操作
+```
+
+`_load_safetensors_state()` try/except 兜底：逐个 safetensors 文件验证，任一个损坏返回 None。Shell 层最终兜底：3次重试耗尽后 `rm -rf checkpoint-latest` 从头训练。
+
+## DataLoader 细节
+
+- `SFTDataset`: 支持 JSON/JSONL/Parquet，自动 `tokenizer.apply_chat_template()`
+- `num_workers`: 假数据=0，真数据=2-4 (可配置)
+- `DistributedSampler`: 多卡时每卡处理数据子集，shuffle=True 时 epoch 间自动重排
+
+## 优化器 OOM 防护 (v17)
+
+训练循环前预分配 CUDA buffer：
+```python
+optimizer.step()   # 预分配 8-bit Adam 量化 buffer
+optimizer.zero_grad()
+```
+
+每个 optimizer step 边界：
+```python
+torch.cuda.empty_cache()  # 碎片整理
+try:
+    model.clip_grad_norm_(1.0)
+    optimizer.step()
+except (OutOfMemoryError, RuntimeError):
+    if "out of memory" in str(e):
+        optimizer.zero_grad()  # 跳过此累积周期
+        continue
+```
+
+---
+
+## 读完本 skill 后
+
+- 显存分析/OOM → `sft_memory.skill`
+- 训练 Crash 排错 → `sft_issues.skill`
+- 性能指标系统 → `sft_metrics.skill`
+- PROMPT_PREFIX 应用点 → `sft_prompt.skill`

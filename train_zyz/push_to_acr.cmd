@@ -3,29 +3,43 @@ chcp 65001 >nul
 title SFT Docker 镜像构建推送 - ACR
 
 REM ═══════════════════════════════════════════════════════════════
-REM  用法:
-REM    push_to_acr.cmd                          ← 交互式输入密码
-REM    push_to_acr.cmd -p <密码>                ← 命令行指定密码
-REM    push_to_acr.cmd -u <用户> -p <密码>      ← 完整参数
-REM
-REM  可选参数:
-REM    --registry     REGISTRY    默认 registry.cn-hangzhou.aliyuncs.com
-REM    --namespace    NS          默认 zhangyuanzheng
-REM    --repo         REPO        默认 sft-base
-REM    --tag          TAG         默认 v1
-REM    --dockerfile   DIR         默认 %USERPROFILE%\docker-sft-base
+REM  凭证自动从 ..\secret.json 的 "acr" 段加载。
+REM  也可用命令行参数覆盖:
+REM    push_to_acr.cmd -u <用户> -p <密码> --tag v3
 REM ═══════════════════════════════════════════════════════════════
 
 setlocal enabledelayedexpansion
 
-REM ── 默认配置 ──────────────────────────────────────────────────
-set "REGISTRY=crpi-32rssczyu25r10yu.cn-beijing.personal.cr.aliyuncs.com"
-set "NAMESPACE=zyz25"
-set "REPO=sft-base"
+REM ── 从 secret.json 加载 ACR 配置 ──────────────────────────────
+set "SECRET_FILE=%~dp0..\secret.json"
+if exist "!SECRET_FILE!" (
+    for /f "tokens=1,* delims=:" %%a in ('python -c "import json,sys;d=json.load(open(r'!SECRET_FILE!',encoding='utf-8'))['acr'];print('USERNAME:',d['username']);print('PASSWORD:',d['password']);print('REGISTRY:',d['registry_public']);print('NAMESPACE:',d['namespace']);print('REPO:',d['repo'])" 2^>nul') do (
+        set "line=%%a:%%b"
+        set "key=%%a"
+        set "val=%%b"
+        rem 去除值首尾空格
+        for /f "tokens=*" %%v in ("!val!") do set "val=%%v"
+        if "!key!"=="USERNAME"  if "!val!" neq "" set "SECRET_USERNAME=!val!"
+        if "!key!"=="PASSWORD"  if "!val!" neq "" set "SECRET_PASSWORD=!val!"
+        if "!key!"=="REGISTRY"  if "!val!" neq "" set "SECRET_REGISTRY=!val!"
+        if "!key!"=="NAMESPACE" if "!val!" neq "" set "SECRET_NAMESPACE=!val!"
+        if "!key!"=="REPO"      if "!val!" neq "" set "SECRET_REPO=!val!"
+    )
+)
+
+REM ── 默认配置 (secret.json 优先，命令行参数可覆盖) ─────────────
+if not defined REGISTRY  set "REGISTRY=!SECRET_REGISTRY!"
+if not defined NAMESPACE set "NAMESPACE=!SECRET_NAMESPACE!"
+if not defined REPO      set "REPO=!SECRET_REPO!"
+if not defined USERNAME  set "USERNAME=!SECRET_USERNAME!"
+if not defined PASSWORD  set "PASSWORD=!SECRET_PASSWORD!"
+
+REM ── 兜底硬编码 ─────────────────────────────────────────────────
+if not defined REGISTRY  set "REGISTRY=crpi-32rssczyu25r10yu.cn-beijing.personal.cr.aliyuncs.com"
+if not defined NAMESPACE set "NAMESPACE=zyz25"
+if not defined REPO      set "REPO=sft-base"
 set "TAG=v1"
 set "DOCKERFILE_DIR=%USERPROFILE%\docker-sft-base"
-set "USERNAME="
-set "PASSWORD="
 
 REM ── 解析命令行参数 ────────────────────────────────────────────
 :parse
@@ -65,6 +79,8 @@ echo =================================================================
 
 if "!USERNAME!"=="" set /p "USERNAME=ACR 登录用户名: "
 if "!PASSWORD!"=="" set /p "PASSWORD=ACR Registry 密码: "
+
+echo [凭证] 用户名=!USERNAME!  Registry=!REGISTRY!
 
 echo docker login !REGISTRY! --username=!USERNAME! [密码已隐藏]
 docker login !REGISTRY! --username="!USERNAME!" --password="!PASSWORD!" 2>&1

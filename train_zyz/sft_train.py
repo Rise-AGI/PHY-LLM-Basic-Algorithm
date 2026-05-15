@@ -200,7 +200,7 @@ os.environ.setdefault("NCCL_SOCKET_IFNAME", "^docker,lo,virbr")
 # NCCL 通讯优化：Ring 算法 + 多通道带宽利用
 os.environ.setdefault("NCCL_ALGO", "Ring")
 os.environ.setdefault("NCCL_PROTO", "Simple")
-os.environ.setdefault("NCCL_MIN_NCHANNELS", "4")
+os.environ.setdefault("NCCL_MIN_NCHANNELS", "2")
 
 # FSDP.state_dict_type() 已弃用但新 DCP get_state_dict 不支持 rank0_only，
 # rank0_only 对 72B 模型至关重要（避免每 rank 各持一份完整 CPU state dict）
@@ -258,6 +258,8 @@ def parse_args():
                     help="FSDP backward prefetch: post 更省显存但略慢")
     p.add_argument("--fused_optimizer", action="store_true", default=True,
                     help="使用 fused AdamW（CUDA 融合内核加速）")
+    p.add_argument("--use_8bit_adam", action="store_true", default=False,
+                    help="使用 8-bit AdamW（大幅降低 CPU 优化器状态显存，需 bitsandbytes）")
     p.add_argument("--perf_metric_steps", type=int, default=50,
                     help="性能指标记录间隔（global_step 倍数），0=禁用")
     p.add_argument("--memory_metric_steps", type=int, default=20,
@@ -503,6 +505,7 @@ def evaluate(model, dataloader, device, n_gpu=1, local_rank=0, global_step=None)
         loss = outputs.loss
         total_loss  += loss.item()
         total_steps += 1
+        del outputs, loss
     # 跨卡汇总（FSDP 下每卡只算了部分数据）
     if n_gpu > 1:
         loss_t = torch.tensor([total_loss], device=device)
@@ -511,6 +514,7 @@ def evaluate(model, dataloader, device, n_gpu=1, local_rank=0, global_step=None)
         dist.all_reduce(cnt_t,  op=dist.ReduceOp.SUM)
         total_loss = loss_t.item()
         total_steps = int(cnt_t.item())
+    torch.cuda.empty_cache()
     model.train()
     avg_loss = total_loss / max(total_steps, 1)
     if local_rank == 0 and global_step is not None:
@@ -520,7 +524,7 @@ def evaluate(model, dataloader, device, n_gpu=1, local_rank=0, global_step=None)
 
 def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    n_gpu  = torch.cuda.device_count()
+    n_gpu  = torch.cuda.device_count() if torch.cuda.is_available() else 0
     local_rank = 0
     if n_gpu > 1:
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
@@ -649,8 +653,10 @@ def train(args):
         # 使用 auto_wrap_policy 逐层分片，避免 FSDP init 时将完整模型移至单卡
         _bwd = BackwardPrefetch.BACKWARD_POST if args.backward_prefetch == "post" else BackwardPrefetch.BACKWARD_PRE
         _cpu_offload = CPUOffload(offload_params=False) if args.cpu_offload else None
+        _fwd_prefetch = False if _cpu_offload else True  # cpu_offload 时关闭 fwd prefetch 节省 ~1.8GB
         if _cpu_offload:
-            log(f"[5/8] CPU offload: 优化器状态将移至 CPU RAM")
+            log(f"[5/8] CPU offload: 优化器状态移至 CPU RAM（每卡节省 ~54GB 显存）")
+            log(f"[5/8] forward_prefetch={_fwd_prefetch}（关闭以节省显存）")
         model = FSDP(
             model,
             sharding_strategy=ShardingStrategy.FULL_SHARD,
@@ -662,7 +668,7 @@ def train(args):
             ),
             device_id=local_rank,
             limit_all_gathers=True,
-            forward_prefetch=True,
+            forward_prefetch=_fwd_prefetch,
             backward_prefetch=_bwd,
             cpu_offload=_cpu_offload,
         )
@@ -703,9 +709,24 @@ def train(args):
 
     # ── Step 7: Optimizer & Scheduler ──
     t0 = time.time()
-    _fused = args.fused_optimizer and torch.cuda.is_available()
-    log(f"[7/8] 创建 optimizer (AdamW{' fused' if _fused else ''}, lr={args.learning_rate})...")
-    optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, fused=_fused)
+    if args.use_8bit_adam:
+        try:
+            import bitsandbytes as bnb
+            optimizer = bnb.optim.AdamW8bit(model.parameters(), lr=args.learning_rate,
+                                            weight_decay=args.weight_decay)
+            log(f"[7/8] 创建 optimizer (8-bit AdamW, lr={args.learning_rate})...")
+            log(f"[7/8] 8-bit AdamW: 优化器状态 ~2.2 bytes/param (fp32 的 1/5.5)")
+        except ImportError:
+            log("[7/8] bitsandbytes 未安装, 回退到标准 AdamW")
+            _fused = args.fused_optimizer and torch.cuda.is_available()
+            optimizer = AdamW(model.parameters(), lr=args.learning_rate,
+                            weight_decay=args.weight_decay, fused=_fused)
+            log(f"[7/8] 创建 optimizer (AdamW{' fused' if _fused else ''}, lr={args.learning_rate})...")
+    else:
+        _fused = args.fused_optimizer and torch.cuda.is_available()
+        optimizer = AdamW(model.parameters(), lr=args.learning_rate,
+                        weight_decay=args.weight_decay, fused=_fused)
+        log(f"[7/8] 创建 optimizer (AdamW{' fused' if _fused else ''}, lr={args.learning_rate})...")
     accum         = args.gradient_accumulation_steps
     steps_per_epoch = (len(train_loader) + accum - 1) // accum
     total_steps   = steps_per_epoch * args.epochs
@@ -720,7 +741,10 @@ def train(args):
     log(f"  数据: {len(train_samples)} 训练样本 | {len(train_loader)} batches/epoch")
     log(f"  训练: {args.epochs} epochs × {steps_per_epoch} steps = {total_steps} total steps")
     log(f"  保存: 每 {args.save_steps} steps（自动覆盖） | 日志: 每 {args.logging_steps} steps")
-    log(f"  GPU: {n_gpu} × {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'}")
+    if n_gpu > 0:
+        log(f"  GPU: {n_gpu} × {torch.cuda.get_device_name(0)}")
+    else:
+        log(f"  设备: CPU（无可用 GPU）")
     log(f"{'='*60}")
 
     train_log   = []
@@ -728,6 +752,29 @@ def train(args):
     optimizer.zero_grad()
     model.train()
     retry_seed = args.retry_seed
+
+    if local_rank == 0:
+        log(f"  [就绪] 优化器/调度器初始化完成，即将开始训练循环")
+        log(f"  [就绪] GPU 显存: {torch.cuda.memory_allocated()/1e9:.1f}GB allocated | "
+            f"{torch.cuda.memory_reserved()/1e9:.1f}GB reserved")
+
+    # ── 预分配优化器 CUDA buffer（避免首次 optimizer.step() 集中分配导致 OOM）──
+    if local_rank == 0:
+        log(f"  [就绪] 预分配优化器显存 buffer...")
+    try:
+        optimizer.step()
+        optimizer.zero_grad()
+        if local_rank == 0:
+            log(f"  [就绪] 优化器 buffer 预分配完成")
+            log(f"  [就绪] GPU 显存: {torch.cuda.memory_allocated()/1e9:.1f}GB allocated | "
+                f"{torch.cuda.max_memory_allocated()/1e9:.1f}GB peak")
+    except (torch.cuda.OutOfMemoryError, RuntimeError) as _prealloc_err:
+        _err_str = str(_prealloc_err)
+        if "out of memory" in _err_str.lower():
+            log(f"  [FATAL] 预分配优化器显存失败: OOM。当前配置无法训练，请降低 grad_accum 或 batch_size")
+            sys.exit(137)
+        else:
+            raise
 
     # ── 诊断: 数据质量预检（仅 rank 0）──
     if local_rank == 0:
@@ -743,49 +790,8 @@ def train(args):
         else:
             log(f"  [数据诊断] 所有 {len(train_dataset.samples)} 条样本 output 均非空 ✓")
 
-    # ── Initial loss @ step=0 ──
-    init_eval_loss = None
-    init_train_loss = None
-    if local_rank == 0:
-        log("  [初始化] 计算 step=0 初始 loss...")
-    if eval_loader:
-        init_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=0)
-    if len(train_loader) > 0:
-        try:
-            first_batch = next(iter(train_loader))
-            input_ids = first_batch["input_ids"].to(device)
-            labels    = first_batch["labels"].to(device)
-            attn_mask = first_batch["attention_mask"].to(device)
-            with torch.no_grad():
-                outputs = model(input_ids=input_ids, attention_mask=attn_mask)
-                logits = outputs.logits
-                shift_logits = logits[..., :-1, :].contiguous().float()
-                shift_labels = labels[..., 1:].contiguous()
-                batch_loss = F.cross_entropy(
-                    shift_logits.view(-1, logits.size(-1)),
-                    shift_labels.view(-1),
-                    ignore_index=-100,
-                ).item()
-            if n_gpu > 1:
-                loss_t = torch.tensor([batch_loss], device=device)
-                dist.all_reduce(loss_t, op=dist.ReduceOp.SUM)
-                batch_loss = loss_t.item() / n_gpu
-            init_train_loss = batch_loss
-        except Exception as e:
-            if local_rank == 0:
-                log(f"  [警告] step=0 train_loss 计算失败: {e}")
-    if local_rank == 0:
-        if init_train_loss is not None:
-            log(f"  [初始化] step=0: train_loss={init_train_loss:.4f}")
-        else:
-            log("  [初始化] step=0: train_loss=None")
-        if init_eval_loss is not None:
-            log(f"  [初始化] step=0: eval_loss={init_eval_loss:.4f}")
-        else:
-            log("  [初始化] step=0: eval_loss=None")
-    train_log.append({"global_step": 0, "epoch": 0.0, "train_loss": round(init_train_loss, 6) if init_train_loss is not None else None, "eval_loss": round(init_eval_loss, 6) if init_eval_loss is not None else None, "lr": round(scheduler.get_last_lr()[0], 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
-
     # 训练前生成式评估已独立为 eval_baseline.py（按需手动执行）
+    # init loss 移至训练结束后计算，避免启动期大 batch forward 占用显存
 
     # ── 性能诊断: 初始化计时器和显存估测 ──
     timer = CUDATimer()
@@ -842,6 +848,8 @@ def train(args):
                     shift_labels.view(-1),
                     ignore_index=-100,
                 )
+                # 释放 logits 显存（gradient checkpointing 会在 backward 时按需重算）
+                del outputs, logits, shift_logits, shift_labels
                 timer.start("fwd_done")
             except Exception as e:
                 _skip_batch = True
@@ -889,13 +897,38 @@ def train(args):
 
             is_update = (step % accum == 0) or (step == len(train_loader))
             if is_update:
+                # 梯度累积期间 CUDA 内存碎片化，opt step 前整理
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
                 timer.start("opt")
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0) if n_gpu <= 1 else model.clip_grad_norm_(1.0)
-                optimizer.step()
-                scheduler.step()
-                optimizer.zero_grad()
-                timer.start("opt_done")
-                global_step += 1
+                _oom_skip = False
+                try:
+                    if n_gpu > 1:
+                        model.clip_grad_norm_(1.0)
+                    else:
+                        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    optimizer.step()
+                except (torch.cuda.OutOfMemoryError, RuntimeError) as _opt_err:
+                    _err_str = str(_opt_err)
+                    if "out of memory" in _err_str.lower() and n_gpu > 1:
+                        _oom_skip = True
+                        if local_rank == 0:
+                            log(f"  [OOM] optimizer.step() 显存溢出，跳过此累积周期 "
+                                f"(step={step}, global_step={global_step})")
+                            log(f"  [OOM] 详情: {_err_str[:200]}")
+                    else:
+                        raise
+                if _oom_skip:
+                    # 跳过此 optimizer step：清空累积梯度，不更新 global_step
+                    optimizer.zero_grad()
+                    timer.start("opt_done")
+                    if n_gpu > 1:
+                        dist.barrier()
+                else:
+                    scheduler.step()
+                    optimizer.zero_grad()
+                    timer.start("opt_done")
+                    global_step += 1
 
                 # ── 性能指标: 显存明细（所有 rank 写，按 GPU 分选）──
                 if args.memory_metric_steps > 0 and global_step % args.memory_metric_steps == 0:
@@ -946,6 +979,51 @@ def train(args):
         if _skip_count > 0:
             log(f"  [诊断] Epoch {epoch} 中共 {_skip_count} 个 batch 因错误跳过")
         train_log.append({"global_step": global_step, "epoch": epoch, "train_loss": round(avg_epoch_loss, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "elapsed_sec": round(elapsed, 1), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
+
+    # ── Post-training baseline loss（step=0 等价评估，含显式显存释放）──
+    init_train_loss = None
+    init_eval_loss = None
+    if local_rank == 0:
+        log("  [收尾] 计算 baseline loss...")
+    if eval_loader:
+        init_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=global_step)
+    if len(train_loader) > 0:
+        try:
+            first_batch = next(iter(train_loader))
+            input_ids = first_batch["input_ids"].to(device)
+            labels    = first_batch["labels"].to(device)
+            attn_mask = first_batch["attention_mask"].to(device)
+            with torch.no_grad():
+                outputs = model(input_ids=input_ids, attention_mask=attn_mask)
+                logits = outputs.logits
+                shift_logits = logits[..., :-1, :].contiguous().float()
+                shift_labels = labels[..., 1:].contiguous()
+                batch_loss = F.cross_entropy(
+                    shift_logits.view(-1, logits.size(-1)),
+                    shift_labels.view(-1),
+                    ignore_index=-100,
+                ).item()
+            if n_gpu > 1:
+                loss_t = torch.tensor([batch_loss], device=device)
+                dist.all_reduce(loss_t, op=dist.ReduceOp.SUM)
+                batch_loss = loss_t.item() / n_gpu
+            init_train_loss = batch_loss
+        except Exception as e:
+            if local_rank == 0:
+                log(f"  [收尾] baseline train_loss 计算失败: {e}")
+        finally:
+            del outputs, logits, shift_logits, shift_labels
+            torch.cuda.empty_cache()
+    if local_rank == 0:
+        log(f"  [收尾] baseline: train_loss={init_train_loss:.4f}" if init_train_loss is not None
+            else "  [收尾] baseline: train_loss=None")
+        if init_eval_loss is not None:
+            log(f"  [收尾] baseline: eval_loss={init_eval_loss:.4f}")
+    train_log.append({"global_step": 0, "epoch": 0.0,
+                      "train_loss": round(init_train_loss, 6) if init_train_loss is not None else None,
+                      "eval_loss": round(init_eval_loss, 6) if init_eval_loss is not None else None,
+                      "lr": round(scheduler.get_last_lr()[0], 8),
+                      "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
     save_final(model, tokenizer, args.output_dir, train_log, local_rank=local_rank)
 

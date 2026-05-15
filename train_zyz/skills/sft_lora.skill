@@ -1,0 +1,34 @@
+# sft_lora.skill — LoRA/QLoRA 补充
+
+> **Level 2 — SFT 子 skill。** SFT.skill 已包含 LoRA 核心内容，本文件补充实现细节。
+> 父 skill: SFT.skill
+
+## 元信息
+- **关联 .py**: submit_sft.py(MODE="lora"), sft_train.py(训练引擎,LoRA路径)
+- **关联 skill**: SFT.skill(父), sft_blueprint.skill(LoRA_zyz.magnus蓝图), sft_memory.skill(显存)
+- **关联 .md**: LoRA.md
+- **父 skill**: SFT.skill
+
+---
+
+## Target Modules 自动检测实现
+
+| 模型架构 | 自动选择 |
+|----------|---------|
+| Qwen2 | q_proj, k_proj, v_proj, o_proj |
+| LLaMA | q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj |
+| 其他 | q_proj, k_proj, v_proj, o_proj (默认) |
+
+从 `model.config.architectures` 检测架构类型，留空 `target_modules` 时自动选择。
+
+## merge_on_save 细节
+
+`merge_on_save=True` 时，训练完成后自动 `model.merge_and_unload()` → adapter 权重合并到 base → 保存完整模型。False 时仅保存 adapter 权重（几百 MB），推理时需要单独加载 adapter。
+
+---
+
+## 读完本 skill 后
+
+- LoRA 蓝图参数详情 → `sft_blueprint.skill`
+- 显存分析 → `sft_memory.skill`
+- 训练排错 → `sft_issues.skill`
