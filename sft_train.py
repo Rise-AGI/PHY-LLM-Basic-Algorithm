@@ -191,8 +191,8 @@ try:
 except Exception:
     pass  # CPU-only PyTorch 无 cudnn 后端
 
-# NCCL: 单节点双卡走 NVLink（撤销蓝图可能设置的 P2P_DISABLE=1）
-os.environ.setdefault("NCCL_P2P_LEVEL", "NVL")
+# NCCL P2P 传输：不强制 P2P_LEVEL，让 NCCL 自选
+# （A100 PCIe 无 NVLink，NVL 会导致无效搜索后回退 host relay；蓝图已 export NCCL_P2P_LEVEL=""）
 os.environ["NCCL_P2P_DISABLE"] = "0"
 # IB 在单节点场景不需要，保留 DISABLE 以消除 IB timeout 风险
 os.environ.setdefault("NCCL_IB_DISABLE", "1")
@@ -745,7 +745,7 @@ def train(args):
     # ── Step 8: 开始训练循环 ──
     log(f"[8/8] 开始训练循环")
     log(f"{'='*60}")
-    log(f"  模型: {total_params:.2f}B params | FSDP: {'FULL_SHARD' if n_gpu > 1 else 'OFF'}")
+    log(f"  模型: {total_params:.2f}B params | FSDP: {'SHARD_GRAD_OP' if n_gpu > 1 else 'OFF'}")
     log(f"  数据: {len(train_samples)} 训练样本 | {len(train_loader)} batches/epoch")
     log(f"  训练: {args.epochs} epochs × {steps_per_epoch} steps = {total_steps} total steps")
     log(f"  保存: 每 {args.save_steps} steps（自动覆盖） | 日志: 每 {args.logging_steps} steps")
