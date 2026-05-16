@@ -201,6 +201,11 @@ os.environ.setdefault("NCCL_SOCKET_IFNAME", "^docker,lo,virbr")
 os.environ.setdefault("NCCL_ALGO", "Ring")
 os.environ.setdefault("NCCL_PROTO", "Simple")
 os.environ.setdefault("NCCL_MIN_NCHANNELS", "2")
+# NCCL host-relay 调参（无 P2P 时走 /dev/shm 共享内存，提升非 NVLink 带宽）
+os.environ.setdefault("NCCL_SOCKET_NTHREADS", "4")
+os.environ.setdefault("NCCL_NTHREADS", "512")
+os.environ.setdefault("NCCL_BUFFSIZE", "4194304")
+os.environ.setdefault("NCCL_NCHANNELS_PER_PEER", "8")
 
 # FSDP.state_dict_type() 已弃用但新 DCP get_state_dict 不支持 rank0_only，
 # rank0_only 对 72B 模型至关重要（避免每 rank 各持一份完整 CPU state dict）
@@ -632,8 +637,11 @@ def train(args):
     log(f"[5/8] 分布式包装 ({n_gpu} GPU)...")
     t0 = time.time()
     if n_gpu > 1:
-        estimated_gb_per_gpu = (total_params * 2) / n_gpu
-        log(f"[5/8] 预计每卡 ~{estimated_gb_per_gpu:.1f}GB (模型+优化器分片)")
+        # SHARD_GRAD_OP: 每卡持有完整参数副本，仅梯度/优化器分片 → forward/backward 零通信
+        _param_gb = total_params * 2 / 1024**3  # BF16 → GB
+        log(f"[5/8] SHARD_GRAD_OP: 每卡完整参数 ~{_param_gb:.1f}GB，需 --cpu_offload 卸载优化器到 CPU")
+        if not args.cpu_offload:
+            log(f"[5/8] ⚠ 未启用 --cpu_offload！SHARD_GRAD_OP 下完整参数+优化器可能 OOM，强烈建议启用")
         # 检测 transformer decoder layer 类（兼容 Qwen2 / LLaMA / InternLM 等）
         _layer_cls = None
         from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
@@ -659,7 +667,7 @@ def train(args):
             log(f"[5/8] forward_prefetch={_fwd_prefetch}（关闭以节省显存）")
         model = FSDP(
             model,
-            sharding_strategy=ShardingStrategy.FULL_SHARD,
+            sharding_strategy=ShardingStrategy.SHARD_GRAD_OP,
             auto_wrap_policy=_policy,
             mixed_precision=MixedPrecision(
                 param_dtype=torch.bfloat16,
@@ -672,7 +680,7 @@ def train(args):
             backward_prefetch=_bwd,
             cpu_offload=_cpu_offload,
         )
-        log(f"[5/8] FSDP FULL_SHARD 完成 ({time.time()-t0:.1f}s)")
+        log(f"[5/8] FSDP SHARD_GRAD_OP 完成 ({time.time()-t0:.1f}s)")
     else:
         model = model.to(device)
         log(f"[5/8] 单卡模式，模型已移至 {device} ({time.time()-t0:.1f}s)")
