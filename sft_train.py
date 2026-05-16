@@ -191,9 +191,9 @@ try:
 except Exception:
     pass  # CPU-only PyTorch 无 cudnn 后端
 
-# NCCL P2P 传输：不强制 P2P_LEVEL，让 NCCL 自选
-# （A100 PCIe 无 NVLink，NVL 会导致无效搜索后回退 host relay；蓝图已 export NCCL_P2P_LEVEL=""）
-os.environ["NCCL_P2P_DISABLE"] = "0"
+# NCCL P2P 传输：禁用 P2P（集群 ACS 阻断跨 PCIe 域的 GPU 直连）
+# 强制走 /dev/shm 共享内存中转，避免 NCCL P2P 探测挂死
+os.environ["NCCL_P2P_DISABLE"] = "1"
 # IB 在单节点场景不需要，保留 DISABLE 以消除 IB timeout 风险
 os.environ.setdefault("NCCL_IB_DISABLE", "1")
 os.environ.setdefault("NCCL_SOCKET_IFNAME", "^docker,lo,virbr")
