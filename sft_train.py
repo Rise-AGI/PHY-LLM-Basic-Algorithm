@@ -918,12 +918,19 @@ def train(args):
                             log(f"  [OOM] 详情: {_err_str[:200]}")
                     else:
                         raise
+                if n_gpu > 1:
+                    # 分布式共识：任一 rank OOM → 全部 rank 跳过，避免控制流分叉导致死锁
+                    _oom_flag = torch.tensor([1 if _oom_skip else 0], dtype=torch.int, device=device)
+                    dist.all_reduce(_oom_flag, op=dist.ReduceOp.MAX)
+                    if _oom_flag.item() > 0 and not _oom_skip:
+                        _oom_skip = True
+                        if local_rank == 0:
+                            log(f"  [OOM] 跟随其他 rank 跳过优化器 step (step={step})")
+
                 if _oom_skip:
                     # 跳过此 optimizer step：清空累积梯度，不更新 global_step
                     optimizer.zero_grad()
                     timer.start("opt_done")
-                    if n_gpu > 1:
-                        dist.barrier()
                 else:
                     scheduler.step()
                     optimizer.zero_grad()
