@@ -637,11 +637,13 @@ def train(args):
     log(f"[5/8] 分布式包装 ({n_gpu} GPU)...")
     t0 = time.time()
     if n_gpu > 1:
-        # SHARD_GRAD_OP: 每卡持有完整参数副本，仅梯度/优化器分片 → forward/backward 零通信
-        _param_gb = total_params * 2 / 1024**3  # BF16 → GB
-        log(f"[5/8] SHARD_GRAD_OP: 每卡完整参数 ~{_param_gb:.1f}GB，需 --cpu_offload 卸载优化器到 CPU")
+        # FULL_SHARD: 每层 forward 后释放全量参数（reshard_after_forward=True）
+        # backward 时重新 all_gather → 多一次通信，但显存峰值大幅降低
+        _param_gb = total_params * 2  # BF16 bytes per param (total_params is in billions)
+        log(f"[5/8] FULL_SHARD: 每卡分片 ~{_param_gb / n_gpu:.1f}GB，"
+            f"全量参数 ~{_param_gb:.1f}GB (仅 layer 计算时短暂 unshard)")
         if not args.cpu_offload:
-            log(f"[5/8] ⚠ 未启用 --cpu_offload！SHARD_GRAD_OP 下完整参数+优化器可能 OOM，强烈建议启用")
+            log(f"[5/8] ⚠ 未启用 --cpu_offload！建议启用，将优化器状态移至 CPU")
         # 检测 transformer decoder layer 类（兼容 Qwen2 / LLaMA / InternLM 等）
         _layer_cls = None
         from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
@@ -667,7 +669,7 @@ def train(args):
             log(f"[5/8] forward_prefetch={_fwd_prefetch}（关闭以节省显存）")
         model = FSDP(
             model,
-            sharding_strategy=ShardingStrategy.SHARD_GRAD_OP,
+            sharding_strategy=ShardingStrategy.FULL_SHARD,
             auto_wrap_policy=_policy,
             mixed_precision=MixedPrecision(
                 param_dtype=torch.bfloat16,
@@ -680,7 +682,7 @@ def train(args):
             backward_prefetch=_bwd,
             cpu_offload=_cpu_offload,
         )
-        log(f"[5/8] FSDP SHARD_GRAD_OP 完成 ({time.time()-t0:.1f}s)")
+        log(f"[5/8] FSDP FULL_SHARD 完成 ({time.time()-t0:.1f}s)")
     else:
         model = model.to(device)
         log(f"[5/8] 单卡模式，模型已移至 {device} ({time.time()-t0:.1f}s)")
@@ -745,7 +747,7 @@ def train(args):
     # ── Step 8: 开始训练循环 ──
     log(f"[8/8] 开始训练循环")
     log(f"{'='*60}")
-    log(f"  模型: {total_params:.2f}B params | FSDP: {'SHARD_GRAD_OP' if n_gpu > 1 else 'OFF'}")
+    log(f"  模型: {total_params:.2f}B params | FSDP: {'FULL_SHARD' if n_gpu > 1 else 'OFF'}")
     log(f"  数据: {len(train_samples)} 训练样本 | {len(train_loader)} batches/epoch")
     log(f"  训练: {args.epochs} epochs × {steps_per_epoch} steps = {total_steps} total steps")
     log(f"  保存: 每 {args.save_steps} steps（自动覆盖） | 日志: 每 {args.logging_steps} steps")
