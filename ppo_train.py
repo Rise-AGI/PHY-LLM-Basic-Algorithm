@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PPO (Proximal Policy Optimization) 训练脚本 — 可选奖励模型
+PPO (Proximal Policy Optimization) 训练脚本 — 可选奖励模型 + 规则奖励 + 外部奖励 API
 
 标准 RLHF PPO 流程：策略模型 + 冻结参考模型 + 奖励模型（可选）+ 规则奖励。
 
@@ -10,6 +10,9 @@ PPO (Proximal Policy Optimization) 训练脚本 — 可选奖励模型
 
     # 仅规则奖励（无奖励模型）
     python ppo_train.py --model_path /path/to/sft_model --train_data /path/to/prompts.json --output_dir /tmp/ppo_out
+
+    # 外部奖励 API
+    python ppo_train.py --model_path /path/to/sft_model --train_data /path/to/prompts.json --reward_api_url http://reward-server:8080/score
 """
 
 import argparse
@@ -60,7 +63,7 @@ def _write_metric(name: str, value: float, step: int, step_domain: str = "optimi
 # ── 命令行参数 ────────────────────────────────────────────────────────────────
 
 def parse_args():
-    p = argparse.ArgumentParser(description="PPO RL training with optional reward model")
+    p = argparse.ArgumentParser(description="PPO training with optional reward model")
     p.add_argument("--model_path",          type=str,   required=True, help="SFT 基础模型路径")
     p.add_argument("--reward_model_path",   type=str,   default=None, help="奖励模型路径（可选，留空仅用规则奖励）")
     p.add_argument("--train_data",          type=str,   required=True)
@@ -86,6 +89,7 @@ def parse_args():
     p.add_argument("--resume_from_checkpoint", type=str, default=None)
     p.add_argument("--temperature",         type=float, default=0.7)
     p.add_argument("--top_p",               type=float, default=0.9)
+    p.add_argument("--reward_api_url",      type=str,   default=None, help="外部奖励 API 地址（可选）")
     return p.parse_args()
 
 
@@ -148,7 +152,7 @@ def collate_prompts(batch, pad_id):
 # ── 奖励 ──────────────────────────────────────────────────────────────────────
 
 def rule_reward(response: str) -> float:
-    """规则奖励 (0.0-1.0)。"""
+    """规则奖励 (0.0-1.0)。可替换为自定义打分函数。"""
     score = 0.0
     if any(tag in response for tag in ["<think>", "解答", "推导", "步骤"]):
         score += 0.2
@@ -161,6 +165,23 @@ def rule_reward(response: str) -> float:
     if re.search(r"\$.*?\$|\\frac|\\sqrt|\\int|\\sum", response):
         score += 0.2
     return score
+
+
+def call_reward_api(api_url: str, prompt: str, response: str, timeout: float = 30.0) -> float:
+    """调用外部奖励 API 打分。约定: POST JSON {prompt, response} → {score: 0-1}"""
+    import requests
+    try:
+        resp = requests.post(
+            api_url,
+            json={"prompt": prompt, "response": response},
+            timeout=timeout,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return float(data.get("score", 0.0))
+    except Exception as e:
+        log(f"[奖励API] 调用失败: {e}，回退到 0.0")
+        return 0.0
 
 
 # ── 模型工具 ──────────────────────────────────────────────────────────────────
@@ -213,9 +234,19 @@ def train():
 
     os.makedirs(args.output_dir, exist_ok=True)
 
+    # ── 奖励来源描述 ────────────────────────────────────────────
+    reward_parts = []
+    if args.reward_api_url:
+        reward_parts.append(f"外部API({args.reward_api_url})")
+    if args.reward_model_path and os.path.exists(args.reward_model_path):
+        reward_parts.append(f"本地RM(ratio={args.reward_ratio})")
+    if not reward_parts:
+        reward_parts.append("纯规则奖励")
+
     log(f"[环境] device={device}, n_gpu={n_gpu}, rank={local_rank}")
     log(f"[PPO] beta={args.kl_coef}, eps={args.clip_range}, lr={args.learning_rate}, "
-        f"reward_ratio={args.reward_ratio}, temp={args.temperature}")
+        f"reward_ratio={args.reward_ratio}, temp={args.temperature}, "
+        f"reward={' + '.join(reward_parts)}")
 
     # ── Tokenizer ────────────────────────────────────────────────────────────
     tok = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
@@ -257,7 +288,10 @@ def train():
         except Exception as e:
             log(f"[奖励模型] 加载失败: {e}，回退到纯规则奖励")
     else:
-        log("[奖励模型] 未提供或路径不存在，使用纯规则奖励")
+        if args.reward_model_path:
+            log(f"[奖励模型] 路径不存在: {args.reward_model_path}，使用纯规则奖励")
+        else:
+            log("[奖励模型] 未提供，使用纯规则奖励")
 
     # ── FSDP ──────────────────────────────────────────────────────────────────
     if n_gpu > 1:
@@ -367,11 +401,29 @@ def train():
                 )
                 texts = tok.batch_decode(resp, skip_special_tokens=True)
 
-                # 计算奖励
+                # 计算奖励（优先级：外部 API > 本地奖励模型 > 规则函数）
                 rule_rewards = torch.tensor(
                     [rule_reward(t) for t in texts], dtype=torch.float32, device=device,
                 )
-                if use_learned_reward and reward_model is not None:
+
+                if args.reward_api_url:
+                    prompt_texts = tok.batch_decode(inp, skip_special_tokens=True)
+                    api_rewards = torch.tensor(
+                        [call_reward_api(args.reward_api_url, p, t) for p, t in zip(prompt_texts, texts)],
+                        dtype=torch.float32, device=device,
+                    )
+                    # 外部 API 可与规则奖励融合
+                    if use_learned_reward and reward_model is not None:
+                        rm_inputs = tok(
+                            texts, return_tensors="pt", max_length=512,
+                            padding=True, truncation=True,
+                        ).to(device)
+                        learned_rewards = reward_model(**rm_inputs).logits.squeeze(-1)
+                        rewards = (args.reward_ratio * learned_rewards +
+                                   (1 - args.reward_ratio) * api_rewards)
+                    else:
+                        rewards = api_rewards
+                elif use_learned_reward and reward_model is not None:
                     rm_inputs = tok(
                         texts, return_tensors="pt", max_length=512,
                         padding=True, truncation=True,
@@ -390,7 +442,6 @@ def train():
             ratio  = (new_lp - old_lp).exp()
             kl     = new_lp - ref_lp
 
-            # 优势：reward - kl_coef * KL（简化版，无 GAE）
             advantages = rewards - args.kl_coef * kl.detach()
 
             surr1   = ratio * advantages
@@ -423,20 +474,20 @@ def train():
                             f"gnorm={grad_norm.item():.2f} | time={step_time:.1f}s"
                         )
 
-                    _write_metric("rl.reward.mean",    mean_reward,        global_step)
-                    _write_metric("rl.kl_divergence",  kl_loss.item(),     global_step)
-                    _write_metric("rl.pg_loss",        pg_loss.item(),     global_step)
-                    _write_metric("rl.clip_ratio",     clip_ratio,         global_step)
-                    _write_metric("train.lr",          scheduler.get_last_lr()[0], global_step)
-                    _write_metric("train.grad_norm",   grad_norm.item(),   global_step)
-                    _write_metric("train.step_time_s", step_time,          global_step)
+                    _write_metric("ppo.reward.mean",    mean_reward,        global_step)
+                    _write_metric("ppo.kl_divergence",  kl_loss.item(),     global_step)
+                    _write_metric("ppo.pg_loss",        pg_loss.item(),     global_step)
+                    _write_metric("ppo.clip_ratio",     clip_ratio,         global_step)
+                    _write_metric("train.lr",           scheduler.get_last_lr()[0], global_step)
+                    _write_metric("train.grad_norm",    grad_norm.item(),   global_step)
+                    _write_metric("train.step_time_s",  step_time,          global_step)
 
                     train_log.append({
                         "step": global_step, "epoch": epoch,
-                        "rl.reward.mean": round(mean_reward, 6),
-                        "rl.kl_divergence": round(kl_loss.item(), 6),
-                        "rl.pg_loss": round(pg_loss.item(), 6),
-                        "rl.clip_ratio": round(clip_ratio, 6),
+                        "ppo.reward.mean": round(mean_reward, 6),
+                        "ppo.kl_divergence": round(kl_loss.item(), 6),
+                        "ppo.pg_loss": round(pg_loss.item(), 6),
+                        "ppo.clip_ratio": round(clip_ratio, 6),
                     })
 
                 if global_step % args.save_steps == 0:
@@ -460,8 +511,8 @@ def train():
     last = train_log[-1] if train_log else {}
     result = {
         "status": "success",
-        "final_reward_mean": last.get("rl.reward.mean"),
-        "final_kl":          last.get("rl.kl_divergence"),
+        "final_reward_mean": last.get("ppo.reward.mean"),
+        "final_kl":          last.get("ppo.kl_divergence"),
         "total_steps":       global_step,
         "output_dir":        args.output_dir,
     }
