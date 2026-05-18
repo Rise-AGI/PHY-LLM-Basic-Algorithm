@@ -677,6 +677,7 @@ def train(args):
                 buffer_dtype=torch.bfloat16,
             ),
             device_id=local_rank,
+            use_orig_params=True,
             limit_all_gathers=True,
             forward_prefetch=_fwd_prefetch,
             backward_prefetch=_bwd,
@@ -849,9 +850,9 @@ def train(args):
             try:
                 timer.start("fwd")
                 outputs = model(input_ids=input_ids, attention_mask=attn_mask)
-                # float32 计算 loss，避免 bfloat16 × 15 万词表数值下溢出
+                # bf16 直接计算 loss（F.cross_entropy 内部以 float32 计算 softmax，无需显式 .float()）
                 logits = outputs.logits
-                shift_logits = logits[..., :-1, :].contiguous().float()
+                shift_logits = logits[..., :-1, :].contiguous()
                 shift_labels = labels[..., 1:].contiguous()
                 loss = F.cross_entropy(
                     shift_logits.view(-1, logits.size(-1)),
