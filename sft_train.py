@@ -407,9 +407,21 @@ class SFTDataset(Dataset):
 
     def __getitem__(self, idx):
         item = self.samples[idx]
-        instruction = item.get("instruction", "")
+        # 自动适配新旧格式：新格式 question/answer/solution → 旧格式 instruction/output
+        if "question" in item:
+            instruction = item["question"]
+            answer = item.get("answer", "")
+            solution = item.get("solution", "")
+            parts = []
+            if answer:
+                parts.append(f"答案：{answer}")
+            if solution:
+                parts.append(f"解答：{solution}")
+            output = "\n\n".join(parts)
+        else:
+            instruction = item.get("instruction", "")
+            output      = item.get("output", "")
         extra_input = item.get("input", "")
-        output      = item.get("output", "")
         # 统一提示词前缀：支持 {instruction} 占位符
         if self.prompt_prefix:
             instruction = self.prompt_prefix.replace("{instruction}", instruction)

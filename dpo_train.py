@@ -1,31 +1,27 @@
+#!/usr/bin/env python3
 """
-DPO（Direct Preference Optimization）训练脚本 —— Magnus 容器内运行版本
-不需要奖励模型，直接从偏好数据优化 policy。
+DPO (Direct Preference Optimization) 训练脚本
 
-数据格式（train.json / JSONL）:
-    偏好对格式（推荐）:
-        {"chosen": [...messages...], "rejected": [...messages...]}
-    或 Alpaca 偏好格式：
-        {"instruction": "...", "chosen": "好回答", "rejected": "差回答"}
+无需奖励模型，直接用偏好对 (chosen, rejected) 优化策略。
+参考: Rafailov et al. "Direct Preference Optimization" (NeurIPS 2023)
 
-DPO 损失：
-    L = -E[log σ(β * (log π(chosen)/π_ref(chosen) - log π(rejected)/π_ref(rejected)))]
-
-指标输出（写入 $MAGNUS_METRICS_DIR）:
-    train.loss / val.loss / train.lr / train.grad_norm
-    rl.reward.mean（chosen reward 均值）/ rl.kl_divergence（chosen KL 均值）
+用法:
+    python dpo_train.py --model_path /path/to/sft_model --train_data /path/to/preference_pairs.json --output_dir /tmp/dpo_out
 """
 
 import argparse
 import json
 import math
 import os
+import re
 import time
+from datetime import timedelta
 
 import torch
+import torch.distributed as dist
 import torch.nn.functional as F
 from torch.optim import AdamW
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, DistributedSampler
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -33,27 +29,62 @@ from transformers import (
 )
 
 
-# ── 命令行参数 ─────────────────────────────────────────────────────────
+def log(msg: str) -> None:
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
+
+
+MAGNUS_METRICS_DIR = os.environ.get("MAGNUS_METRICS_DIR", "/magnus/workspace/metrics")
+
+
+def _write_metric(name: str, value: float, step: int, step_domain: str = "optimizer"):
+    if not math.isfinite(value):
+        return
+    rec = {
+        "name": name, "kind": "gauge", "value": value,
+        "time_unix_ms": int(time.time() * 1000),
+        "step": step, "step_domain": step_domain,
+    }
+    job_id = os.environ.get("MAGNUS_JOB_ID", "")
+    if job_id:
+        rec.setdefault("labels", {})["job"] = job_id[:8]
+    os.makedirs(MAGNUS_METRICS_DIR, exist_ok=True)
+    with open(os.path.join(MAGNUS_METRICS_DIR, "rank0.jsonl"), "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec) + "\n")
+
+
+# ── 命令行参数 ────────────────────────────────────────────────────────────────
 
 def parse_args():
-    p = argparse.ArgumentParser(description="DPO training for Phy-LLM")
-    p.add_argument("--model_path",    type=str,   required=True)
-    p.add_argument("--train_data",    type=str,   required=True)
-    p.add_argument("--test_data",     type=str,   default=None)
-    p.add_argument("--output_dir",    type=str,   default="/tmp/dpo_output")
-    p.add_argument("--epochs",        type=int,   default=1)
-    p.add_argument("--batch_size",    type=int,   default=2)
-    p.add_argument("--learning_rate", type=float, default=5e-7)
-    p.add_argument("--max_length",    type=int,   default=1024)
-    p.add_argument("--beta",          type=float, default=0.1,  help="DPO temperature β")
-    p.add_argument("--save_steps",    type=int,   default=100)
-    p.add_argument("--logging_steps", type=int,   default=10)
+    p = argparse.ArgumentParser(description="DPO training")
+    p.add_argument("--model_path",          type=str,   required=True)
+    p.add_argument("--train_data",          type=str,   required=True)
+    p.add_argument("--output_dir",          type=str,   default="/tmp/dpo_output")
+    p.add_argument("--epochs",              type=int,   default=1)
+    p.add_argument("--batch_size",          type=int,   default=1)
+    p.add_argument("--gradient_accumulation_steps", type=int, default=4)
+    p.add_argument("--learning_rate",       type=float, default=5e-7)
+    p.add_argument("--warmup_ratio",        type=float, default=0.05)
+    p.add_argument("--weight_decay",        type=float, default=0.01)
+    p.add_argument("--max_prompt_length",   type=int,   default=512)
+    p.add_argument("--max_response_length", type=int,   default=512)
+    p.add_argument("--dpo_beta",            type=float, default=0.1,  help="DPO temperature (higher=closer to ref)")
+    p.add_argument("--dpo_loss",            type=str,   default="sigmoid",
+                    choices=["sigmoid", "hinge", "ipo"],
+                    help="DPO loss type: sigmoid (standard), hinge, ipo")
+    p.add_argument("--save_steps",          type=int,   default=100)
+    p.add_argument("--logging_steps",       type=int,   default=10)
+    p.add_argument("--num_workers",         type=int,   default=2)
+    p.add_argument("--retry_seed",          type=int,   default=0)
+    p.add_argument("--cpu_offload",         action="store_true")
+    p.add_argument("--use_8bit_adam",       action="store_true")
+    p.add_argument("--resume_from_checkpoint", type=str, default=None)
     return p.parse_args()
 
 
-# ── 数据加载 ───────────────────────────────────────────────────────────
+# ── 数据加载 ──────────────────────────────────────────────────────────────────
 
-def load_pairs(path: str) -> list:
+def load_preference_pairs(path: str) -> list:
+    """加载偏好对数据。格式: {prompt/messages, chosen, rejected}"""
     if path.endswith(".parquet"):
         import pandas as pd
         rows = pd.read_parquet(path).to_dict(orient="records")
@@ -66,110 +97,118 @@ def load_pairs(path: str) -> list:
 
     pairs = []
     for row in rows:
-        if "chosen" in row and "rejected" in row:
-            if isinstance(row["chosen"], list):
-                # messages 格式: {"chosen": [...], "rejected": [...]}
-                chosen_msgs   = row["chosen"]
-                rejected_msgs = row["rejected"]
-            else:
-                # Alpaca 格式: {"instruction": ..., "chosen": str, "rejected": str}
-                system_msg = {"role": "system", "content": "你是物理推理助手，请展示详细的推导过程。"}
-                user_msg   = {"role": "user",   "content": row.get("instruction", row.get("prompt", ""))}
-                chosen_msgs   = [system_msg, user_msg, {"role": "assistant", "content": row["chosen"]}]
-                rejected_msgs = [system_msg, user_msg, {"role": "assistant", "content": row["rejected"]}]
-            pairs.append({"chosen": chosen_msgs, "rejected": rejected_msgs})
-
-    assert pairs, f"数据集为空：{path}"
-    print(f"[数据] 从 {path} 加载 {len(pairs)} 条偏好对")
+        if "messages" in row:
+            prompt_msgs = [m for m in row["messages"] if m["role"] in ("system", "user")]
+        elif "instruction" in row:
+            prompt_msgs = [
+                {"role": "system", "content": "你是一位数学解题专家。"},
+                {"role": "user",   "content": row["instruction"]},
+            ]
+        elif "question" in row:
+            prompt_msgs = [
+                {"role": "system", "content": "你是一位数学解题专家。"},
+                {"role": "user",   "content": row["question"]},
+            ]
+        elif "prompt" in row:
+            prompt_msgs = [{"role": "user", "content": row["prompt"]}]
+        else:
+            continue
+        pairs.append({
+            "prompt": prompt_msgs,
+            "chosen": row["chosen"],
+            "rejected": row["rejected"],
+        })
+    assert pairs, f"数据集为空: {path}"
+    log(f"[数据] 从 {path} 加载 {len(pairs)} 条偏好对")
     return pairs
 
 
-class DPODataset(Dataset):
-    def __init__(self, pairs, tok, max_len):
-        self.pairs   = pairs
-        self.tok     = tok
-        self.max_len = max_len
+class PreferenceDataset(Dataset):
+    def __init__(self, pairs, tok, max_prompt_len, max_resp_len):
+        self.pairs = pairs
+        self.tok = tok
+        self.max_prompt_len = max_prompt_len
+        self.max_resp_len = max_resp_len
 
     def __len__(self):
         return len(self.pairs)
 
     def __getitem__(self, i):
         pair = self.pairs[i]
-        chosen_text   = self.tok.apply_chat_template(pair["chosen"],   tokenize=False)
-        rejected_text = self.tok.apply_chat_template(pair["rejected"], tokenize=False)
-
-        c_enc = self.tok(chosen_text,   return_tensors="pt", max_length=self.max_len, truncation=True)
-        r_enc = self.tok(rejected_text, return_tensors="pt", max_length=self.max_len, truncation=True)
-
+        prompt_text = self.tok.apply_chat_template(
+            pair["prompt"], tokenize=False, add_generation_prompt=True
+        )
+        prompt_enc = self.tok(prompt_text, return_tensors="pt",
+                              max_length=self.max_prompt_len, truncation=True)
+        chosen_enc = self.tok(pair["chosen"], return_tensors="pt",
+                              max_length=self.max_resp_len, truncation=True)
+        rejected_enc = self.tok(pair["rejected"], return_tensors="pt",
+                                max_length=self.max_resp_len, truncation=True)
         return {
-            "chosen_ids":     c_enc["input_ids"][0],
-            "chosen_attn":    c_enc["attention_mask"][0],
-            "rejected_ids":   r_enc["input_ids"][0],
-            "rejected_attn":  r_enc["attention_mask"][0],
+            "prompt_ids": prompt_enc["input_ids"][0],
+            "prompt_mask": prompt_enc["attention_mask"][0],
+            "chosen_ids": chosen_enc["input_ids"][0],
+            "chosen_mask": chosen_enc["attention_mask"][0],
+            "rejected_ids": rejected_enc["input_ids"][0],
+            "rejected_mask": rejected_enc["attention_mask"][0],
         }
 
 
-def collate_dpo(batch, pad_id):
-    def pad_seq(tensors):
-        max_len = max(t.size(0) for t in tensors)
-        return torch.stack([F.pad(t, (0, max_len - t.size(0)), value=pad_id) for t in tensors])
-
-    def pad_attn(tensors):
-        max_len = max(t.size(0) for t in tensors)
-        return torch.stack([F.pad(t, (0, max_len - t.size(0)), value=0) for t in tensors])
+def collate_preference_batch(batch, pad_id):
+    """Pad prompts and responses to same length within batch."""
+    def _pad(seqs, pad_val):
+        max_len = max(s.size(0) for s in seqs)
+        padded = []
+        for s in seqs:
+            n = s.size(0)
+            padded.append(F.pad(s, (0, max_len - n), value=pad_val))
+        return torch.stack(padded)
 
     return {
-        "chosen_ids":    pad_seq([b["chosen_ids"]   for b in batch]),
-        "chosen_attn":   pad_attn([b["chosen_attn"] for b in batch]),
-        "rejected_ids":  pad_seq([b["rejected_ids"]   for b in batch]),
-        "rejected_attn": pad_attn([b["rejected_attn"] for b in batch]),
+        "prompt_ids":   _pad([b["prompt_ids"]   for b in batch], pad_id),
+        "prompt_mask":  _pad([b["prompt_mask"]  for b in batch], 0),
+        "chosen_ids":   _pad([b["chosen_ids"]   for b in batch], pad_id),
+        "chosen_mask":  _pad([b["chosen_mask"]  for b in batch], 0),
+        "rejected_ids": _pad([b["rejected_ids"] for b in batch], pad_id),
+        "rejected_mask": _pad([b["rejected_mask"] for b in batch], 0),
     }
 
 
-# ── 核心函数 ───────────────────────────────────────────────────────────
+# ── DPO 损失 ─────────────────────────────────────────────────────────────────
 
-def sequence_log_prob(model, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
-    """计算完整序列（含 prompt）的 average log-prob per token。"""
-    out    = model(input_ids=input_ids, attention_mask=attention_mask)
-    logits = out.logits[:, :-1, :]                                    # [B, L-1, V]
-    labels = input_ids[:, 1:]                                         # [B, L-1]
-    lp     = F.log_softmax(logits, dim=-1)
-    token_lp = lp.gather(2, labels.unsqueeze(2)).squeeze(2)          # [B, L-1]
-    # 只计算非 pad token
-    mask    = attention_mask[:, 1:].float()
-    return (token_lp * mask).sum(1) / mask.sum(1).clamp(min=1)       # [B]
+def sequence_log_prob(model, prompt_ids, prompt_mask, resp_ids, resp_mask):
+    """计算 response 序列的 sum log-prob [B]."""
+    full_ids = torch.cat([prompt_ids, resp_ids], dim=1)
+    full_mask = torch.cat([prompt_mask, resp_mask], dim=1)
+    out = model(full_ids, attention_mask=full_mask)
+    logits = out.logits[:, prompt_ids.size(1) - 1 : -1, :]
+    lp = F.log_softmax(logits.float(), dim=-1)
+    return lp.gather(2, resp_ids.unsqueeze(2)).squeeze(2).sum(1)
 
 
-def dpo_loss(policy_chosen_lp, policy_rejected_lp, ref_chosen_lp, ref_rejected_lp, beta):
-    """标准 DPO 损失（Bradley-Terry + 对数 sigmoid）。"""
-    pi_delta  = policy_chosen_lp - policy_rejected_lp
-    ref_delta = ref_chosen_lp    - ref_rejected_lp
-    logits    = beta * (pi_delta - ref_delta)
-    loss      = -F.logsigmoid(logits).mean()
-    reward_chosen   = beta * (policy_chosen_lp   - ref_chosen_lp).detach().mean()
-    reward_rejected = beta * (policy_rejected_lp - ref_rejected_lp).detach().mean()
-    return loss, reward_chosen.item(), reward_rejected.item()
+def dpo_loss_fn(policy_chosen_lp, policy_rejected_lp,
+                ref_chosen_lp, ref_rejected_lp,
+                beta: float, loss_type: str = "sigmoid"):
+    """DPO loss: -log σ(β * (Δpolicy - Δref))"""
+    log_ratio_chosen = policy_chosen_lp - ref_chosen_lp
+    log_ratio_rejected = policy_rejected_lp - ref_rejected_lp
+    logits = beta * (log_ratio_chosen - log_ratio_rejected)
+
+    if loss_type == "sigmoid":
+        loss = -F.logsigmoid(logits).mean()
+    elif loss_type == "hinge":
+        loss = F.relu(1 - logits).mean()
+    elif loss_type == "ipo":
+        loss = ((logits - 1 / (2 * beta)) ** 2).mean()
+    else:
+        loss = -F.logsigmoid(logits).mean()
+
+    with torch.no_grad():
+        acc = (logits > 0).float().mean().item()
+    return loss, acc
 
 
-# ── Magnus 指标上报 ────────────────────────────────────────────────────
-
-def emit(name: str, kind: str, value: float, step: int, mdir: str):
-    if not mdir:
-        return
-    v = -999999.0 if (math.isnan(value) or math.isinf(value)) else value
-    rec = {
-        "name": name, "kind": kind, "value": v,
-        "time_unix_ms": int(time.time() * 1000),
-        "step": step, "step_domain": "optimizer",
-    }
-    if v == -999999.0:
-        rec["labels"] = {"nan": "true"}
-    os.makedirs(mdir, exist_ok=True)
-    with open(os.path.join(mdir, "rank0.jsonl"), "a", encoding="utf-8") as f:
-        f.write(json.dumps(rec) + "\n")
-
-
-# ── Checkpoint ─────────────────────────────────────────────────────────
+# ── Checkpoint ────────────────────────────────────────────────────────────────
 
 def save_ckpt(policy, tokenizer, output_dir, step, meta):
     path = os.path.join(output_dir, f"checkpoint-{step}")
@@ -179,158 +218,201 @@ def save_ckpt(policy, tokenizer, output_dir, step, meta):
     tokenizer.save_pretrained(path)
     with open(os.path.join(path, "checkpoint_meta.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
-    print(f"  [Checkpoint] 已保存 step={step} → {path}")
+    log(f"  [Checkpoint] step={step} -> {path}")
 
 
-@torch.no_grad()
-def evaluate(policy, ref_model, loader, device, beta, mdir=""):
-    policy.eval()
-    total_loss, n = 0.0, 0
-    for batch in loader:
-        c_ids = batch["chosen_ids"].to(device);    c_attn = batch["chosen_attn"].to(device)
-        r_ids = batch["rejected_ids"].to(device);  r_attn = batch["rejected_attn"].to(device)
-        m = policy.module if hasattr(policy, "module") else policy
-        pol_c = sequence_log_prob(m, c_ids, c_attn)
-        pol_r = sequence_log_prob(m, r_ids, r_attn)
-        ref_c = sequence_log_prob(ref_model, c_ids, c_attn)
-        ref_r = sequence_log_prob(ref_model, r_ids, r_attn)
-        loss, _, _ = dpo_loss(pol_c, pol_r, ref_c, ref_r, beta)
-        total_loss += loss.item(); n += 1
-    policy.train()
-    return total_loss / max(n, 1)
-
-
-# ── 主训练循环 ─────────────────────────────────────────────────────────
+# ── 主训练循环 ────────────────────────────────────────────────────────────────
 
 def train():
-    args  = parse_args()
-    mdir  = os.environ.get("MAGNUS_METRICS_DIR", "")
+    args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    n_gpu  = torch.cuda.device_count()
+    n_gpu = torch.cuda.device_count() if torch.cuda.is_available() else 0
+    local_rank = 0
+
+    if n_gpu > 1:
+        local_rank = int(os.environ.get("LOCAL_RANK", 0))
+        dist.init_process_group(backend="nccl", timeout=timedelta(seconds=600))
+        torch.cuda.set_device(local_rank)
+        device = torch.device(f"cuda:{local_rank}")
+
     os.makedirs(args.output_dir, exist_ok=True)
 
-    print(f"[环境] device={device}, n_gpu={n_gpu}")
-    print(f"[DPO] β={args.beta}, lr={args.learning_rate}, max_len={args.max_length}")
+    log(f"[环境] device={device}, n_gpu={n_gpu}, rank={local_rank}")
+    log(f"[DPO] beta={args.dpo_beta}, loss={args.dpo_loss}, lr={args.learning_rate}")
 
+    # ── Tokenizer ──
     tok = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
     pad_id = tok.pad_token_id
 
+    # ── Policy model ──
     policy = AutoModelForCausalLM.from_pretrained(
-        args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True
-    ).to(device)
+        args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
+    )
+    if hasattr(policy, "gradient_checkpointing_enable"):
+        policy.gradient_checkpointing_enable()
+        policy.config.use_cache = False
+
+    # ── Reference model（冻结）──
     ref_model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True
+        args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
     ).to(device)
     ref_model.eval()
     for p in ref_model.parameters():
         p.requires_grad_(False)
 
+    # ── FSDP ──
     if n_gpu > 1:
-        policy = torch.nn.DataParallel(policy)
+        try:
+            from torch.distributed.fsdp import (
+                FSDP, ShardingStrategy, MixedPrecision, BackwardPrefetch, CPUOffload,
+            )
+            from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
+            from functools import partial as _partial
+
+            _layer_cls = None
+            for _name, _mod in policy.named_modules():
+                _cn = type(_mod).__name__
+                if 'Decoder' in _cn and 'Layer' in _cn:
+                    _layer_cls = type(_mod)
+                    log(f"[FSDP] 检测到 transformer layer: {_cn}")
+                    break
+
+            _wrap_policy = _partial(transformer_auto_wrap_policy, transformer_layer_cls={_layer_cls}) if _layer_cls else None
+            _cpu_offload = CPUOffload(offload_params=True) if args.cpu_offload else None
+            policy = FSDP(
+                policy,
+                sharding_strategy=ShardingStrategy.FULL_SHARD,
+                auto_wrap_policy=_wrap_policy,
+                mixed_precision=MixedPrecision(
+                    param_dtype=torch.bfloat16, reduce_dtype=torch.bfloat16, buffer_dtype=torch.bfloat16,
+                ),
+                device_id=local_rank, limit_all_gathers=True,
+                forward_prefetch=False, backward_prefetch=BackwardPrefetch.BACKWARD_POST,
+                cpu_offload=_cpu_offload,
+            )
+            log("[FSDP] FULL_SHARD 完成")
+        except ImportError:
+            log("[FSDP] 不可用，回退 DataParallel")
+            policy = torch.nn.DataParallel(policy)
+        policy = policy.to(device)
+    else:
+        policy = policy.to(device)
 
     total_params = sum(p.numel() for p in policy.parameters()) / 1e9
-    print(f"[模型] {total_params:.2f}B 参数，DPO 全量微调")
+    log(f"[模型] {total_params:.2f}B params | {n_gpu} GPU")
 
-    pairs = load_pairs(args.train_data)
-    dataset = DPODataset(pairs, tok, args.max_length)
-    loader  = DataLoader(
-        dataset, batch_size=args.batch_size, shuffle=True, num_workers=0,
-        collate_fn=lambda b: collate_dpo(b, pad_id),
+    # ── 数据 ──
+    pairs = load_preference_pairs(args.train_data)
+    dataset = PreferenceDataset(pairs, tok, args.max_prompt_length, args.max_response_length)
+    sampler = DistributedSampler(dataset) if n_gpu > 1 else None
+    loader = DataLoader(
+        dataset, batch_size=args.batch_size,
+        shuffle=(sampler is None), sampler=sampler,
+        num_workers=args.num_workers,
+        collate_fn=lambda b: collate_preference_batch(b, pad_id),
     )
 
-    eval_loader = None
-    if args.test_data and os.path.exists(args.test_data):
-        eval_pairs   = load_pairs(args.test_data)
-        eval_dataset = DPODataset(eval_pairs, tok, args.max_length)
-        eval_loader  = DataLoader(
-            eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=0,
-            collate_fn=lambda b: collate_dpo(b, pad_id),
-        )
-        print(f"[测试集] {len(eval_pairs)} 条偏好对")
+    # ── 优化器 ──
+    if args.use_8bit_adam:
+        try:
+            import bitsandbytes as bnb
+            optimizer = bnb.optim.AdamW8bit(policy.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+            log("[优化器] 8-bit AdamW")
+        except ImportError:
+            optimizer = AdamW(policy.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+    else:
+        optimizer = AdamW(policy.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
-    total_steps = len(loader) * args.epochs
-    optimizer   = AdamW(policy.parameters(), lr=args.learning_rate, weight_decay=0.01)
-    scheduler   = get_cosine_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=max(1, int(total_steps * 0.05)),
-        num_training_steps=total_steps,
-    )
+    total_steps = len(loader) * args.epochs // args.gradient_accumulation_steps
+    warmup_steps = max(1, int(total_steps * args.warmup_ratio))
+    scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps)
+    log(f"[优化器] total_steps={total_steps}, warmup={warmup_steps}")
 
+    # ── 训练循环 ──
     global_step = 0
-    train_log   = []
-    policy.train()
+    train_log = []
+    start_epoch = 1
 
-    for epoch in range(1, args.epochs + 1):
-        epoch_loss, epoch_steps = 0.0, 0
+    if args.resume_from_checkpoint:
+        meta_path = os.path.join(args.resume_from_checkpoint, "checkpoint_meta.json")
+        if os.path.exists(meta_path):
+            with open(meta_path) as f:
+                global_step = json.load(f).get("step", 0)
+        log(f"[恢复] global_step={global_step}")
 
-        for batch in loader:
-            c_ids  = batch["chosen_ids"].to(device);    c_attn  = batch["chosen_attn"].to(device)
-            r_ids  = batch["rejected_ids"].to(device);  r_attn  = batch["rejected_attn"].to(device)
-            m = policy.module if hasattr(policy, "module") else policy
+    log(f"[训练] 等效全局 batch={args.batch_size * args.gradient_accumulation_steps * max(n_gpu,1)} | 开始...")
+    log("=" * 60)
 
-            pol_c = sequence_log_prob(m, c_ids, c_attn)
-            pol_r = sequence_log_prob(m, r_ids, r_attn)
+    for epoch in range(start_epoch, args.epochs + 1):
+        if sampler:
+            sampler.set_epoch(epoch + args.retry_seed)
 
+        for step, batch in enumerate(loader, 1):
+            t0 = time.time()
+            p_ids = batch["prompt_ids"].to(device)
+            p_mask = batch["prompt_mask"].to(device)
+            c_ids = batch["chosen_ids"].to(device)
+            c_mask = batch["chosen_mask"].to(device)
+            r_ids = batch["rejected_ids"].to(device)
+            r_mask = batch["rejected_mask"].to(device)
+
+            # ── Log-probs ──
             with torch.no_grad():
-                ref_c = sequence_log_prob(ref_model, c_ids, c_attn)
-                ref_r = sequence_log_prob(ref_model, r_ids, r_attn)
+                ref_chosen_lp  = sequence_log_prob(ref_model, p_ids, p_mask, c_ids, c_mask).detach()
+                ref_rejected_lp = sequence_log_prob(ref_model, p_ids, p_mask, r_ids, r_mask).detach()
 
-            loss, reward_chosen, reward_rejected = dpo_loss(pol_c, pol_r, ref_c, ref_r, args.beta)
-            kl_chosen = (pol_c - ref_c).detach().mean().item()
+            policy_chosen_lp  = sequence_log_prob(policy, p_ids, p_mask, c_ids, c_mask)
+            policy_rejected_lp = sequence_log_prob(policy, p_ids, p_mask, r_ids, r_mask)
 
-            optimizer.zero_grad()
+            # ── DPO loss ──
+            loss, chosen_acc = dpo_loss_fn(
+                policy_chosen_lp, policy_rejected_lp,
+                ref_chosen_lp, ref_rejected_lp,
+                args.dpo_beta, args.dpo_loss,
+            )
+            loss = loss / args.gradient_accumulation_steps
             loss.backward()
-            grad_norm = torch.nn.utils.clip_grad_norm_(m.parameters(), 1.0)
-            optimizer.step()
-            scheduler.step()
 
-            global_step  += 1
-            epoch_loss   += loss.item()
-            epoch_steps  += 1
-            lr_now        = scheduler.get_last_lr()[0]
+            if (step % args.gradient_accumulation_steps == 0) or (step == len(loader)):
+                grad_norm = torch.nn.utils.clip_grad_norm_(policy.parameters(), 1.0)
+                optimizer.step()
+                scheduler.step()
+                optimizer.zero_grad()
+                global_step += 1
 
-            if global_step % args.logging_steps == 0:
-                avg_loss = epoch_loss / epoch_steps
-                print(
-                    f"  Ep{epoch} Step{global_step} | "
-                    f"loss={avg_loss:.4f} | "
-                    f"r_chosen={reward_chosen:.4f} r_rejected={reward_rejected:.4f} | "
-                    f"kl={kl_chosen:.4f} | gnorm={grad_norm:.3f} | lr={lr_now:.2e}"
-                )
-                train_log.append({
-                    "step":              global_step,
-                    "epoch":             epoch,
-                    "train.loss":        round(avg_loss,         6),
-                    "rl.reward.mean":    round(reward_chosen,    6),
-                    "rl.kl_divergence":  round(kl_chosen,        6),
-                    "train.lr":          round(lr_now,           8),
-                    "train.grad_norm":   round(grad_norm.item(), 6),
-                })
+                step_time = time.time() - t0
+                if local_rank == 0:
+                    if global_step % args.logging_steps == 0 or global_step == 1:
+                        log(
+                            f"  Ep{epoch} Step{global_step}/{total_steps} | "
+                            f"loss={loss.item() * args.gradient_accumulation_steps:.4f} | "
+                            f"chosen_acc={chosen_acc:.3f} | gnorm={grad_norm.item():.2f} | "
+                            f"time={step_time:.1f}s"
+                        )
 
-            emit("train.loss",       "gauge", loss.item(),          global_step, mdir)
-            emit("rl.reward.mean",   "gauge", reward_chosen,        global_step, mdir)
-            emit("rl.kl_divergence", "gauge", kl_chosen,            global_step, mdir)
-            emit("train.lr",         "gauge", lr_now,               global_step, mdir)
-            emit("train.grad_norm",  "gauge", grad_norm.item(),     global_step, mdir)
+                    _write_metric("dpo.loss",        loss.item() * args.gradient_accumulation_steps, global_step)
+                    _write_metric("dpo.chosen_acc",  chosen_acc,        global_step)
+                    _write_metric("train.lr",        scheduler.get_last_lr()[0], global_step)
+                    _write_metric("train.grad_norm", grad_norm.item(),  global_step)
+                    _write_metric("train.step_time_s", step_time,       global_step)
 
-            if global_step % args.save_steps == 0:
-                eval_loss = evaluate(policy, ref_model, eval_loader, device, args.beta) if eval_loader else None
-                save_ckpt(policy, tok, args.output_dir, global_step, {
-                    "step": global_step, "epoch": epoch,
-                    "train_loss": round(loss.item(), 6),
-                    "eval_loss":  round(eval_loss, 6) if eval_loss is not None else None,
-                })
+                    train_log.append({
+                        "step": global_step, "epoch": epoch,
+                        "dpo.loss": round(loss.item() * args.gradient_accumulation_steps, 6),
+                        "dpo.chosen_acc": round(chosen_acc, 6),
+                    })
 
-        avg_epoch_loss = epoch_loss / max(epoch_steps, 1)
-        eval_loss      = evaluate(policy, ref_model, eval_loader, device, args.beta) if eval_loader else None
-        eval_str       = f" | val_loss={eval_loss:.4f}" if eval_loss is not None else ""
-        print(f"[Epoch {epoch}/{args.epochs}] train_loss={avg_epoch_loss:.4f}{eval_str}")
-        if eval_loss is not None:
-            emit("val.loss", "gauge", eval_loss, global_step, mdir)
+                if global_step % args.save_steps == 0:
+                    save_ckpt(policy, tok, args.output_dir, global_step, {
+                        "step": global_step, "epoch": epoch,
+                        "dpo_loss": round(loss.item(), 6),
+                    })
 
-    # ── 保存最终模型 ───────────────────────────────────────────────
+        log(f"[Epoch {epoch}/{args.epochs}] 完成, global_step={global_step}")
+
+    # ── 最终保存 ──
     final_path = os.path.join(args.output_dir, "final")
     os.makedirs(final_path, exist_ok=True)
     m_final = policy.module if hasattr(policy, "module") else policy
@@ -338,17 +420,17 @@ def train():
     tok.save_pretrained(final_path)
     with open(os.path.join(args.output_dir, "training_log.json"), "w", encoding="utf-8") as f:
         json.dump(train_log, f, ensure_ascii=False, indent=2)
-    print(f"[完成] 最终模型 → {final_path}")
+    log(f"[完成] 最终模型 -> {final_path}")
 
-    last   = train_log[-1] if train_log else {}
+    last = train_log[-1] if train_log else {}
     result = {
-        "status":            "success",
-        "final_train_loss":  last.get("train.loss"),
-        "final_kl":          last.get("rl.kl_divergence"),
-        "total_steps":       global_step,
-        "output_dir":        args.output_dir,
+        "status": "success",
+        "final_dpo_loss": last.get("dpo.loss"),
+        "final_chosen_acc": last.get("dpo.chosen_acc"),
+        "total_steps": global_step,
+        "output_dir": args.output_dir,
     }
-    print(json.dumps(result, ensure_ascii=False))
+    log(json.dumps(result, ensure_ascii=False))
     return result
 
 

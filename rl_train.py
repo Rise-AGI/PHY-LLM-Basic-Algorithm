@@ -109,6 +109,11 @@ def load_prompts(path: str) -> list:
                 {"role": "system", "content": "你是一位数学解题专家。请逐步推理并解答以下问题。"},
                 {"role": "user",   "content": row["instruction"]},
             ])
+        elif "question" in row:
+            prompts.append([
+                {"role": "system", "content": "你是一位数学解题专家。请逐步推理并解答以下问题。"},
+                {"role": "user",   "content": row["question"]},
+            ])
         elif "prompt" in row:
             prompts.append([
                 {"role": "user", "content": row["prompt"]},
