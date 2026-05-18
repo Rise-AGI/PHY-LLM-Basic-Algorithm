@@ -332,6 +332,8 @@ def parse_args():
                     help="使用 fused AdamW（CUDA 融合内核加速）")
     p.add_argument("--use_8bit_adam", action="store_true", default=False,
                     help="使用 8-bit AdamW（大幅降低 CPU 优化器状态显存，需 bitsandbytes）")
+    p.add_argument("--no_gradient_checkpointing", action="store_true", default=False,
+                    help="关闭 gradient checkpointing（加速 30-50%，显存增加 ~15-20 GB）")
     p.add_argument("--perf_metric_steps", type=int, default=50,
                     help="性能指标记录间隔（global_step 倍数），0=禁用")
     p.add_argument("--memory_metric_steps", type=int, default=20,
@@ -692,13 +694,15 @@ def train(args):
     total_params = _raw_params / 1e9
     log(f"[4/8] 原始参数量: {total_params:.2f}B ({_raw_params} params)")
 
-    # 始终开启 gradient checkpointing（用计算换显存）
-    if hasattr(model, "gradient_checkpointing_enable"):
-        model.gradient_checkpointing_enable()
-        model.config.use_cache = False
-        log("[4/8] gradient_checkpointing 已开启")
+    if not args.no_gradient_checkpointing:
+        if hasattr(model, "gradient_checkpointing_enable"):
+            model.gradient_checkpointing_enable()
+            model.config.use_cache = False
+            log("[4/8] gradient_checkpointing 已开启")
+        else:
+            log("[4/8] gradient_checkpointing 不可用（模型不支持）")
     else:
-        log("[4/8] gradient_checkpointing 不可用（模型不支持）")
+        log("[4/8] gradient_checkpointing 已关闭（--no_gradient_checkpointing）")
 
     # ── Step 5: FSDP/分布式包装 ──
     log(f"[5/8] 分布式包装 ({n_gpu} GPU)...")
