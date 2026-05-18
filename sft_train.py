@@ -76,22 +76,89 @@ def _write_metric(name: str, value: float, step: int, step_domain: str,
 # 性能诊断工具
 # ═══════════════════════════════════════════════════════════════
 
-class CUDATimer:
-    """CUDA Event-based timer for precise GPU phase timing."""
+class StepTimer:
+    """Per-step phase timer: CUDA events for GPU time, time.time() for CPU/wall time.
+
+    Usage::
+
+        timer = StepTimer()
+        timer.cpu_start("data_wait")
+        for batch in loader:
+            timer.cpu_end("data_wait")
+            timer.gpu_start("h2d");  batch = batch.to(device);  timer.gpu_end("h2d")
+            timer.gpu_start("forward");   ... forward + loss ...;  timer.gpu_end("forward")
+            timer.gpu_start("backward");  ... backward ...;        timer.gpu_end("backward")
+            timer.gpu_start("optimizer"); ... optimizer ...;       timer.gpu_end("optimizer")
+            timer.cpu_start("data_wait")   # start waiting for *next* batch
+
+            bd = timer.breakdown(total_wall_ms)
+            # bd keys: data_loader, h2d, forward, backward, optimizer, gpu_idle  (all ms)
+    """
+
     def __init__(self):
-        self.events = {}
-    def start(self, name):
+        self._gpu = {}   # name -> (start_event, end_event)
+        self._cpu = {}   # name -> (start_wall, end_wall)
+
+    # ── GPU events (CUDA) ──────────────────────────────────
+    def gpu_start(self, name: str):
+        if not torch.cuda.is_available():
+            return
+        s = torch.cuda.Event(enable_timing=True)
+        s.record()
+        self._gpu[name] = [s, None]
+
+    def gpu_end(self, name: str):
         if not torch.cuda.is_available():
             return
         e = torch.cuda.Event(enable_timing=True)
         e.record()
-        self.events[name] = e
-    def elapsed_ms(self, a, b):
-        if a not in self.events or b not in self.events:
+        if name in self._gpu:
+            self._gpu[name][1] = e
+
+    def gpu_ms(self, name: str) -> float:
+        pair = self._gpu.get(name)
+        if pair is None or pair[0] is None or pair[1] is None:
             return 0.0
-        self.events[a].synchronize()
-        self.events[b].synchronize()
-        return self.events[a].elapsed_time(self.events[b])
+        pair[0].synchronize()
+        pair[1].synchronize()
+        return pair[0].elapsed_time(pair[1])
+
+    # ── CPU wall-clock ─────────────────────────────────────
+    def cpu_start(self, name: str):
+        self._cpu[name] = [time.time(), None]
+
+    def cpu_end(self, name: str):
+        if name in self._cpu:
+            self._cpu[name][1] = time.time()
+
+    def cpu_ms(self, name: str) -> float:
+        pair = self._cpu.get(name)
+        if pair is None or pair[0] is None or pair[1] is None:
+            return 0.0
+        return (pair[1] - pair[0]) * 1000.0
+
+    # ── Combined breakdown ─────────────────────────────────
+    def breakdown(self, total_wall_ms: float, is_update_step: bool = True) -> dict:
+        """Return {phase: gpu_ms} with data_loader (cpu_ms) and gpu_idle (derived)."""
+        out = {}
+        for p in ["h2d", "forward", "backward"]:
+            out[p] = self.gpu_ms(p)
+        out["optimizer"] = self.gpu_ms("optimizer") if is_update_step else 0.0
+        out["data_loader"] = self.cpu_ms("data_wait")
+
+        gpu_sum = out["h2d"] + out["forward"] + out["backward"] + out["optimizer"]
+        out["gpu_idle"] = max(0.0, total_wall_ms - out["data_loader"] - gpu_sum)
+        return out
+
+    # ── Backward-compat wrappers for existing perf metrics ─
+    def fwd_ms(self) -> float:
+        return self.gpu_ms("forward")
+
+    def bwd_ms(self) -> float:
+        return self.gpu_ms("backward")
+
+    def opt_ms(self) -> float:
+        return self.gpu_ms("optimizer")
 
 
 def get_memory_breakdown(device_id=0):
@@ -805,7 +872,7 @@ def train(args):
     # init loss 移至训练结束后计算，避免启动期大 batch forward 占用显存
 
     # ── 性能诊断: 初始化计时器和显存估测 ──
-    timer = CUDATimer()
+    timer = StepTimer()
     if local_rank == 0 and args.perf_metric_steps > 0:
         mem_est = estimate_memory_components(model, max(n_gpu, 1))
         log(f"  [显存估测] params={mem_est['estimated_params_gb']:.1f}GB"
@@ -827,16 +894,21 @@ def train(args):
         torch.cuda.reset_peak_memory_stats()
         log(f"[Epoch {epoch}/{args.epochs}] 开始...")
 
+        timer.cpu_start("data_wait")  # step 1 will measure pre-loop → first batch
+
         for step, batch in enumerate(train_loader, 1):
+            timer.cpu_end("data_wait")
             step_start = time.time()
 
             # ── 诊断: 每 50 步打印一次步进信息 ──
             if local_rank == 0 and step % 50 == 1:
                 log(f"  [诊断] >>> Step {step}/{len(train_loader)} (global {global_step+1}) 开始")
 
-            input_ids = batch["input_ids"].to(device)
-            labels    = batch["labels"].to(device)
-            attn_mask = batch["attention_mask"].to(device)
+            timer.gpu_start("h2d")
+            input_ids = batch["input_ids"].to(device, non_blocking=True)
+            labels    = batch["labels"].to(device, non_blocking=True)
+            attn_mask = batch["attention_mask"].to(device, non_blocking=True)
+            timer.gpu_end("h2d")
             seq_len   = input_ids.shape[-1]
 
             # ── 诊断: 定期记录序列长度和显存 ──
@@ -848,9 +920,8 @@ def train(args):
             # ── 前向传播（含异常恢复）──
             _skip_batch = False
             try:
-                timer.start("fwd")
+                timer.gpu_start("forward")
                 outputs = model(input_ids=input_ids, attention_mask=attn_mask)
-                # bf16 直接计算 loss（F.cross_entropy 内部以 float32 计算 softmax，无需显式 .float()）
                 logits = outputs.logits
                 shift_logits = logits[..., :-1, :].contiguous()
                 shift_labels = labels[..., 1:].contiguous()
@@ -859,9 +930,8 @@ def train(args):
                     shift_labels.view(-1),
                     ignore_index=-100,
                 )
-                # 释放 logits 显存（gradient checkpointing 会在 backward 时按需重算）
                 del outputs, logits, shift_logits, shift_labels
-                timer.start("fwd_done")
+                timer.gpu_end("forward")
             except Exception as e:
                 _skip_batch = True
                 _skip_count += 1
@@ -886,9 +956,9 @@ def train(args):
                     loss,
                 )
 
-            timer.start("bwd")
+            timer.gpu_start("backward")
             (loss / accum).backward()
-            timer.start("bwd_done")
+            timer.gpu_end("backward")
             epoch_loss += loss.item()
 
             # ── Magnus 指标: train.loss（每步）──
@@ -900,9 +970,17 @@ def train(args):
             step_elapsed = time.time() - step_start
             if step_elapsed > 20:
                 slow_count += 1
-                log(f"  [SLOW] Step {step} 耗时 {step_elapsed:.1f}s | seq_len={seq_len} | "
-                    f"GPU={torch.cuda.memory_allocated()/1024**3:.1f}GB "
-                    f"(此 epoch 第 {slow_count} 次慢步)")
+                fwd_s = timer.gpu_ms("forward") / 1000
+                bwd_s = timer.gpu_ms("backward") / 1000
+                h2d_s = timer.gpu_ms("h2d") / 1000
+                data_s = timer.cpu_ms("data_wait") / 1000
+                gpu_sum = h2d_s + fwd_s + bwd_s
+                idle_s = max(0, step_elapsed - data_s - gpu_sum)
+                log(f"  [SLOW] Step {step} {step_elapsed:.1f}s | "
+                    f"FWD={fwd_s:.1f}s BWD={bwd_s:.1f}s H2D={h2d_s:.1f}s "
+                    f"DATA={data_s:.1f}s IDLE={idle_s:.1f}s | "
+                    f"seq={seq_len} GPU={torch.cuda.memory_allocated()/1024**3:.1f}GB "
+                    f"(#{slow_count})")
             elif step_elapsed > 10 and local_rank == 0:
                 log(f"  [诊断] Step {step} 略慢: {step_elapsed:.1f}s | seq_len={seq_len}")
 
@@ -911,7 +989,7 @@ def train(args):
                 # 梯度累积期间 CUDA 内存碎片化，opt step 前整理
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
-                timer.start("opt")
+                timer.gpu_start("optimizer")
                 _oom_skip = False
                 try:
                     if n_gpu > 1:
@@ -941,11 +1019,11 @@ def train(args):
                 if _oom_skip:
                     # 跳过此 optimizer step：清空累积梯度，不更新 global_step
                     optimizer.zero_grad()
-                    timer.start("opt_done")
+                    timer.gpu_end("optimizer")
                 else:
                     scheduler.step()
                     optimizer.zero_grad()
-                    timer.start("opt_done")
+                    timer.gpu_end("optimizer")
                     global_step += 1
 
                 # ── 性能指标: 显存明细（所有 rank 写，按 GPU 分选）──
@@ -959,9 +1037,9 @@ def train(args):
 
                 # ── 性能指标: 时间分解（仅 rank 0）──
                 if args.perf_metric_steps > 0 and local_rank == 0 and global_step % args.perf_metric_steps == 0:
-                    fwd_ms = timer.elapsed_ms("fwd", "fwd_done")
-                    bwd_ms = timer.elapsed_ms("bwd", "bwd_done")
-                    opt_ms = timer.elapsed_ms("opt", "opt_done")
+                    fwd_ms = timer.fwd_ms()
+                    bwd_ms = timer.bwd_ms()
+                    opt_ms = timer.opt_ms()
                     total_ms = step_elapsed * 1000
                     comm_ms = max(0, total_ms - fwd_ms - bwd_ms - opt_ms)
                     _write_metric("perf.forward_ms", fwd_ms, global_step, "train", unit="ms")
@@ -973,6 +1051,14 @@ def train(args):
                     if total_ms > 0:
                         _write_metric("perf.tokens_per_sec", eff_tokens / (total_ms / 1000),
                                       global_step, "train", unit="tokens/s")
+
+                # ── 每步时间分解（统一指标 perf.breakdown_ms，component label 区分子项）──
+                if local_rank == 0:
+                    _is_upd = is_update or (step == len(train_loader))
+                    bd = timer.breakdown(step_elapsed * 1000, is_update_step=_is_upd)
+                    for comp, ms_val in bd.items():
+                        _write_metric("perf.breakdown_ms", ms_val, _metric_step, "train",
+                                      unit="ms", labels={"component": comp})
 
                 if global_step % args.logging_steps == 0:
                     avg_loss = epoch_loss / step
@@ -988,6 +1074,9 @@ def train(args):
                         _e_str = f" | eval_loss={eval_loss:.4f}" if eval_loss is not None else ""
                         log(f"  [存档] step={global_step} train_loss={epoch_loss/step:.4f}{_e_str}")
                     train_log.append({"global_step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "lr": round(scheduler.get_last_lr()[0], 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
+
+            # 开始等待下一个 batch（GPU 异步工作可能尚未完成，墙钟计时已开始）
+            timer.cpu_start("data_wait")
 
         avg_epoch_loss = epoch_loss / len(train_loader)
         elapsed        = time.time() - epoch_start
