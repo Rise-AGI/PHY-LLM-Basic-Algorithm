@@ -1002,9 +1002,6 @@ def train(args):
 
             is_update = (step % accum == 0) or (step == len(train_loader))
             if is_update:
-                # 梯度累积期间 CUDA 内存碎片化，opt step 前整理
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
                 timer.gpu_start("optimizer")
                 _oom_skip = False
                 try:
