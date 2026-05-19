@@ -600,7 +600,6 @@ def evaluate(model, dataloader, device, n_gpu=1, local_rank=0, global_step=None)
         dist.all_reduce(cnt_t,  op=dist.ReduceOp.SUM)
         total_loss = loss_t.item()
         total_steps = int(cnt_t.item())
-    torch.cuda.empty_cache()
     model.train()
     avg_loss = total_loss / max(total_steps, 1)
     if local_rank == 0 and global_step is not None:
