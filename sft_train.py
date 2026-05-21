@@ -744,6 +744,10 @@ def train(args):
             _policy = _partial(transformer_auto_wrap_policy, transformer_layer_cls={_layer_cls})
         # 使用 auto_wrap_policy 逐层分片，避免 FSDP init 时将完整模型移至单卡
         _bwd = BackwardPrefetch.BACKWARD_POST if args.backward_prefetch == "post" else BackwardPrefetch.BACKWARD_PRE
+        if args.cpu_offload and args.use_8bit_adam:
+            log("[5/8] ⚠ cpu_offload + 8bit AdamW 不兼容（8bit 量化状态会被 FSDP 错误卸载到 CPU）")
+            log("[5/8]    跳过 FSDP CPU offload，8bit AdamW 状态已足够紧凑 (~2.2 bytes/param)")
+            args.cpu_offload = False
         _cpu_offload = CPUOffload(offload_params=True) if args.cpu_offload else None
         _fwd_prefetch = False if _cpu_offload else True  # cpu_offload 时关闭 fwd prefetch 节省 ~1.8GB
         if _cpu_offload:
