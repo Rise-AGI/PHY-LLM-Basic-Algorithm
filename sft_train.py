@@ -1151,10 +1151,16 @@ def train(args):
     save_final(model, tokenizer, args.output_dir, train_log, local_rank=local_rank)
 
     if eval_samples_raw is not None:
-        run_generation_eval(model, tokenizer, eval_samples_raw, args,
-                            tag="final", model_path=args.model_path,
-                            output_dir=args.output_dir, device=device,
-                            local_rank=local_rank, n_gpu=n_gpu)
+        try:
+            run_generation_eval(model, tokenizer, eval_samples_raw, args,
+                                tag="final", model_path=args.model_path,
+                                output_dir=args.output_dir, device=device,
+                                local_rank=local_rank, n_gpu=n_gpu)
+        except Exception as _eval_err:
+            if local_rank == 0:
+                log(f"[推理-final] 生成式评估失败（模型已保存，不影响训练）: {_eval_err}")
+            if n_gpu > 1:
+                dist.barrier()
 
     final_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=global_step) if eval_loader else None
     result = {"status": "success", "final_train_loss": round(train_log[-1]["train_loss"], 6), "final_eval_loss": round(final_eval_loss, 6) if final_eval_loss is not None else None, "total_steps": global_step, "output_dir": args.output_dir}
@@ -1281,6 +1287,13 @@ def run_generation_eval(model, tokenizer, test_samples, args, tag,
     # ── 2. 创建临时推理模型（rank 0 only）──
     if isinstance(model, FSDP):
         _config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+        # 兼容新版 transformers composite config: vocab_size 等字段可能在 text_config 下
+        if hasattr(_config, 'text_config') and _config.text_config:
+            _tc = _config.text_config.to_dict() if hasattr(_config.text_config, 'to_dict') else _config.text_config
+            if isinstance(_tc, dict):
+                for _k, _v in _tc.items():
+                    if not hasattr(_config, _k):
+                        setattr(_config, _k, _v)
         _temp = AutoModelForCausalLM.from_config(_config, trust_remote_code=True,
                                                   torch_dtype=torch.bfloat16)
         _temp.load_state_dict(_state, strict=False)
