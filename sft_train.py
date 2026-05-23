@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """
-SFT 全参微调 — 独立训练/评估脚本
+SFT 全参微调 — 独立训练脚本
 
 从 Magnus 蓝图（OpenFundus_SFT_zyz.magnus）提取的独立模块。
 蓝图通过 wget 从 github.com/Rise-AGI/ 拉取此文件并执行。
 
-用法:
-    # 训练模式
-    python sft_train.py --model_path /path/to/model --train_data /path/to/data --output_dir /tmp/out
+评估/推理已独立为 eval_baseline.py（模型长期存储，修改模型路径即可评估）。
 
-    # 评估模式（训练完成后单独推理）
-    python sft_train.py --eval-only --model_dir /tmp/out/final --test_path /path/to/test --output_dir /tmp/out
+用法:
+    python sft_train.py --model_path /path/to/model --train_data /path/to/data --output_dir /tmp/out
 """
 
 import argparse
@@ -202,31 +200,6 @@ def estimate_memory_components(model, n_gpu, is_bf16=True):
     }
 
 
-def parse_answer_solution(text: str):
-    """
-    将 "答案：...\\n\\n解答：..." 格式拆分为 (answer, solution)。
-    对模型输出和标准答案通用。无法解析时 answer 返回全文。
-    """
-    if not text:
-        return "", ""
-    # 按 "解答" 分割（兼容中英文冒号）
-    parts = _re.split(r'\n?\s*解答\s*[：:]\s*', text, maxsplit=1)
-    if len(parts) >= 2:
-        ans_part = parts[0]
-        sol = parts[1].strip()
-        m = _re.search(r'答案\s*[：:]\s*(.*?)$', ans_part, _re.DOTALL)
-        ans = m.group(1).strip() if m else ans_part.strip()
-        return ans, sol
-    # fallback: 在单段文本中分别匹配
-    m_ans = _re.search(r'答案\s*[：:]\s*(.*?)(?:\n\n|\n解答|$)', text, _re.DOTALL)
-    m_sol = _re.search(r'解答\s*[：:]\s*(.*?)$', text, _re.DOTALL)
-    ans = m_ans.group(1).strip() if m_ans else ""
-    sol = m_sol.group(1).strip() if m_sol else ""
-    if not ans and not sol:
-        return text.strip(), ""
-    return ans, sol
-
-
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
@@ -289,24 +262,14 @@ transformers.modeling_utils.check_torch_load_is_safe = lambda: None
 
 def parse_args():
     p = argparse.ArgumentParser(description="通用大模型 SFT on Magnus")
-    # 模式
-    p.add_argument("--eval-only", action="store_true", help="仅运行推理评估（不训练）")
 
     # 模型与数据
     p.add_argument("--model_path",    type=str, default=None,
-                    help="训练模式：模型路径")
+                    help="模型路径")
     p.add_argument("--train_data",    type=str, default=None,
-                    help="训练模式：训练集路径")
-    p.add_argument("--test_data",     type=str, default=None,
-                    help="训练或评估模式：测试集路径（评估/验证）")
-    p.add_argument("--test_path",     type=str, default=None,
-                    help="评估模式：测试集路径（与 --test_data 等价，用于兼容蓝图）")
+                    help="训练集路径")
     p.add_argument("--output_dir",    type=str, default="/tmp/sft_output",
                     help="输出目录")
-
-    # 评估模式专属
-    p.add_argument("--model_dir",     type=str, default=None,
-                    help="评估模式：已保存模型目录路径")
 
     # 超参数
     p.add_argument("--epochs",        type=int,   default=3)
@@ -579,33 +542,6 @@ def _load_safetensors_state(ckpt_path):
     return None
 
 
-@torch.no_grad()
-def evaluate(model, dataloader, device, n_gpu=1, local_rank=0, global_step=None):
-    model.eval()
-    total_loss, total_steps = 0.0, 0
-    for batch in dataloader:
-        input_ids = batch["input_ids"].to(device)
-        labels    = batch["labels"].to(device)
-        attn_mask = batch["attention_mask"].to(device)
-        outputs   = model(input_ids=input_ids, attention_mask=attn_mask, labels=labels)
-        loss = outputs.loss
-        total_loss  += loss.item()
-        total_steps += 1
-        del outputs, loss
-    # 跨卡汇总（FSDP 下每卡只算了部分数据）
-    if n_gpu > 1:
-        loss_t = torch.tensor([total_loss], device=device)
-        cnt_t  = torch.tensor([total_steps], device=device)
-        dist.all_reduce(loss_t, op=dist.ReduceOp.SUM)
-        dist.all_reduce(cnt_t,  op=dist.ReduceOp.SUM)
-        total_loss = loss_t.item()
-        total_steps = int(cnt_t.item())
-    model.train()
-    avg_loss = total_loss / max(total_steps, 1)
-    if local_rank == 0 and global_step is not None:
-        _write_metric("eval.loss", avg_loss, global_step, "eval")
-    return avg_loss
-
 
 def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -783,7 +719,6 @@ def train(args):
     pad_id = tokenizer.pad_token_id
 
     def train_collate(b): return collate_fn(b, pad_id)
-    def eval_collate(b):  return collate_fn(b, pad_id)
 
     train_samples = load_json_dataset(args.train_data)
     log(f"[6/8] 训练样本: {len(train_samples)} 条")
@@ -791,17 +726,6 @@ def train(args):
     train_sampler = DistributedSampler(train_dataset, rank=local_rank, shuffle=True) if n_gpu > 1 else None
     train_loader  = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), sampler=train_sampler, num_workers=args.num_workers, pin_memory=True, prefetch_factor=4, persistent_workers=(args.num_workers > 0), collate_fn=train_collate)
     log(f"[6/8] DataLoader: {len(train_loader)} batches/epoch (batch_size={args.batch_size})")
-
-    eval_loader = None
-    eval_samples_raw = None  # 用于生成式评估
-    if args.test_data and os.path.exists(args.test_data):
-        log(f"[6/8] 加载测试数据: {args.test_data}")
-        eval_samples_raw = load_json_dataset(args.test_data)
-        eval_dataset = SFTDataset(eval_samples_raw, tokenizer, args.max_length, args.prompt_prefix)
-        eval_loader  = DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True, prefetch_factor=4, persistent_workers=(args.num_workers > 0), collate_fn=eval_collate)
-        log(f"[6/8] 测试集: {len(eval_samples_raw)} 条, {len(eval_loader)} batches")
-    else:
-        log("[6/8] 测试集: 未提供，跳过 eval loss")
     log(f"[6/8] 数据准备完成 ({time.time()-t0:.1f}s)")
 
     # ── Step 7: Optimizer & Scheduler ──
@@ -1082,34 +1006,27 @@ def train(args):
                     log(f"  Epoch {epoch}/{args.epochs} | Step {step}/{len(train_loader)} (global {global_step}) | Loss {avg_loss:.4f} | LR: {lr_now:.2e}")
                     train_log.append({"global_step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(avg_loss, 6), "lr": round(lr_now, 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
-                # ── 自动存档（仅 loss 评估 + 保存权重，不做生成式推理）──
+                # ── 自动存档 ──
                 if global_step % args.save_steps == 0:
-                    eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=global_step) if eval_loader else None
-                    save_checkpoint(model, tokenizer, args.output_dir, global_step, meta={"step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}, local_rank=local_rank)
+                    save_checkpoint(model, tokenizer, args.output_dir, global_step, meta={"step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}, local_rank=local_rank)
                     if local_rank == 0:
-                        _e_str = f" | eval_loss={eval_loss:.4f}" if eval_loss is not None else ""
-                        log(f"  [存档] step={global_step} train_loss={epoch_loss/step:.4f}{_e_str}")
-                    train_log.append({"global_step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "lr": round(scheduler.get_last_lr()[0], 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
+                        log(f"  [存档] step={global_step} train_loss={epoch_loss/step:.4f}")
+                    train_log.append({"global_step": global_step, "epoch": round(epoch - 1 + step / len(train_loader), 3), "train_loss": round(epoch_loss / step, 6), "lr": round(scheduler.get_last_lr()[0], 8), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
             # 开始等待下一个 batch（GPU 异步工作可能尚未完成，墙钟计时已开始）
             timer.cpu_start("data_wait")
 
         avg_epoch_loss = epoch_loss / len(train_loader)
         elapsed        = time.time() - epoch_start
-        eval_loss      = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=global_step) if eval_loader else None
-        eval_str = f" | Eval Loss: {eval_loss:.4f}" if eval_loss is not None else ""
-        log(f"[Epoch {epoch}/{args.epochs}] Train Loss: {avg_epoch_loss:.4f}{eval_str} | 耗时: {elapsed:.0f}s ({elapsed/60:.1f}min)")
+        log(f"[Epoch {epoch}/{args.epochs}] Train Loss: {avg_epoch_loss:.4f} | 耗时: {elapsed:.0f}s ({elapsed/60:.1f}min)")
         if _skip_count > 0:
             log(f"  [诊断] Epoch {epoch} 中共 {_skip_count} 个 batch 因错误跳过")
-        train_log.append({"global_step": global_step, "epoch": epoch, "train_loss": round(avg_epoch_loss, 6), "eval_loss": round(eval_loss, 6) if eval_loss is not None else None, "elapsed_sec": round(elapsed, 1), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
+        train_log.append({"global_step": global_step, "epoch": epoch, "train_loss": round(avg_epoch_loss, 6), "elapsed_sec": round(elapsed, 1), "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
     # ── Post-training baseline loss（step=0 等价评估，含显式显存释放）──
     init_train_loss = None
-    init_eval_loss = None
     if local_rank == 0:
         log("  [收尾] 计算 baseline loss...")
-    if eval_loader:
-        init_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=global_step)
     if len(train_loader) > 0:
         try:
             first_batch = next(iter(train_loader))
@@ -1140,238 +1057,19 @@ def train(args):
     if local_rank == 0:
         log(f"  [收尾] baseline: train_loss={init_train_loss:.4f}" if init_train_loss is not None
             else "  [收尾] baseline: train_loss=None")
-        if init_eval_loss is not None:
-            log(f"  [收尾] baseline: eval_loss={init_eval_loss:.4f}")
     train_log.append({"global_step": 0, "epoch": 0.0,
                       "train_loss": round(init_train_loss, 6) if init_train_loss is not None else None,
-                      "eval_loss": round(init_eval_loss, 6) if init_eval_loss is not None else None,
                       "lr": round(scheduler.get_last_lr()[0], 8),
                       "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")})
 
     save_final(model, tokenizer, args.output_dir, train_log, local_rank=local_rank)
 
-    if eval_samples_raw is not None:
-        try:
-            run_generation_eval(model, tokenizer, eval_samples_raw, args,
-                                tag="final", model_path=args.model_path,
-                                output_dir=args.output_dir, device=device,
-                                local_rank=local_rank, n_gpu=n_gpu)
-        except Exception as _eval_err:
-            if local_rank == 0:
-                log(f"[推理-final] 生成式评估失败（模型已保存，不影响训练）: {_eval_err}")
-            if n_gpu > 1:
-                dist.barrier()
-
-    final_eval_loss = evaluate(model, eval_loader, device, n_gpu, local_rank, global_step=global_step) if eval_loader else None
-    result = {"status": "success", "final_train_loss": round(train_log[-1]["train_loss"], 6), "final_eval_loss": round(final_eval_loss, 6) if final_eval_loss is not None else None, "total_steps": global_step, "output_dir": args.output_dir}
+    result = {"status": "success", "final_train_loss": round(train_log[-1]["train_loss"], 6), "total_steps": global_step, "output_dir": args.output_dir}
     log(f"[结果] {json.dumps(result, ensure_ascii=False)}")
     return result
 
 
-@torch.no_grad()
-def run_eval(args):
-    """评估模式：基于已保存模型对测试集做推理并保存结果。"""
-    model_dir = args.model_dir
-    test_path = args.test_path or args.test_data
-    out_dir   = args.output_dir
-
-    log("[推理] 加载模型: " + model_dir)
-    tokenizer = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    if tokenizer.chat_template is None:
-        tokenizer.chat_template = "{% for message in messages %}{% if message['role'] == 'user' %}{{ 'User: ' + message['content'] + '\\n\\nAssistant: ' }}{% elif message['role'] == 'assistant' %}{{ message['content'] + '\\n\\n' }}{% endif %}{% endfor %}"
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = AutoModelForCausalLM.from_pretrained(
-        model_dir,
-        dtype=torch.bfloat16 if device == "cuda" else torch.float32,
-        device_map="auto" if device == "cuda" else None,
-        trust_remote_code=True,
-    )
-    if device == "cpu":
-        model = model.to(device)
-    model.eval()
-    log("[推理] 模型加载完成，设备: " + device)
-
-    with open(test_path, "r", encoding="utf-8") as fh:
-        raw = fh.read().strip()
-    samples = json.loads(raw) if raw.startswith("[") else [json.loads(ln) for ln in raw.splitlines() if ln.strip()]
-    log("[推理] 测试集共 " + str(len(samples)) + " 条")
-
-    results = []
-
-    for i, sample in enumerate(samples):
-        instruction = sample.get("instruction", "")
-        extra       = sample.get("input", "")
-        gt_out      = sample.get("output", "")
-
-        if args.prompt_prefix:
-            instruction = args.prompt_prefix.replace("{instruction}", instruction)
-        user_content = instruction + ("\n" + extra if extra else "")
-
-        # 通用：使用 apply_chat_template 自动适配所有模型
-        messages = [{"role": "user", "content": user_content}]
-        prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-
-        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=args.max_length).to(device)
-        with torch.no_grad():
-            out_ids = model.generate(
-                **inputs,
-                max_new_tokens=512,
-                do_sample=False,
-                pad_token_id=tokenizer.eos_token_id,
-            )
-        new_ids  = out_ids[0][inputs["input_ids"].shape[1]:]
-        response = tokenizer.decode(new_ids, skip_special_tokens=True).strip()
-
-        gt_ans, gt_sol = parse_answer_solution(gt_out)
-        md_ans, md_sol = parse_answer_solution(response)
-        results.append({
-            "id": sample.get("id", i),
-            "question": user_content,
-            "gt_full": gt_out,
-            "gt_answer": gt_ans,
-            "gt_solution": gt_sol,
-            "model_full": response,
-            "model_answer": md_ans,
-            "model_solution": md_sol,
-        })
-
-        if (i + 1) % 10 == 0 or (i + 1) == len(samples):
-            log("  进度 %d/%d" % (i + 1, len(samples)))
-
-    eval_dir = os.path.join(out_dir, "eval")
-    os.makedirs(eval_dir, exist_ok=True)
-
-    eval_path = os.path.join(eval_dir, "eval_results.json")
-    with open(eval_path, "w", encoding="utf-8") as fh:
-        json.dump(results, fh, ensure_ascii=False, indent=2)
-    _fn = os.path.basename(eval_path)
-    log(f"[推理] 已保存: {_fn} ({len(results)} 条)")
-    log(f"[推理] 文件路径: {eval_path}")
-    log(f"[推理] 下载: 任务结束后查看日志末尾的 magnus receive 命令")
-
-
-@torch.no_grad()
-def run_generation_eval(model, tokenizer, test_samples, args, tag,
-                         model_path, output_dir, device, local_rank=0, n_gpu=1):
-    """
-    对测试集做生成式推理（逐样本生成 response），保存 JSON 结果。
-    FSDP 兼容：所有 rank 参与 state_dict 收集（NCCL collective），
-    rank 0 单独推理，其他 rank 在 barrier 等待，完成后同步返回训练循环。
-    """
-    # ── 1. 收集完整 state dict（ALL ranks 必须参与 NCCL collective）──
-    _state = None
-    if isinstance(model, FSDP):
-        from torch.distributed.fsdp.api import StateDictType, FullStateDictConfig
-        _cfg = FullStateDictConfig(rank0_only=True, offload_to_cpu=True)
-        with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, _cfg):
-            _state = model.state_dict()
-        if local_rank == 0:
-            log(f"[推理-{tag}] FSDP state dict 收集完成")
-
-    # barrier: 确保 state dict 的所有 NCCL 操作完成后 rank 0 再单独推理
-    if n_gpu > 1:
-        dist.barrier()
-
-    # 非 rank 0 在此等待 rank 0 完成推理，防止其他 rank 进入训练循环
-    # 发送需要 rank 0 参与的 NCCL collective（FSDP forward allgather）
-    if local_rank != 0:
-        if n_gpu > 1:
-            dist.barrier()
-        return
-
-    log(f"[推理-{tag}] 开始生成式评估 ({len(test_samples)} 条)...")
-
-    # ── 2. 创建临时推理模型（rank 0 only）──
-    if isinstance(model, FSDP):
-        _config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
-        # 兼容新版 transformers composite config: vocab_size 等字段可能在 text_config 下
-        if hasattr(_config, 'text_config') and _config.text_config:
-            _tc = _config.text_config.to_dict() if hasattr(_config.text_config, 'to_dict') else _config.text_config
-            if isinstance(_tc, dict):
-                for _k, _v in _tc.items():
-                    if not hasattr(_config, _k):
-                        setattr(_config, _k, _v)
-        _temp = AutoModelForCausalLM.from_config(_config, trust_remote_code=True,
-                                                  torch_dtype=torch.bfloat16)
-        _temp.load_state_dict(_state, strict=False)
-        _temp = _temp.to(device)
-        _temp.eval()
-        _inf_model = _temp
-        log(f"[推理-{tag}] 临时推理模型已创建")
-    else:
-        _inf_model = model
-        _inf_model.eval()
-
-    # ── 3. 逐样本推理 ──
-    _results = []
-    for _i, _sample in enumerate(test_samples):
-        _inst = _sample.get("instruction", "")
-        _extra = _sample.get("input", "")
-        _gt = _sample.get("output", "")
-        if args.prompt_prefix:
-            _inst = args.prompt_prefix.replace("{instruction}", _inst)
-        _content = _inst + ("\n" + _extra if _extra else "")
-
-        _messages = [{"role": "user", "content": _content}]
-        _prompt = tokenizer.apply_chat_template(_messages, tokenize=False,
-                                                 add_generation_prompt=True)
-        _inputs = tokenizer(_prompt, return_tensors="pt", truncation=True,
-                            max_length=args.max_length).to(device)
-        _out_ids = _inf_model.generate(
-            **_inputs,
-            max_new_tokens=512,
-            do_sample=False,
-            pad_token_id=tokenizer.eos_token_id,
-        )
-        _new_ids = _out_ids[0][_inputs["input_ids"].shape[1]:]
-        _response = tokenizer.decode(_new_ids, skip_special_tokens=True).strip()
-
-        _gt_ans, _gt_sol = parse_answer_solution(_gt)
-        _md_ans, _md_sol = parse_answer_solution(_response)
-        _results.append({
-            "id": _sample.get("id", _i),
-            "question": _content,
-            "gt_full": _gt,
-            "gt_answer": _gt_ans,
-            "gt_solution": _gt_sol,
-            "model_full": _response,
-            "model_answer": _md_ans,
-            "model_solution": _md_sol,
-        })
-
-        if (_i + 1) % 10 == 0 or (_i + 1) == len(test_samples):
-            log(f"  [推理-{tag}] {_i+1}/{len(test_samples)}")
-
-    # ── 4. 保存 JSON ──
-    _eval_dir = os.path.join(output_dir, "eval")
-    os.makedirs(_eval_dir, exist_ok=True)
-    _path = os.path.join(_eval_dir, f"eval_results_{tag}.json")
-    with open(_path, "w", encoding="utf-8") as _f:
-        json.dump(_results, _f, ensure_ascii=False, indent=2)
-    _fn = os.path.basename(_path)
-    log(f"[推理-{tag}] 已保存: {_fn} ({len(_results)} 条)")
-    log(f"[推理-{tag}] 文件路径: {_path}")
-    log(f"[推理-{tag}] 下载: 任务结束后查看日志末尾的 magnus receive 命令")
-
-    # ── 5. 清理 ──
-    if isinstance(model, FSDP):
-        del _temp, _state
-        torch.cuda.empty_cache()
-    else:
-        _inf_model.train()
-
-    # barrier: 通知其他 rank 推理完成，可以继续训练循环
-    if n_gpu > 1:
-        dist.barrier()
-
 
 if __name__ == "__main__":
     _args = parse_args()
-
-    if _args.eval_only:
-        run_eval(_args)
-    else:
-        train(_args)
+    train(_args)
