@@ -326,7 +326,7 @@ def train():
                     buffer_dtype=torch.bfloat16,
                 ),
                 device_id=local_rank,
-                limit_all_gathers=True,
+                use_orig_params=True,
                 forward_prefetch=False,
                 backward_prefetch=BackwardPrefetch.BACKWARD_POST,
                 cpu_offload=_cpu_offload,
