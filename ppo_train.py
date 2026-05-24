@@ -354,26 +354,17 @@ def train():
     else:
         policy = policy.to(device)
 
-    # ── Reference model（冻结）────────────────────────────────────────────
-    # FSDP: ref_model 用 device_map="auto" 跨卡分片 (~13.5GB/卡)
-    # DataParallel: ref_model 必须放 CPU，否则与复制的 policy 抢显存导致 OOM
-    if fsdp_ok:
-        log("[模型] 加载 ref_model (device_map='auto')...")
-        ref_model = AutoModelForCausalLM.from_pretrained(
-            args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
-            device_map="auto",
-        )
-        _mem_report("ref_model loaded (device_map=auto)")
-    else:
-        log("[模型] 加载 ref_model (CPU, DataParallel 回退)...")
-        ref_model = AutoModelForCausalLM.from_pretrained(
-            args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
-        )
-        _mem_report("ref_model loaded (CPU)")
-
+    # ── Reference model（冻结，始终放 CPU 避免 GPU 显存竞争）───────────────
+    # FSDP + summon_full_params 需 ~50GiB 临时空间，ref 放 GPU 会造成 OOM。
+    # ref 仅用于 sequence_log_prob 一次前向，CPU 推理 54GB 内存可接受。
+    log("[模型] 加载 ref_model (CPU)...")
+    ref_model = AutoModelForCausalLM.from_pretrained(
+        args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
+    )
     ref_model.eval()
     for p in ref_model.parameters():
         p.requires_grad_(False)
+    _mem_report("ref_model loaded (CPU)")
 
     # ── Reward model（可选）───────────────────────────────────────────────────
     reward_model = None
@@ -397,7 +388,7 @@ def train():
         else:
             log(f"[奖励模型] 路径不存在: {args.reward_model_path}，使用纯规则奖励")
 
-    log(f"[模型] 训练就绪 | {n_gpu} GPU | FSDP={fsdp_ok} | learned_reward={use_learned_reward} | ref_cpu={not fsdp_ok}")
+    log(f"[模型] 训练就绪 | {n_gpu} GPU | FSDP={fsdp_ok} | learned_reward={use_learned_reward} | ref=CPU")
 
     # ── 数据 ────────────────────────────────────────────────────────────────
     prompts = load_prompts(args.train_data)
@@ -495,15 +486,11 @@ def train():
                 else:
                     rewards = rule_rewards
 
-                # Old log-probs + ref log-probs
+                # Old log-probs + ref log-probs (ref 始终在 CPU)
                 old_lp = sequence_log_prob(policy, inp, attn, resp).detach()
-                if fsdp_ok:
-                    ref_lp = sequence_log_prob(ref_model, inp, attn, resp).detach()
-                else:
-                    # DataParallel 回退: ref_model 在 CPU，输入需移过去
-                    ref_lp = sequence_log_prob(
-                        ref_model, inp.cpu(), attn.cpu(), resp.cpu()
-                    ).detach().to(device)
+                ref_lp = sequence_log_prob(
+                    ref_model, inp.cpu(), attn.cpu(), resp.cpu()
+                ).detach().to(device)
 
             # ── 2. PPO loss ─────────────────────────────────────────────────
             new_lp = sequence_log_prob(policy, inp, attn, resp)
