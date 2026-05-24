@@ -226,6 +226,14 @@ def save_ckpt(policy, tokenizer, output_dir, step, meta):
 # ── 主训练循环 ────────────────────────────────────────────────────────────────
 
 def train():
+    # 抑制 transformers/tqdm 进度条，避免 4 rank × 851 chunks 日志洪流
+    os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+    try:
+        from transformers.utils import logging as hf_logging
+        hf_logging.disable_progress_bar()
+    except Exception:
+        pass
+
     args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n_gpu  = torch.cuda.device_count() if torch.cuda.is_available() else 0
@@ -238,6 +246,14 @@ def train():
         device = torch.device(f"cuda:{local_rank}")
 
     os.makedirs(args.output_dir, exist_ok=True)
+
+    def _mem_report(tag: str):
+        """每个 rank 报告本卡显存使用"""
+        if torch.cuda.is_available():
+            used = torch.cuda.memory_allocated(device) / 1024**3
+            rsvd = torch.cuda.memory_reserved(device) / 1024**3
+            total = torch.cuda.get_device_properties(device).total_memory / 1024**3
+            log(f"[显存] {tag} | used={used:.1f}GiB reserved={rsvd:.1f}GiB total={total:.1f}GiB")
 
     # ── 奖励来源描述 ────────────────────────────────────────────
     reward_parts = []
@@ -259,57 +275,31 @@ def train():
         tok.pad_token = tok.eos_token
     pad_id = tok.pad_token_id
 
-    # ── Policy model ─────────────────────────────────────────────────────────
+    # ── Policy model（先加载到 CPU，再根据 FSDP/DataParallel 策略放 GPU）───
+    log("[模型] 加载 policy (CPU)...")
     policy = AutoModelForCausalLM.from_pretrained(
         args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
     )
     if hasattr(policy, "gradient_checkpointing_enable"):
         policy.gradient_checkpointing_enable()
         policy.config.use_cache = False
+    total_params = sum(p.numel() for p in policy.parameters()) / 1e9
+    _mem_report("policy loaded (CPU)")
 
-    # ── Reference model（冻结，device_map="auto" 跨卡分片避免 OOM）───────────
-    ref_model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
-        device_map="auto",
-    )
-    ref_model.eval()
-    for p in ref_model.parameters():
-        p.requires_grad_(False)
-
-    # ── Reward model（可选）───────────────────────────────────────────────────
-    reward_model = None
-    use_learned_reward = False
-    if args.reward_model_path and os.path.exists(args.reward_model_path):
-        log(f"[奖励模型] 加载: {args.reward_model_path}")
-        try:
-            reward_model = AutoModelForSequenceClassification.from_pretrained(
-                args.reward_model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
-            ).to(device)
-            reward_model.eval()
-            for p in reward_model.parameters():
-                p.requires_grad_(False)
-            use_learned_reward = True
-            log("[奖励模型] 已就绪，combined reward = learned * {} + rule * {}".format(
-                args.reward_ratio, 1 - args.reward_ratio))
-        except Exception as e:
-            log(f"[奖励模型] 加载失败: {e}，回退到纯规则奖励")
-    else:
-        if args.reward_model_path:
-            log(f"[奖励模型] 路径不存在: {args.reward_model_path}，使用纯规则奖励")
-        else:
-            log("[奖励模型] 未提供，使用纯规则奖励")
-
-    # ── FSDP ──────────────────────────────────────────────────────────────────
+    # ── FSDP / DataParallel（在加载 ref_model 之前确定，避免显存竞争）─────
+    fsdp_ok = False
     if n_gpu > 1:
-        # 8bit Adam + FSDP CPU offload(offload_params=True) 不兼容，检测到冲突时禁用 CPU offload
         _fsdp_cpu_offload = args.cpu_offload
         if _fsdp_cpu_offload and args.use_8bit_adam:
-            log("[FSDP] 警告: 8bit Adam + CPU offload(offload_params=True) 不兼容，禁用 CPU offload")
+            log("[FSDP] 8bit Adam + CPU offload(offload_params=True) 不兼容，禁用 CPU offload")
             _fsdp_cpu_offload = False
 
         try:
             from torch.distributed.fsdp import (
-                FSDP, ShardingStrategy, MixedPrecision, BackwardPrefetch, CPUOffload,
+                FullyShardedDataParallel as FSDP,
+            )
+            from torch.distributed.fsdp import (
+                ShardingStrategy, MixedPrecision, BackwardPrefetch, CPUOffload,
             )
             from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
             from functools import partial as _partial
@@ -319,10 +309,10 @@ def train():
                 _cn = type(_mod).__name__
                 if 'Decoder' in _cn and 'Layer' in _cn:
                     _layer_cls = type(_mod)
-                    log(f"[FSDP] 检测到 transformer layer: {_cn}")
+                    log(f"[FSDP] transformer layer: {_cn}")
                     break
             if _layer_cls is None:
-                log("[FSDP] 未检测到 DecoderLayer，将使用默认 wrap policy")
+                log("[FSDP] 未检测到 DecoderLayer，使用默认 wrap policy")
 
             _wrap_policy = _partial(transformer_auto_wrap_policy, transformer_layer_cls={_layer_cls}) if _layer_cls else None
             _cpu_offload = CPUOffload(offload_params=True) if _fsdp_cpu_offload else None
@@ -341,16 +331,62 @@ def train():
                 backward_prefetch=BackwardPrefetch.BACKWARD_POST,
                 cpu_offload=_cpu_offload,
             )
-            log("[FSDP] FULL_SHARD 完成")
+            fsdp_ok = True
+            log(f"[FSDP] FULL_SHARD 完成 (params={total_params:.2f}B, offload={_fsdp_cpu_offload})")
+            _mem_report("FSDP wrap done")
         except Exception as _fsdp_err:
-            log(f"[FSDP] 不可用 ({type(_fsdp_err).__name__}: {_fsdp_err})，回退 DataParallel")
+            log(f"[FSDP] 不可用: {type(_fsdp_err).__name__}: {_fsdp_err}")
+            log("[FSDP] 回退 DataParallel — 27B 模型需 ref_model 保持 CPU 以防 OOM")
             policy = torch.nn.DataParallel(policy)
-        policy = policy.to(device)
+            policy = policy.to(device)
+            _mem_report("DataParallel .to(device) done")
     else:
         policy = policy.to(device)
 
-    total_params = sum(p.numel() for p in policy.parameters()) / 1e9
-    log(f"[模型] {total_params:.2f}B params | {n_gpu} GPU | learned_reward={use_learned_reward}")
+    # ── Reference model（冻结）────────────────────────────────────────────
+    # FSDP: ref_model 用 device_map="auto" 跨卡分片 (~13.5GB/卡)
+    # DataParallel: ref_model 必须放 CPU，否则与复制的 policy 抢显存导致 OOM
+    if fsdp_ok:
+        log("[模型] 加载 ref_model (device_map='auto')...")
+        ref_model = AutoModelForCausalLM.from_pretrained(
+            args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
+            device_map="auto",
+        )
+        _mem_report("ref_model loaded (device_map=auto)")
+    else:
+        log("[模型] 加载 ref_model (CPU, DataParallel 回退)...")
+        ref_model = AutoModelForCausalLM.from_pretrained(
+            args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
+        )
+        _mem_report("ref_model loaded (CPU)")
+
+    ref_model.eval()
+    for p in ref_model.parameters():
+        p.requires_grad_(False)
+
+    # ── Reward model（可选）───────────────────────────────────────────────────
+    reward_model = None
+    use_learned_reward = False
+    if args.reward_model_path and os.path.exists(args.reward_model_path):
+        log(f"[奖励模型] 加载: {args.reward_model_path}")
+        try:
+            reward_model = AutoModelForSequenceClassification.from_pretrained(
+                args.reward_model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
+            ).to(device)
+            reward_model.eval()
+            for p in reward_model.parameters():
+                p.requires_grad_(False)
+            use_learned_reward = True
+            log(f"[奖励模型] 已就绪，combined reward = learned*{args.reward_ratio} + rule*{1-args.reward_ratio}")
+        except Exception as e:
+            log(f"[奖励模型] 加载失败: {e}，回退到纯规则奖励")
+    else:
+        if not args.reward_model_path:
+            log("[奖励模型] 未提供，使用纯规则奖励")
+        else:
+            log(f"[奖励模型] 路径不存在: {args.reward_model_path}，使用纯规则奖励")
+
+    log(f"[模型] 训练就绪 | {n_gpu} GPU | FSDP={fsdp_ok} | learned_reward={use_learned_reward} | ref_cpu={not fsdp_ok}")
 
     # ── 数据 ────────────────────────────────────────────────────────────────
     prompts = load_prompts(args.train_data)
@@ -449,7 +485,13 @@ def train():
 
                 # Old log-probs + ref log-probs
                 old_lp = sequence_log_prob(policy, inp, attn, resp).detach()
-                ref_lp = sequence_log_prob(ref_model, inp, attn, resp).detach()
+                if fsdp_ok:
+                    ref_lp = sequence_log_prob(ref_model, inp, attn, resp).detach()
+                else:
+                    # DataParallel 回退: ref_model 在 CPU，输入需移过去
+                    ref_lp = sequence_log_prob(
+                        ref_model, inp.cpu(), attn.cpu(), resp.cpu()
+                    ).detach().to(device)
 
             # ── 2. PPO loss ─────────────────────────────────────────────────
             new_lp = sequence_log_prob(policy, inp, attn, resp)
