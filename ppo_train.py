@@ -267,10 +267,11 @@ def train():
         policy.gradient_checkpointing_enable()
         policy.config.use_cache = False
 
-    # ── Reference model（冻结）─────────────────────────────────────────────────
+    # ── Reference model（冻结，device_map="auto" 跨卡分片避免 OOM）───────────
     ref_model = AutoModelForCausalLM.from_pretrained(
         args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
-    ).to(device)
+        device_map="auto",
+    )
     ref_model.eval()
     for p in ref_model.parameters():
         p.requires_grad_(False)
@@ -300,6 +301,12 @@ def train():
 
     # ── FSDP ──────────────────────────────────────────────────────────────────
     if n_gpu > 1:
+        # 8bit Adam + FSDP CPU offload(offload_params=True) 不兼容，检测到冲突时禁用 CPU offload
+        _fsdp_cpu_offload = args.cpu_offload
+        if _fsdp_cpu_offload and args.use_8bit_adam:
+            log("[FSDP] 警告: 8bit Adam + CPU offload(offload_params=True) 不兼容，禁用 CPU offload")
+            _fsdp_cpu_offload = False
+
         try:
             from torch.distributed.fsdp import (
                 FSDP, ShardingStrategy, MixedPrecision, BackwardPrefetch, CPUOffload,
@@ -314,9 +321,11 @@ def train():
                     _layer_cls = type(_mod)
                     log(f"[FSDP] 检测到 transformer layer: {_cn}")
                     break
+            if _layer_cls is None:
+                log("[FSDP] 未检测到 DecoderLayer，将使用默认 wrap policy")
 
             _wrap_policy = _partial(transformer_auto_wrap_policy, transformer_layer_cls={_layer_cls}) if _layer_cls else None
-            _cpu_offload = CPUOffload(offload_params=True) if args.cpu_offload else None
+            _cpu_offload = CPUOffload(offload_params=True) if _fsdp_cpu_offload else None
             policy = FSDP(
                 policy,
                 sharding_strategy=ShardingStrategy.FULL_SHARD,
@@ -333,8 +342,8 @@ def train():
                 cpu_offload=_cpu_offload,
             )
             log("[FSDP] FULL_SHARD 完成")
-        except ImportError:
-            log("[FSDP] 不可用，回退 DataParallel")
+        except Exception as _fsdp_err:
+            log(f"[FSDP] 不可用 ({type(_fsdp_err).__name__}: {_fsdp_err})，回退 DataParallel")
             policy = torch.nn.DataParallel(policy)
         policy = policy.to(device)
     else:
