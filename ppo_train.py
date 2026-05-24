@@ -202,13 +202,24 @@ def sequence_log_prob(model, inp, attn, resp):
 
 
 @torch.no_grad()
-def generate_responses(model, tok, inp, attn, max_new_tokens, pad_id, temperature, top_p):
-    out = model.generate(
-        inp, attention_mask=attn,
-        max_new_tokens=max_new_tokens,
-        do_sample=True, temperature=temperature, top_p=top_p,
-        pad_token_id=pad_id,
-    )
+def generate_responses(model, tok, inp, attn, max_new_tokens, pad_id, temperature, top_p, fsdp_ok=False):
+    """生成 responses。FSDP 模型需 summon_full_params 临时实例化分片参数。"""
+    if fsdp_ok:
+        from torch.distributed.fsdp import FullyShardedDataParallel as _FSDP
+        with _FSDP.summon_full_params(model, writeback=False, recurse=True):
+            out = model.generate(
+                inp, attention_mask=attn,
+                max_new_tokens=max_new_tokens,
+                do_sample=True, temperature=temperature, top_p=top_p,
+                pad_token_id=pad_id,
+            )
+    else:
+        out = model.generate(
+            inp, attention_mask=attn,
+            max_new_tokens=max_new_tokens,
+            do_sample=True, temperature=temperature, top_p=top_p,
+            pad_token_id=pad_id,
+        )
     return out[:, inp.size(1):]
 
 
@@ -448,6 +459,7 @@ def train():
                 resp = generate_responses(
                     policy, tok, inp, attn,
                     args.max_response_length, pad_id, args.temperature, args.top_p,
+                    fsdp_ok=fsdp_ok,
                 )
                 texts = tok.batch_decode(resp, skip_special_tokens=True)
 
