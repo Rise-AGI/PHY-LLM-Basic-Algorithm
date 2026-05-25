@@ -458,6 +458,8 @@ def train():
                     fsdp_ok=fsdp_ok,
                 )
             epoch_resps.append(resp_g.cpu())
+            # summon_full_params 内部 all_gather 是集合通信，必须所有 rank 同步
+            dist.barrier()
             if local_rank == 0 and (i % 10 == 0 or i == pre_total):
                 elapsed = time.time() - pre_t0
                 eta = elapsed / i * (pre_total - i)
