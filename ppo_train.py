@@ -444,9 +444,11 @@ def train():
         # fp32 master weights + 8-bit Adam 状态会占满 GPU，后续 summon 必 OOM。
         # 因此在优化器状态分配之前一次性生成所有 batch 的 responses。
         epoch_resps = []
+        pre_total = len(loader)
         if local_rank == 0:
-            log(f"[预生成] Epoch {epoch}: 开始生成 responses ({len(loader)} 批)...")
-        for pre_batch in loader:
+            log(f"[预生成] Epoch {epoch}: 开始生成 responses ({pre_total} 批)...")
+        pre_t0 = time.time()
+        for i, pre_batch in enumerate(loader, 1):
             inp_g = pre_batch["input_ids"].to(device)
             attn_g = pre_batch["attention_mask"].to(device)
             with torch.no_grad():
@@ -456,9 +458,13 @@ def train():
                     fsdp_ok=fsdp_ok,
                 )
             epoch_resps.append(resp_g.cpu())
+            if local_rank == 0 and (i % 20 == 0 or i == pre_total):
+                elapsed = time.time() - pre_t0
+                eta = elapsed / i * (pre_total - i)
+                log(f"[预生成] {i}/{pre_total} | 耗时={elapsed:.0f}s | ETA={eta:.0f}s")
         if local_rank == 0:
             _mem_report(f"pre-gen epoch {epoch} done")
-            log(f"[预生成] Epoch {epoch}: {len(epoch_resps)} 批完成")
+            log(f"[预生成] Epoch {epoch}: {len(epoch_resps)} 批完成 ({time.time()-pre_t0:.0f}s)")
 
         for step, (batch, resp_cpu) in enumerate(zip(loader, epoch_resps), 1):
             t0 = time.time()
