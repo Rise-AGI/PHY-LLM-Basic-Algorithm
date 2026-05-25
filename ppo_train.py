@@ -439,19 +439,36 @@ def train():
         if sampler:
             sampler.set_epoch(epoch + args.retry_seed)
 
-        for step, batch in enumerate(loader, 1):
-            t0 = time.time()
-            inp  = batch["input_ids"].to(device)
-            attn = batch["attention_mask"].to(device)
-            B    = inp.size(0)
-
-            # ── 1. 生成 responses ──────────────────────────────────────────
+        # ── 0. 预生成全部 responses ─────────────────────────────────────────
+        # summon_full_params 需 ~50GiB 临时空间。首个 optimizer.step() 后
+        # fp32 master weights + 8-bit Adam 状态会占满 GPU，后续 summon 必 OOM。
+        # 因此在优化器状态分配之前一次性生成所有 batch 的 responses。
+        epoch_resps = []
+        if local_rank == 0:
+            log(f"[预生成] Epoch {epoch}: 开始生成 responses ({len(loader)} 批)...")
+        for pre_batch in loader:
+            inp_g = pre_batch["input_ids"].to(device)
+            attn_g = pre_batch["attention_mask"].to(device)
             with torch.no_grad():
-                resp = generate_responses(
-                    policy, tok, inp, attn,
+                resp_g = generate_responses(
+                    policy, tok, inp_g, attn_g,
                     args.max_response_length, pad_id, args.temperature, args.top_p,
                     fsdp_ok=fsdp_ok,
                 )
+            epoch_resps.append(resp_g.cpu())
+        if local_rank == 0:
+            _mem_report(f"pre-gen epoch {epoch} done")
+            log(f"[预生成] Epoch {epoch}: {len(epoch_resps)} 批完成")
+
+        for step, (batch, resp_cpu) in enumerate(zip(loader, epoch_resps), 1):
+            t0 = time.time()
+            inp  = batch["input_ids"].to(device)
+            attn = batch["attention_mask"].to(device)
+            resp = resp_cpu.to(device)
+            B    = inp.size(0)
+
+            # ── 1. 计算奖励 & log-probs ────────────────────────────────────
+            with torch.no_grad():
                 texts = tok.batch_decode(resp, skip_special_tokens=True)
 
                 # 计算奖励（优先级：外部 API > 本地奖励模型 > 规则函数）
