@@ -440,24 +440,28 @@ def train():
             sampler.set_epoch(epoch + args.retry_seed)
 
         # ── 0. 预生成全部 responses ─────────────────────────────────────────
-        # summon_full_params 需 ~50GiB 临时空间。首个 optimizer.step() 后
-        # fp32 master weights + 8-bit Adam 状态会占满 GPU，后续 summon 必 OOM。
-        # 因此在优化器状态分配之前一次性生成所有 batch 的 responses。
+        # 使用 ref_model (普通模型，无 FSDP) 生成，避免 summon_full_params
+        # 与 model.generate() 在 PyTorch 2.5.1 上的 NCCL 死锁问题。
+        # SFT 训练正常验证了 FSDP/NCCL 基础没问题，问题专属于 summon+generate。
+        # ref_model: CPU → GPU → generate → CPU，每批 ~50GiB 显存开销。
         epoch_resps = []
         pre_total = len(loader)
         if local_rank == 0:
-            log(f"[预生成] Epoch {epoch}: 开始生成 responses ({pre_total} 批)...")
+            log(f"[预生成] Epoch {epoch}: 使用 ref_model 生成 responses ({pre_total} 批)...")
         pre_t0 = time.time()
         for i, pre_batch in enumerate(loader, 1):
             inp_g = pre_batch["input_ids"].to(device)
             attn_g = pre_batch["attention_mask"].to(device)
+            ref_model.to(device)
             with torch.no_grad():
-                resp_g = generate_responses(
-                    policy, tok, inp_g, attn_g,
-                    args.max_response_length, pad_id, args.temperature, args.top_p,
-                    fsdp_ok=fsdp_ok,
+                resp_g = ref_model.generate(
+                    inp_g, attention_mask=attn_g,
+                    max_new_tokens=args.max_response_length,
+                    do_sample=True, temperature=args.temperature, top_p=args.top_p,
+                    pad_token_id=pad_id,
                 )
-            epoch_resps.append(resp_g.cpu())
+            ref_model.to('cpu')
+            epoch_resps.append(resp_g[:, inp_g.size(1):].cpu())
             if local_rank == 0 and (i <= 3 or i % 10 == 0 or i == pre_total):
                 elapsed = time.time() - pre_t0
                 eta = elapsed / i * (pre_total - i)
