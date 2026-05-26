@@ -458,12 +458,10 @@ def train():
                     fsdp_ok=fsdp_ok,
                 )
             epoch_resps.append(resp_g.cpu())
-            # summon_full_params 内部 all_gather 是集合通信，必须所有 rank 同步
-            dist.barrier()
-            if local_rank == 0 and (i % 10 == 0 or i == pre_total):
+            if local_rank == 0 and (i <= 3 or i % 10 == 0 or i == pre_total):
                 elapsed = time.time() - pre_t0
                 eta = elapsed / i * (pre_total - i)
-                log(f"[预生成] {i}/{pre_total} | 耗时={elapsed:.0f}s | ETA={eta:.0f}s")
+                log(f"[预生成] {i}/{pre_total} | 耗时={elapsed:.0f}s | ETA={eta:.0f}s | {elapsed/i:.1f}s/batch")
         if local_rank == 0:
             _mem_report(f"pre-gen epoch {epoch} done")
             log(f"[预生成] Epoch {epoch}: {len(epoch_resps)} 批完成 ({time.time()-pre_t0:.0f}s)")
