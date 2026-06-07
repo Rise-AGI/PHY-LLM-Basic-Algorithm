@@ -246,15 +246,17 @@ def train():
         pass
 
     args = parse_args()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n_gpu  = torch.cuda.device_count() if torch.cuda.is_available() else 0
-    local_rank = 0
+    world_size = int(os.environ.get("WORLD_SIZE", "1"))
+    rank = int(os.environ.get("RANK", "0"))
+    local_rank = int(os.environ.get("LOCAL_RANK", "0"))
 
-    if n_gpu > 1:
-        local_rank = int(os.environ.get("LOCAL_RANK", 0))
-        dist.init_process_group(backend="nccl", timeout=timedelta(seconds=600))
+    if world_size > 1:
+        dist.init_process_group(backend="nccl", timeout=timedelta(seconds=1800))
         torch.cuda.set_device(local_rank)
-        device = torch.device(f"cuda:{local_rank}")
+        device = torch.device("cuda", local_rank)
+    else:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -347,7 +349,9 @@ def train():
             _mem_report("FSDP wrap done")
         except Exception as _fsdp_err:
             log(f"[FSDP] 不可用: {type(_fsdp_err).__name__}: {_fsdp_err}")
-            log("[FSDP] 回退 DataParallel — 27B 模型需 ref_model 保持 CPU 以防 OOM")
+            if total_params > 10:
+                raise RuntimeError("Large-model PPO requires FSDP; DataParallel fallback disabled")
+            log("[FSDP] 回退 DataParallel")
             policy = torch.nn.DataParallel(policy)
             policy = policy.to(device)
             _mem_report("DataParallel .to(device) done")
@@ -460,8 +464,10 @@ def train():
                     do_sample=True, temperature=args.temperature, top_p=args.top_p,
                     pad_token_id=pad_id,
                 )
-            ref_model.to('cpu')
+            ref_model.to("cpu")
             epoch_resps.append(resp_g[:, inp_g.size(1):].cpu())
+            del resp_g, inp_g, attn_g
+            torch.cuda.empty_cache()
             if local_rank == 0 and (i <= 3 or i % 10 == 0 or i == pre_total):
                 elapsed = time.time() - pre_t0
                 eta = elapsed / i * (pre_total - i)
@@ -582,13 +588,14 @@ def train():
 
     # ── 最终保存 ────────────────────────────────────────────────────────────
     final_path = os.path.join(args.output_dir, "final")
-    os.makedirs(final_path, exist_ok=True)
-    m_final = policy.module if hasattr(policy, "module") else policy
-    m_final.save_pretrained(final_path)
-    tok.save_pretrained(final_path)
-    with open(os.path.join(args.output_dir, "training_log.json"), "w", encoding="utf-8") as f:
-        json.dump(train_log, f, ensure_ascii=False, indent=2)
-    log(f"[完成] 最终模型 -> {final_path}")
+    if local_rank == 0:
+        os.makedirs(final_path, exist_ok=True)
+        m_final = policy.module if hasattr(policy, "module") else policy
+        m_final.save_pretrained(final_path)
+        tok.save_pretrained(final_path)
+        with open(os.path.join(args.output_dir, "training_log.json"), "w", encoding="utf-8") as f:
+            json.dump(train_log, f, ensure_ascii=False, indent=2)
+        log(f"[完成] 最终模型 -> {final_path}")
 
     last = train_log[-1] if train_log else {}
     result = {
