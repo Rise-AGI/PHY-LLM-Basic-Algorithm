@@ -358,17 +358,48 @@ def train():
     else:
         policy = policy.to(device)
 
-    # ── Reference model（冻结，始终放 CPU 避免 GPU 显存竞争）───────────────
-    # FSDP + summon_full_params 需 ~50GiB 临时空间，ref 放 GPU 会造成 OOM。
-    # ref 仅用于 sequence_log_prob 一次前向，CPU 推理 54GB 内存可接受。
-    log("[模型] 加载 ref_model (CPU)...")
+    # ── Reference model（冻结；多卡时 FSDP 常驻 GPU，避免每批 CPU↔GPU 搬迁）────
+    # 27B bf16 约 54GiB；FULL_SHARD 后 4×A100 单卡约 13.5GiB。
+    # 预生成阶段直接在分片 ref_model 上 generate，不再每 batch .to(device)/.to("cpu")。
+    ref_fsdp_ok = False
+    log("[模型] 加载 ref_model (CPU -> FSDP/GPU if available)...")
     ref_model = AutoModelForCausalLM.from_pretrained(
         args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
     )
     ref_model.eval()
     for p in ref_model.parameters():
         p.requires_grad_(False)
-    _mem_report("ref_model loaded (CPU)")
+
+    if fsdp_ok:
+        ref_model = FSDP(
+            ref_model,
+            sharding_strategy=ShardingStrategy.FULL_SHARD,
+            auto_wrap_policy=_wrap_policy,
+            mixed_precision=MixedPrecision(
+                param_dtype=torch.bfloat16,
+                reduce_dtype=torch.bfloat16,
+                buffer_dtype=torch.bfloat16,
+            ),
+            device_id=local_rank,
+            use_orig_params=True,
+            forward_prefetch=False,
+            backward_prefetch=BackwardPrefetch.BACKWARD_POST,
+            cpu_offload=None,
+        )
+        ref_model.eval()
+        for p in ref_model.parameters():
+            p.requires_grad_(False)
+        ref_fsdp_ok = True
+        _mem_report("ref_model FSDP wrap done")
+        log("[模型] ref_model 已使用 FSDP FULL_SHARD 常驻 GPU")
+    elif n_gpu > 0 and total_params <= 10:
+        # 小模型/单卡 fallback：可直接常驻 GPU；大模型单卡仍保留 CPU，避免 OOM。
+        ref_model = ref_model.to(device)
+        _mem_report("ref_model .to(device) done")
+        log("[模型] ref_model 常驻单卡 GPU")
+    else:
+        _mem_report("ref_model loaded (CPU)")
+        log("[模型] ref_model 保持 CPU（无 FSDP 或模型过大）")
 
     # ── Reward model（可选）───────────────────────────────────────────────────
     reward_model = None
@@ -392,7 +423,8 @@ def train():
         else:
             log(f"[奖励模型] 路径不存在: {args.reward_model_path}，使用纯规则奖励")
 
-    log(f"[模型] 训练就绪 | {n_gpu} GPU | FSDP={fsdp_ok} | learned_reward={use_learned_reward} | ref=CPU")
+    ref_place = "FSDP-GPU" if ref_fsdp_ok else ("GPU" if n_gpu > 0 and total_params <= 10 else "CPU")
+    log(f"[模型] 训练就绪 | {n_gpu} GPU | FSDP={fsdp_ok} | learned_reward={use_learned_reward} | ref={ref_place}")
 
     # ── 数据 ────────────────────────────────────────────────────────────────
     prompts = load_prompts(args.train_data)
@@ -444,19 +476,16 @@ def train():
             sampler.set_epoch(epoch + args.retry_seed)
 
         # ── 0. 预生成全部 responses ─────────────────────────────────────────
-        # 使用 ref_model (普通模型，无 FSDP) 生成，避免 summon_full_params
-        # 与 model.generate() 在 PyTorch 2.5.1 上的 NCCL 死锁问题。
-        # SFT 训练正常验证了 FSDP/NCCL 基础没问题，问题专属于 summon+generate。
-        # ref_model: CPU → GPU → generate → CPU，每批 ~50GiB 显存开销。
+        # 使用常驻 ref_model 生成：多卡 FSDP 分片常驻 GPU，避免每批 54GiB CPU↔GPU 搬迁。
+        # 注意：这里不使用 summon_full_params；FSDP forward/generate 直接按分片参数执行。
         epoch_resps = []
         pre_total = len(loader)
         if local_rank == 0:
-            log(f"[预生成] Epoch {epoch}: 使用 ref_model 生成 responses ({pre_total} 批)...")
+            log(f"[预生成] Epoch {epoch}: 使用 ref_model({ref_place}) 生成 responses ({pre_total} 批)...")
         pre_t0 = time.time()
         for i, pre_batch in enumerate(loader, 1):
             inp_g = pre_batch["input_ids"].to(device)
             attn_g = pre_batch["attention_mask"].to(device)
-            ref_model.to(device)
             with torch.no_grad():
                 resp_g = ref_model.generate(
                     inp_g, attention_mask=attn_g,
@@ -464,10 +493,10 @@ def train():
                     do_sample=True, temperature=args.temperature, top_p=args.top_p,
                     pad_token_id=pad_id,
                 )
-            ref_model.to("cpu")
             epoch_resps.append(resp_g[:, inp_g.size(1):].cpu())
             del resp_g, inp_g, attn_g
-            torch.cuda.empty_cache()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
             if local_rank == 0 and (i <= 3 or i % 10 == 0 or i == pre_total):
                 elapsed = time.time() - pre_t0
                 eta = elapsed / i * (pre_total - i)
@@ -519,11 +548,14 @@ def train():
                 else:
                     rewards = rule_rewards
 
-                # Old log-probs + ref log-probs (ref 始终在 CPU)
+                # Old log-probs + ref log-probs（ref 多卡时常驻 FSDP/GPU；CPU fallback 时走 CPU）
                 old_lp = sequence_log_prob(policy, inp, attn, resp).detach()
-                ref_lp = sequence_log_prob(
-                    ref_model, inp.cpu(), attn.cpu(), resp.cpu()
-                ).detach().to(device)
+                if ref_fsdp_ok or (n_gpu > 0 and total_params <= 10):
+                    ref_lp = sequence_log_prob(ref_model, inp, attn, resp).detach()
+                else:
+                    ref_lp = sequence_log_prob(
+                        ref_model, inp.cpu(), attn.cpu(), resp.cpu()
+                    ).detach().to(device)
 
             # ── 2. PPO loss ─────────────────────────────────────────────────
             new_lp = sequence_log_prob(policy, inp, attn, resp)
