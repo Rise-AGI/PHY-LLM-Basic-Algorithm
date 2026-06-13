@@ -203,10 +203,15 @@ def sequence_log_prob(model, inp, attn, resp):
 
 @torch.no_grad()
 def generate_responses(model, tok, inp, attn, max_new_tokens, pad_id, temperature, top_p, fsdp_ok=False):
-    """生成 responses。FSDP 模型需 summon_full_params 临时实例化分片参数。"""
+    """生成 responses。
+
+    HF generate() 会绕过 FSDP wrapper 的 forward hook，root 层的 embedding/lm_head
+    仍可能保持 1-D FlatParameter。这里只召回 root 层参数；decoder layer 子模块
+    继续由各自的 FSDP forward hook 分片执行，避免整模型同时 unshard。
+    """
     if fsdp_ok:
         from torch.distributed.fsdp import FullyShardedDataParallel as _FSDP
-        with _FSDP.summon_full_params(model, writeback=False, recurse=True):
+        with _FSDP.summon_full_params(model, writeback=False, recurse=False):
             out = model.generate(
                 inp, attention_mask=attn,
                 max_new_tokens=max_new_tokens,
@@ -477,7 +482,8 @@ def train():
 
         # ── 0. 预生成全部 responses ─────────────────────────────────────────
         # 使用常驻 ref_model 生成：多卡 FSDP 分片常驻 GPU，避免每批 54GiB CPU↔GPU 搬迁。
-        # 注意：这里不使用 summon_full_params；FSDP forward/generate 直接按分片参数执行。
+        # generate() 需要临时召回 root embedding/lm_head，否则 HF 会绕过 FSDP
+        # wrapper hook，导致 embedding weight 仍是 1-D FlatParameter。
         epoch_resps = []
         pre_total = len(loader)
         if local_rank == 0:
@@ -486,15 +492,16 @@ def train():
         for i, pre_batch in enumerate(loader, 1):
             inp_g = pre_batch["input_ids"].to(device)
             attn_g = pre_batch["attention_mask"].to(device)
-            with torch.no_grad():
-                resp_g = ref_model.generate(
-                    inp_g, attention_mask=attn_g,
-                    max_new_tokens=args.max_response_length,
-                    do_sample=True, temperature=args.temperature, top_p=args.top_p,
-                    pad_token_id=pad_id,
-                )
-            epoch_resps.append(resp_g[:, inp_g.size(1):].cpu())
-            del resp_g, inp_g, attn_g
+            resp = generate_responses(
+                ref_model, tok, inp_g, attn_g,
+                max_new_tokens=args.max_response_length,
+                pad_id=pad_id,
+                temperature=args.temperature,
+                top_p=args.top_p,
+                fsdp_ok=ref_fsdp_ok,
+            )
+            epoch_resps.append(resp.cpu())
+            del resp, inp_g, attn_g
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
             if local_rank == 0 and (i <= 3 or i % 10 == 0 or i == pre_total):
