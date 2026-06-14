@@ -350,6 +350,16 @@ def train():
         tok.pad_token = tok.eos_token
     pad_id = tok.pad_token_id
 
+    # ── 数据 ────────────────────────────────────────────────────────────────
+    prompts = load_prompts(args.train_data)
+    dataset = PromptDataset(prompts, tok, args.max_prompt_length, args.max_response_length)
+    offline_response_mode = dataset.has_responses
+    if offline_response_mode:
+        log("[数据] 检测到完整 response/output 字段，跳过在线 rollout 预生成，使用数据集 response 做 PPO 样本")
+        log("[模型] 离线 response 模式：跳过常驻 ref_model；KL 使用 batch old-policy logprob，避免 policy+ref 双 27B 反向 OOM")
+    else:
+        log("[数据] 未检测到完整 response/output 字段，将使用在线 generate；27B+FSDP 下会非常慢")
+
     # ── Policy model（先加载到 CPU，再根据 FSDP/DataParallel 策略放 GPU）───
     log("[模型] 加载 policy (CPU)...")
     policy = AutoModelForCausalLM.from_pretrained(
@@ -402,6 +412,7 @@ def train():
                 ),
                 device_id=local_rank,
                 use_orig_params=True,
+                limit_all_gathers=True,
                 forward_prefetch=False,
                 backward_prefetch=BackwardPrefetch.BACKWARD_POST,
                 cpu_offload=_cpu_offload,
@@ -420,48 +431,54 @@ def train():
     else:
         policy = policy.to(device)
 
-    # ── Reference model（冻结；多卡时 FSDP 常驻 GPU，避免每批 CPU↔GPU 搬迁）────
-    # 27B bf16 约 54GiB；FULL_SHARD 后 4×A100 单卡约 13.5GiB。
-    # 预生成阶段直接在分片 ref_model 上 generate，不再每 batch .to(device)/.to("cpu")。
+    # ── Reference model（冻结；仅 prompt-only 在线 rollout 模式需要常驻）────
+    # 离线 response 数据已有样本响应，不需要 ref_model 生成；再常驻一份 27B
+    # 会让 3×A100 在反向 unshard 时 OOM。
     ref_fsdp_ok = False
-    log("[模型] 加载 ref_model (CPU -> FSDP/GPU if available)...")
-    ref_model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
-    )
-    ref_model.eval()
-    for p in ref_model.parameters():
-        p.requires_grad_(False)
-
-    if fsdp_ok:
-        ref_model = FSDP(
-            ref_model,
-            sharding_strategy=ShardingStrategy.FULL_SHARD,
-            auto_wrap_policy=_wrap_policy,
-            mixed_precision=MixedPrecision(
-                param_dtype=torch.bfloat16,
-                reduce_dtype=torch.bfloat16,
-                buffer_dtype=torch.bfloat16,
-            ),
-            device_id=local_rank,
-            use_orig_params=True,
-            forward_prefetch=False,
-            backward_prefetch=BackwardPrefetch.BACKWARD_POST,
-            cpu_offload=None,
+    ref_model = None
+    if offline_response_mode:
+        ref_place = "old-policy"
+    else:
+        log("[模型] 加载 ref_model (CPU -> FSDP/GPU if available)...")
+        ref_model = AutoModelForCausalLM.from_pretrained(
+            args.model_path, torch_dtype=torch.bfloat16, trust_remote_code=True,
         )
         ref_model.eval()
         for p in ref_model.parameters():
             p.requires_grad_(False)
-        ref_fsdp_ok = True
-        _mem_report("ref_model FSDP wrap done")
-        log("[模型] ref_model 已使用 FSDP FULL_SHARD 常驻 GPU")
-    elif n_gpu > 0 and total_params <= 10:
-        # 小模型/单卡 fallback：可直接常驻 GPU；大模型单卡仍保留 CPU，避免 OOM。
-        ref_model = ref_model.to(device)
-        _mem_report("ref_model .to(device) done")
-        log("[模型] ref_model 常驻单卡 GPU")
-    else:
-        _mem_report("ref_model loaded (CPU)")
-        log("[模型] ref_model 保持 CPU（无 FSDP 或模型过大）")
+
+        if fsdp_ok:
+            ref_model = FSDP(
+                ref_model,
+                sharding_strategy=ShardingStrategy.FULL_SHARD,
+                auto_wrap_policy=_wrap_policy,
+                mixed_precision=MixedPrecision(
+                    param_dtype=torch.bfloat16,
+                    reduce_dtype=torch.bfloat16,
+                    buffer_dtype=torch.bfloat16,
+                ),
+                device_id=local_rank,
+                use_orig_params=True,
+                limit_all_gathers=True,
+                forward_prefetch=False,
+                backward_prefetch=BackwardPrefetch.BACKWARD_POST,
+                cpu_offload=None,
+            )
+            ref_model.eval()
+            for p in ref_model.parameters():
+                p.requires_grad_(False)
+            ref_fsdp_ok = True
+            _mem_report("ref_model FSDP wrap done")
+            log("[模型] ref_model 已使用 FSDP FULL_SHARD 常驻 GPU")
+        elif n_gpu > 0 and total_params <= 10:
+            # 小模型/单卡 fallback：可直接常驻 GPU；大模型单卡仍保留 CPU，避免 OOM。
+            ref_model = ref_model.to(device)
+            _mem_report("ref_model .to(device) done")
+            log("[模型] ref_model 常驻单卡 GPU")
+        else:
+            _mem_report("ref_model loaded (CPU)")
+            log("[模型] ref_model 保持 CPU（无 FSDP 或模型过大）")
+        ref_place = "FSDP-GPU" if ref_fsdp_ok else ("GPU" if n_gpu > 0 and total_params <= 10 else "CPU")
 
     # ── Reward model（可选）───────────────────────────────────────────────────
     reward_model = None
@@ -485,16 +502,8 @@ def train():
         else:
             log(f"[奖励模型] 路径不存在: {args.reward_model_path}，使用纯规则奖励")
 
-    ref_place = "FSDP-GPU" if ref_fsdp_ok else ("GPU" if n_gpu > 0 and total_params <= 10 else "CPU")
     log(f"[模型] 训练就绪 | {n_gpu} GPU | FSDP={fsdp_ok} | learned_reward={use_learned_reward} | ref={ref_place}")
 
-    # ── 数据 ────────────────────────────────────────────────────────────────
-    prompts = load_prompts(args.train_data)
-    dataset = PromptDataset(prompts, tok, args.max_prompt_length, args.max_response_length)
-    if dataset.has_responses:
-        log("[数据] 检测到完整 response/output 字段，跳过在线 rollout 预生成，使用数据集 response 做 PPO 样本")
-    else:
-        log("[数据] 未检测到完整 response/output 字段，将使用在线 generate；27B+FSDP 下会非常慢")
     sampler = DistributedSampler(dataset) if n_gpu > 1 else None
     loader  = DataLoader(
         dataset,
@@ -625,7 +634,9 @@ def train():
 
                 # Old log-probs + ref log-probs（ref 多卡时常驻 FSDP/GPU；CPU fallback 时走 CPU）
                 old_lp = sequence_log_prob(policy, inp, attn, resp, resp_mask).detach()
-                if ref_fsdp_ok or (n_gpu > 0 and total_params <= 10):
+                if ref_model is None:
+                    ref_lp = old_lp
+                elif ref_fsdp_ok or (n_gpu > 0 and total_params <= 10):
                     ref_lp = sequence_log_prob(ref_model, inp, attn, resp, resp_mask).detach()
                 else:
                     ref_lp = sequence_log_prob(
