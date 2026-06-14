@@ -95,6 +95,26 @@ def parse_args():
 
 # ── 数据 ──────────────────────────────────────────────────────────────────────
 
+def _row_response(row: dict) -> str | None:
+    if "messages" in row:
+        parts = [m.get("content", "") for m in row["messages"] if m.get("role") == "assistant"]
+        if parts:
+            return "\n\n".join(p for p in parts if p).strip() or None
+    for key in ("output", "response", "chosen"):
+        val = row.get(key)
+        if val:
+            return str(val).strip()
+    answer = row.get("answer")
+    solution = row.get("solution")
+    if answer and solution:
+        return f"答案：{answer}\n\n解答：{solution}".strip()
+    if solution:
+        return str(solution).strip()
+    if answer:
+        return f"答案：{answer}".strip()
+    return None
+
+
 def load_prompts(path: str) -> list:
     if path.endswith(".parquet"):
         import pandas as pd
@@ -105,42 +125,61 @@ def load_prompts(path: str) -> list:
         rows = json.loads(raw) if raw.startswith("[") else [
             json.loads(line) for line in raw.splitlines() if line.strip()
         ]
-    prompts = []
+    samples = []
     for row in rows:
         if "messages" in row:
-            prompts.append([m for m in row["messages"] if m["role"] in ("system", "user")])
+            messages = [m for m in row["messages"] if m["role"] in ("system", "user")]
         elif "instruction" in row:
-            prompts.append([
+            messages = [
                 {"role": "system", "content": "你是一位数学解题专家。请逐步推理并解答以下问题。"},
                 {"role": "user",   "content": row["instruction"]},
-            ])
+            ]
         elif "question" in row:
-            prompts.append([
+            messages = [
                 {"role": "system", "content": "你是一位数学解题专家。请逐步推理并解答以下问题。"},
                 {"role": "user",   "content": row["question"]},
-            ])
+            ]
         elif "prompt" in row:
-            prompts.append([{"role": "user", "content": row["prompt"]}])
-    assert prompts, f"数据集为空: {path}"
-    log(f"[数据] 从 {path} 加载 {len(prompts)} 条 prompts")
-    return prompts
+            messages = [{"role": "user", "content": row["prompt"]}]
+        else:
+            continue
+        samples.append({"messages": messages, "response": _row_response(row)})
+    assert samples, f"数据集为空: {path}"
+    response_count = sum(1 for s in samples if s.get("response"))
+    if 0 < response_count < len(samples):
+        dropped = len(samples) - response_count
+        samples = [s for s in samples if s.get("response")]
+        log(f"[数据] 丢弃 {dropped} 条无 response/output 的样本，避免退回慢速在线 rollout")
+    log(f"[数据] 从 {path} 加载 {len(samples)} 条 prompts | dataset_response={response_count}/{len(samples)}")
+    return samples
 
 
 class PromptDataset(Dataset):
-    def __init__(self, prompts, tok, max_len):
+    def __init__(self, prompts, tok, max_len, max_response_len):
         self.prompts = prompts
         self.tok = tok
         self.max_len = max_len
+        self.max_response_len = max_response_len
+        self.has_responses = all(bool(p.get("response")) for p in prompts)
 
     def __len__(self):
         return len(self.prompts)
 
     def __getitem__(self, i):
         text = self.tok.apply_chat_template(
-            self.prompts[i], tokenize=False, add_generation_prompt=True
+            self.prompts[i]["messages"], tokenize=False, add_generation_prompt=True
         )
         enc = self.tok(text, return_tensors="pt", max_length=self.max_len, truncation=True)
-        return {"input_ids": enc["input_ids"][0], "attention_mask": enc["attention_mask"][0]}
+        item = {"input_ids": enc["input_ids"][0], "attention_mask": enc["attention_mask"][0]}
+        response = self.prompts[i].get("response")
+        if response:
+            resp_enc = self.tok(
+                response, return_tensors="pt",
+                max_length=self.max_response_len, truncation=True,
+            )
+            item["response_ids"] = resp_enc["input_ids"][0]
+            item["response_mask"] = resp_enc["attention_mask"][0]
+        return item
 
 
 def collate_prompts(batch, pad_id):
@@ -151,7 +190,18 @@ def collate_prompts(batch, pad_id):
         pad = max_len - n
         ids.append(F.pad(b["input_ids"],      (0, pad), value=pad_id))
         attn.append(F.pad(b["attention_mask"], (0, pad), value=0))
-    return {"input_ids": torch.stack(ids), "attention_mask": torch.stack(attn)}
+    out = {"input_ids": torch.stack(ids), "attention_mask": torch.stack(attn)}
+    if all("response_ids" in b for b in batch):
+        max_resp = max(b["response_ids"].size(0) for b in batch)
+        resp_ids, resp_mask = [], []
+        for b in batch:
+            n = b["response_ids"].size(0)
+            pad = max_resp - n
+            resp_ids.append(F.pad(b["response_ids"], (0, pad), value=pad_id))
+            resp_mask.append(F.pad(b["response_mask"], (0, pad), value=0))
+        out["response_ids"] = torch.stack(resp_ids)
+        out["response_mask"] = torch.stack(resp_mask)
+    return out
 
 
 # ── 奖励 ──────────────────────────────────────────────────────────────────────
@@ -191,14 +241,17 @@ def call_reward_api(api_url: str, prompt: str, response: str, timeout: float = 3
 
 # ── 模型工具 ──────────────────────────────────────────────────────────────────
 
-def sequence_log_prob(model, inp, attn, resp):
+def sequence_log_prob(model, inp, attn, resp, resp_mask=None):
     prompt_len = inp.size(1)
     full_ids  = torch.cat([inp, resp], dim=1)
-    full_attn = torch.cat([attn, torch.ones_like(resp)], dim=1)
+    if resp_mask is None:
+        resp_mask = torch.ones_like(resp)
+    full_attn = torch.cat([attn, resp_mask], dim=1)
     out       = model(full_ids, attention_mask=full_attn)
     logits    = out.logits[:, prompt_len - 1 : -1, :]
     lp        = F.log_softmax(logits.float(), dim=-1)
-    return lp.gather(2, resp.unsqueeze(2)).squeeze(2).sum(1)
+    token_lp  = lp.gather(2, resp.unsqueeze(2)).squeeze(2)
+    return (token_lp * resp_mask.to(token_lp.dtype)).sum(1)
 
 
 @torch.no_grad()
@@ -216,6 +269,8 @@ def generate_responses(model, tok, inp, attn, max_new_tokens, pad_id, temperatur
                 inp, attention_mask=attn,
                 max_new_tokens=max_new_tokens,
                 do_sample=True, temperature=temperature, top_p=top_p,
+                use_cache=True,
+                eos_token_id=tok.eos_token_id,
                 pad_token_id=pad_id,
             )
     else:
@@ -223,6 +278,8 @@ def generate_responses(model, tok, inp, attn, max_new_tokens, pad_id, temperatur
             inp, attention_mask=attn,
             max_new_tokens=max_new_tokens,
             do_sample=True, temperature=temperature, top_p=top_p,
+            use_cache=True,
+            eos_token_id=tok.eos_token_id,
             pad_token_id=pad_id,
         )
     return out[:, inp.size(1):]
@@ -433,7 +490,11 @@ def train():
 
     # ── 数据 ────────────────────────────────────────────────────────────────
     prompts = load_prompts(args.train_data)
-    dataset = PromptDataset(prompts, tok, args.max_prompt_length)
+    dataset = PromptDataset(prompts, tok, args.max_prompt_length, args.max_response_length)
+    if dataset.has_responses:
+        log("[数据] 检测到完整 response/output 字段，跳过在线 rollout 预生成，使用数据集 response 做 PPO 样本")
+    else:
+        log("[数据] 未检测到完整 response/output 字段，将使用在线 generate；27B+FSDP 下会非常慢")
     sampler = DistributedSampler(dataset) if n_gpu > 1 else None
     loader  = DataLoader(
         dataset,
@@ -480,43 +541,50 @@ def train():
         if sampler:
             sampler.set_epoch(epoch + args.retry_seed)
 
-        # ── 0. 预生成全部 responses ─────────────────────────────────────────
-        # 使用常驻 ref_model 生成：多卡 FSDP 分片常驻 GPU，避免每批 54GiB CPU↔GPU 搬迁。
-        # generate() 需要临时召回 root embedding/lm_head，否则 HF 会绕过 FSDP
-        # wrapper hook，导致 embedding weight 仍是 1-D FlatParameter。
-        epoch_resps = []
-        pre_total = len(loader)
-        if local_rank == 0:
-            log(f"[预生成] Epoch {epoch}: 使用 ref_model({ref_place}) 生成 responses ({pre_total} 批)...")
-        pre_t0 = time.time()
-        for i, pre_batch in enumerate(loader, 1):
-            inp_g = pre_batch["input_ids"].to(device)
-            attn_g = pre_batch["attention_mask"].to(device)
-            resp = generate_responses(
-                ref_model, tok, inp_g, attn_g,
-                max_new_tokens=args.max_response_length,
-                pad_id=pad_id,
-                temperature=args.temperature,
-                top_p=args.top_p,
-                fsdp_ok=ref_fsdp_ok,
-            )
-            epoch_resps.append(resp.cpu())
-            del resp, inp_g, attn_g
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            if local_rank == 0 and (i <= 3 or i % 10 == 0 or i == pre_total):
-                elapsed = time.time() - pre_t0
-                eta = elapsed / i * (pre_total - i)
-                log(f"[预生成] {i}/{pre_total} | 耗时={elapsed:.0f}s | ETA={eta:.0f}s | {elapsed/i:.1f}s/batch")
-        if local_rank == 0:
-            _mem_report(f"pre-gen epoch {epoch} done")
-            log(f"[预生成] Epoch {epoch}: {len(epoch_resps)} 批完成 ({time.time()-pre_t0:.0f}s)")
+        # ── 0. 预生成全部 responses（仅 prompt-only 数据需要）───────────────
+        epoch_resps = None
+        if not dataset.has_responses:
+            # 使用常驻 ref_model 生成：多卡 FSDP 分片常驻 GPU，避免每批 54GiB CPU↔GPU 搬迁。
+            # generate() 需要临时召回 root embedding/lm_head，否则 HF 会绕过 FSDP
+            # wrapper hook，导致 embedding weight 仍是 1-D FlatParameter。
+            epoch_resps = []
+            pre_total = len(loader)
+            if local_rank == 0:
+                log(f"[预生成] Epoch {epoch}: 使用 ref_model({ref_place}) 生成 responses ({pre_total} 批)...")
+            pre_t0 = time.time()
+            for i, pre_batch in enumerate(loader, 1):
+                inp_g = pre_batch["input_ids"].to(device)
+                attn_g = pre_batch["attention_mask"].to(device)
+                resp = generate_responses(
+                    ref_model, tok, inp_g, attn_g,
+                    max_new_tokens=args.max_response_length,
+                    pad_id=pad_id,
+                    temperature=args.temperature,
+                    top_p=args.top_p,
+                    fsdp_ok=ref_fsdp_ok,
+                )
+                epoch_resps.append(resp.cpu())
+                del resp, inp_g, attn_g
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                if local_rank == 0 and (i <= 3 or i % 10 == 0 or i == pre_total):
+                    elapsed = time.time() - pre_t0
+                    eta = elapsed / i * (pre_total - i)
+                    log(f"[预生成] {i}/{pre_total} | 耗时={elapsed:.0f}s | ETA={eta:.0f}s | {elapsed/i:.1f}s/batch")
+            if local_rank == 0:
+                _mem_report(f"pre-gen epoch {epoch} done")
+                log(f"[预生成] Epoch {epoch}: {len(epoch_resps)} 批完成 ({time.time()-pre_t0:.0f}s)")
 
-        for step, (batch, resp_cpu) in enumerate(zip(loader, epoch_resps), 1):
+        for step, batch in enumerate(loader, 1):
             t0 = time.time()
             inp  = batch["input_ids"].to(device)
             attn = batch["attention_mask"].to(device)
-            resp = resp_cpu.to(device)
+            if dataset.has_responses:
+                resp = batch["response_ids"].to(device)
+                resp_mask = batch["response_mask"].to(device)
+            else:
+                resp = epoch_resps[step - 1].to(device)
+                resp_mask = None
             B    = inp.size(0)
 
             # ── 1. 计算奖励 & log-probs ────────────────────────────────────
@@ -556,16 +624,17 @@ def train():
                     rewards = rule_rewards
 
                 # Old log-probs + ref log-probs（ref 多卡时常驻 FSDP/GPU；CPU fallback 时走 CPU）
-                old_lp = sequence_log_prob(policy, inp, attn, resp).detach()
+                old_lp = sequence_log_prob(policy, inp, attn, resp, resp_mask).detach()
                 if ref_fsdp_ok or (n_gpu > 0 and total_params <= 10):
-                    ref_lp = sequence_log_prob(ref_model, inp, attn, resp).detach()
+                    ref_lp = sequence_log_prob(ref_model, inp, attn, resp, resp_mask).detach()
                 else:
                     ref_lp = sequence_log_prob(
-                        ref_model, inp.cpu(), attn.cpu(), resp.cpu()
+                        ref_model, inp.cpu(), attn.cpu(), resp.cpu(),
+                        resp_mask.cpu() if resp_mask is not None else None,
                     ).detach().to(device)
 
             # ── 2. PPO loss ─────────────────────────────────────────────────
-            new_lp = sequence_log_prob(policy, inp, attn, resp)
+            new_lp = sequence_log_prob(policy, inp, attn, resp, resp_mask)
             ratio  = (new_lp - old_lp).exp()
             kl     = new_lp - ref_lp
 
