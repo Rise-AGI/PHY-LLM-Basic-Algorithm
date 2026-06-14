@@ -28,6 +28,7 @@ import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 from torch.optim import AdamW
+from torch import nn
 from torch.utils.data import DataLoader, Dataset, DistributedSampler
 from transformers import (
     AutoModelForCausalLM,
@@ -42,6 +43,19 @@ def log(msg: str) -> None:
 
 
 MAGNUS_METRICS_DIR = os.environ.get("MAGNUS_METRICS_DIR", "/magnus/workspace/metrics")
+
+# zhustation A100 PCIe topology can hang during large NCCL P2P all-gathers.
+# Match the stable SFT path: force NCCL through host shared memory.
+os.environ["NCCL_P2P_DISABLE"] = "1"
+os.environ.setdefault("NCCL_IB_DISABLE", "1")
+os.environ.setdefault("NCCL_SOCKET_IFNAME", "^docker,lo,virbr")
+os.environ.setdefault("NCCL_ALGO", "Ring")
+os.environ.setdefault("NCCL_PROTO", "Simple")
+os.environ.setdefault("NCCL_MIN_NCHANNELS", "2")
+os.environ.setdefault("NCCL_SOCKET_NTHREADS", "4")
+os.environ.setdefault("NCCL_NTHREADS", "512")
+os.environ.setdefault("NCCL_BUFFSIZE", "4194304")
+os.environ.setdefault("NCCL_NCHANNELS_PER_PEER", "8")
 
 
 def _write_metric(name: str, value: float, step: int, step_domain: str = "optimizer"):
@@ -58,6 +72,42 @@ def _write_metric(name: str, value: float, step: int, step_domain: str = "optimi
     os.makedirs(MAGNUS_METRICS_DIR, exist_ok=True)
     with open(os.path.join(MAGNUS_METRICS_DIR, "rank0.jsonl"), "a", encoding="utf-8") as f:
         f.write(json.dumps(rec) + "\n")
+
+
+def build_fsdp_wrap_policy(model, log_prefix: str = "[FSDP]"):
+    from functools import partial as _partial
+    from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy, transformer_auto_wrap_policy
+
+    layer_cls = None
+    for name, module in model.named_modules():
+        class_name = type(module).__name__
+        if "Decoder" in class_name and "Layer" in class_name:
+            layer_cls = type(module)
+            log(f"{log_prefix} transformer layer: {class_name} (from {name})")
+            break
+    if layer_cls is None:
+        log(f"{log_prefix} 未检测到 DecoderLayer，仅使用 size-based wrap")
+
+    transformer_policy = (
+        _partial(transformer_auto_wrap_policy, transformer_layer_cls={layer_cls})
+        if layer_cls
+        else None
+    )
+    size_policy = _partial(size_based_auto_wrap_policy, min_num_params=100_000_000)
+
+    def policy(module: nn.Module, recurse: bool, nonwrapped_numel: int) -> bool:
+        if recurse:
+            return True
+        if transformer_policy and transformer_policy(
+            module=module,
+            recurse=False,
+            nonwrapped_numel=nonwrapped_numel,
+        ):
+            return True
+        return size_policy(module=module, recurse=False, nonwrapped_numel=nonwrapped_numel)
+
+    log(f"{log_prefix} auto-wrap: transformer layers + size_based(min_num_params=100M)")
+    return policy
 
 
 # ── 命令行参数 ────────────────────────────────────────────────────────────────
@@ -415,20 +465,7 @@ def train():
             from torch.distributed.fsdp import (
                 ShardingStrategy, MixedPrecision, BackwardPrefetch, CPUOffload,
             )
-            from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
-            from functools import partial as _partial
-
-            _layer_cls = None
-            for _name, _mod in policy.named_modules():
-                _cn = type(_mod).__name__
-                if 'Decoder' in _cn and 'Layer' in _cn:
-                    _layer_cls = type(_mod)
-                    log(f"[FSDP] transformer layer: {_cn}")
-                    break
-            if _layer_cls is None:
-                log("[FSDP] 未检测到 DecoderLayer，使用默认 wrap policy")
-
-            _wrap_policy = _partial(transformer_auto_wrap_policy, transformer_layer_cls={_layer_cls}) if _layer_cls else None
+            _wrap_policy = build_fsdp_wrap_policy(policy)
             _cpu_offload = CPUOffload(offload_params=True) if _fsdp_cpu_offload else None
             policy = FSDP(
                 policy,

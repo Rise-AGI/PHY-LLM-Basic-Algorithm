@@ -25,9 +25,16 @@ def setup_environment() -> None:
         "TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC": "600",
         "NCCL_DEBUG": "WARN",
         "TORCH_NCCL_AVOID_RECORD_STREAMS": "1",
+        "NCCL_P2P_DISABLE": "1",
         "NCCL_IB_DISABLE": "1",
+        "NCCL_SOCKET_IFNAME": "^docker,lo,virbr",
         "NCCL_ALGO": "Ring",
         "NCCL_PROTO": "Simple",
+        "NCCL_MIN_NCHANNELS": "2",
+        "NCCL_SOCKET_NTHREADS": "4",
+        "NCCL_NTHREADS": "512",
+        "NCCL_BUFFSIZE": "4194304",
+        "NCCL_NCHANNELS_PER_PEER": "8",
     }
     for key, value in defaults.items():
         os.environ.setdefault(key, value)
