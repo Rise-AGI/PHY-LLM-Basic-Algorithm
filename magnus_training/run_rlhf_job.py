@@ -32,13 +32,18 @@ ESTIMATOR_BY_ALGORITHM = {
     "rloo": "rloo",
 }
 VLLM_TEXT_ONLY_PATCH = r'''
-"""Runtime patch for text-only Qwen checkpoints under OpenRLHF + vLLM.
+"""Runtime patches for OpenRLHF + vLLM jobs on Magnus.
 
 OpenRLHF creates vLLM AsyncEngineArgs internally and does not expose newer
 vLLM multimodal/text-only switches.  vLLM 0.22 may classify Qwen3.5/Qwen3.6
 text checkpoints through the Qwen3-VL renderer path and then fail when the
 HF config is Qwen3_5TextConfig.  The PPO payload is text-only, so force vLLM
 to skip multimodal processors for those rollout engines.
+
+OpenRLHF also calls ray.init() internally without exposing Ray startup options.
+On Apptainer/Magnus nodes Ray dashboard startup can fail and delay local node
+registration until ray.init() times out.  Disable the dashboard for training
+jobs; OpenRLHF does not need it.
 """
 
 from __future__ import annotations
@@ -52,6 +57,33 @@ def _enabled() -> bool:
         "false",
         "no",
     }
+
+
+def _patch_ray_init() -> None:
+    if os.environ.get("OPENRLHF_RAY_PATCH", "1").lower() in {"0", "false", "no"}:
+        return
+    try:
+        import ray
+
+        if getattr(ray.init, "_openrlhf_magnus_patched", False):
+            return
+        _original_ray_init = ray.init
+
+        def _init_without_dashboard(*args, **kwargs):
+            kwargs.setdefault("include_dashboard", False)
+            kwargs.setdefault("dashboard_host", "127.0.0.1")
+            kwargs.setdefault("ignore_reinit_error", True)
+            temp_dir = os.environ.get("OPENRLHF_RAY_TEMP_DIR")
+            if temp_dir:
+                kwargs.setdefault("_temp_dir", temp_dir)
+            return _original_ray_init(*args, **kwargs)
+
+        _init_without_dashboard._openrlhf_magnus_patched = True
+        _init_without_dashboard._openrlhf_original = _original_ray_init
+        ray.init = _init_without_dashboard
+        print("[openrlhf-ray-patch] ray.init dashboard disabled", flush=True)
+    except Exception as exc:
+        print(f"[openrlhf-ray-patch] failed to patch ray.init: {exc}", flush=True)
 
 
 if _enabled():
@@ -102,6 +134,8 @@ if _enabled():
         print("[openrlhf-vllm-patch] text-only vLLM patch enabled", flush=True)
     except Exception as exc:
         print(f"[openrlhf-vllm-patch] failed to enable patch: {exc}", flush=True)
+
+_patch_ray_init()
 '''
 
 
@@ -165,6 +199,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--vllm_enforce_eager", action="store_true")
     p.add_argument("--vllm_text_only_patch", dest="vllm_text_only_patch", action="store_true", default=True)
     p.add_argument("--no_vllm_text_only_patch", dest="vllm_text_only_patch", action="store_false")
+    p.add_argument("--ray_dashboard", dest="ray_dashboard", action="store_true")
+    p.add_argument("--no_ray_dashboard", dest="ray_dashboard", action="store_false")
+    p.set_defaults(ray_dashboard=False)
 
     p.add_argument("--colocate_all", action="store_true")
     p.add_argument("--ds_enable_sleep", action="store_true")
@@ -246,6 +283,20 @@ def install_vllm_text_only_patch(enabled: bool) -> None:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
     log(f"Installed vLLM text-only patch via PYTHONPATH: {patch_dir}")
+
+
+def configure_ray_environment(enable_dashboard: bool) -> None:
+    job_id = os.environ.get("MAGNUS_JOB_ID") or "local"
+    ray_tmp = Path("/tmp") / f"ray-openrlhf-{job_id}"
+    ray_tmp.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault("RAY_USAGE_STATS_ENABLED", "0")
+    os.environ.setdefault("RAY_DEDUP_LOGS", "0")
+    os.environ["OPENRLHF_RAY_PATCH"] = "0" if enable_dashboard else "1"
+    os.environ["OPENRLHF_RAY_TEMP_DIR"] = str(ray_tmp)
+    if enable_dashboard:
+        log("Ray dashboard left enabled")
+    else:
+        log(f"Ray dashboard disabled; temp dir: {ray_tmp}")
 
 
 def build_openrlhf_command(args: argparse.Namespace, model_path: str, train_data: str) -> list[str]:
@@ -361,6 +412,7 @@ def build_openrlhf_command(args: argparse.Namespace, model_path: str, train_data
 def maybe_start_ray(gpu_count: int) -> None:
     log("Starting local Ray head")
     subprocess.run(["ray", "stop", "--force"], check=False)
+    ray_tmp = os.environ.get("OPENRLHF_RAY_TEMP_DIR", "/tmp/ray-openrlhf-local")
     subprocess.run(
         [
             "ray",
@@ -368,8 +420,9 @@ def maybe_start_ray(gpu_count: int) -> None:
             "--head",
             "--node-ip-address",
             "127.0.0.1",
-            "--dashboard-host",
-            "127.0.0.1",
+            "--include-dashboard=false",
+            "--temp-dir",
+            ray_tmp,
             "--num-gpus",
             str(gpu_count),
             "--disable-usage-stats",
@@ -384,6 +437,7 @@ def main() -> int:
     os.environ.setdefault("RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES", "1")
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    configure_ray_environment(args.ray_dashboard)
     install_vllm_text_only_patch(args.vllm_text_only_patch)
     ensure_runtime_dependencies()
 
