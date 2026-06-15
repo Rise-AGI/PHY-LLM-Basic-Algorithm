@@ -1,128 +1,305 @@
 from __future__ import annotations
 
 import argparse
+import importlib
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 from common_runtime import (
-    add_bool,
-    add_flag,
-    ensure_dependencies,
-    launcher,
     log,
-    make_fake_rlhf_data,
     receive_file_secret,
     receive_resume_checkpoint,
     resolve_model_path,
-    run_training,
     runtime_dir,
     setup_environment,
+    verified_gpu_count,
     write_result,
 )
+from prepare_openrlhf_data import convert as convert_prompt_data
 
 
-SCRIPT_BY_ALGO = {
-    "grpo": "grpo_train.py",
-    "ppo": "ppo_train.py",
-    "dpo": "dpo_train.py",
-    "orpo": "orpo_train.py",
+DEFAULT_IMAGE_NOTE = "OpenRLHF/vLLM runtime expects docker tag sft-base:v5 or newer."
+ONLINE_ALGORITHMS = {"ppo", "reinforce", "reinforce_baseline", "grpo", "dr_grpo", "rloo"}
+ESTIMATOR_BY_ALGORITHM = {
+    "ppo": "gae",
+    "reinforce": "reinforce",
+    "reinforce_baseline": "reinforce_baseline",
+    "grpo": "group_norm",
+    "dr_grpo": "dr_grpo",
+    "rloo": "rloo",
 }
 
 
-def parse_args():
-    p = argparse.ArgumentParser(description="Magnus RLHF runtime wrapper")
-    p.add_argument("--algorithm", choices=sorted(SCRIPT_BY_ALGO), required=True)
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="Magnus OpenRLHF/vLLM runtime wrapper")
+    p.add_argument("--algorithm", choices=sorted(ONLINE_ALGORITHMS), required=True)
     p.add_argument("--model_path", required=True)
-    p.add_argument("--reward_model_path")
     p.add_argument("--train_data")
     p.add_argument("--train_data_secret")
     p.add_argument("--train_data_secret_name", default="uploaded_rlhf_train.json")
+    p.add_argument("--reward_model_path")
+    p.add_argument("--reward_api_url")
     p.add_argument("--output_dir", required=True)
+    p.add_argument("--resume_from")
+
     p.add_argument("--epochs", type=int, default=1)
+    p.add_argument("--num_episodes", type=int, default=1)
     p.add_argument("--batch_size", type=int, default=1)
-    p.add_argument("--grad_accum", type=int, default=4)
+    p.add_argument("--train_batch_size", type=int)
+    p.add_argument("--rollout_batch_size", type=int)
+    p.add_argument("--rollout_micro_batch_size", type=int)
     p.add_argument("--learning_rate", type=float, default=5e-7)
+    p.add_argument("--critic_learning_rate", type=float, default=5e-6)
     p.add_argument("--max_prompt_length", type=int, default=512)
-    p.add_argument("--max_response_length", type=int, default=512)
+    p.add_argument("--max_response_length", type=int, default=256)
     p.add_argument("--temperature", type=float, default=0.8)
     p.add_argument("--top_p", type=float, default=0.95)
     p.add_argument("--num_workers", type=int, default=2)
+    p.add_argument("--max_samples", type=int)
+
     p.add_argument("--group_size", type=int, default=8)
-    p.add_argument("--grpo_kl_coef", type=float, default=0.04)
-    p.add_argument("--grpo_clip_range", type=float, default=0.2)
-    p.add_argument("--ppo_kl_coef", type=float, default=0.1)
-    p.add_argument("--ppo_clip_range", type=float, default=0.2)
-    p.add_argument("--reward_ratio", type=float, default=0.3)
-    p.add_argument("--value_coef", type=float, default=0.5)
-    p.add_argument("--dpo_beta", type=float, default=0.1)
-    p.add_argument("--dpo_loss_type", choices=["sigmoid", "hinge", "ipo"], default="sigmoid")
-    p.add_argument("--orpo_lambda", type=float, default=0.1)
-    p.add_argument("--reward_api_url")
-    p.add_argument("--resume_from")
-    p.add_argument("--cpu_offload", action="store_true")
-    p.add_argument("--use_8bit_adam", action="store_true")
+    p.add_argument("--kl_coef", type=float, default=0.02)
+    p.add_argument("--kl_target", type=float)
+    p.add_argument("--clip_range", type=float, default=0.2)
+    p.add_argument("--value_clip", type=float, default=0.5)
+    p.add_argument("--gae_lambda", type=float, default=0.95)
+    p.add_argument("--gamma", type=float, default=1.0)
+    p.add_argument("--normalize_reward", action="store_true")
+    p.add_argument("--reward_clip_min", type=float, default=-5.0)
+    p.add_argument("--reward_clip_max", type=float, default=5.0)
+
+    p.add_argument("--zero_stage", type=int, default=3)
+    p.add_argument("--bf16", action="store_true", default=True)
+    p.add_argument("--flash_attn", action="store_true", default=True)
+    p.add_argument("--packing_samples", action="store_true")
+    p.add_argument("--gradient_checkpointing", action="store_true", default=True)
+    p.add_argument("--adam_offload", action="store_true")
+    p.add_argument("--ref_offload", action="store_true")
+    p.add_argument("--disable_fast_tokenizer", action="store_true")
+    p.add_argument("--save_steps", type=int, default=-1)
+    p.add_argument("--logging_steps", type=int, default=1)
+    p.add_argument("--train_max_tokens_per_gpu", type=int)
+    p.add_argument("--rollout_max_tokens_per_gpu", type=int)
+
+    p.add_argument("--vllm_num_engines", type=int, default=2)
+    p.add_argument("--vllm_tensor_parallel_size", type=int, default=2)
+    p.add_argument("--vllm_generate_batch_size", type=int)
+    p.add_argument("--vllm_gpu_memory_utilization", type=float, default=0.45)
+    p.add_argument("--vllm_sync_backend", default="nccl")
+    p.add_argument("--vllm_enable_sleep", action="store_true", default=True)
+    p.add_argument("--vllm_enforce_eager", action="store_true")
+
+    p.add_argument("--colocate_all", action="store_true")
+    p.add_argument("--ds_enable_sleep", action="store_true")
+    p.add_argument("--openrlhf_cli_style", choices=["v5"], default="v5")
+    p.add_argument("--ray_start", action="store_true")
     return p.parse_args()
+
+
+def ensure_runtime_dependencies() -> None:
+    missing = []
+    for module in ("torch", "ray", "vllm", "deepspeed", "openrlhf"):
+        try:
+            importlib.import_module(module)
+        except Exception as exc:
+            missing.append(f"{module} ({exc})")
+    if missing:
+        raise RuntimeError(
+            "Missing RLHF runtime dependencies: "
+            + "; ".join(missing)
+            + ". "
+            + DEFAULT_IMAGE_NOTE
+        )
+    log("OpenRLHF/vLLM dependencies ready")
+
+
+def add_flag(command: list[str], name: str, value) -> None:
+    if value is None:
+        return
+    command.extend([name, str(value)])
+
+
+def add_bool(command: list[str], name: str, enabled: bool) -> None:
+    if enabled:
+        command.append(name)
+
+
+def prepare_train_data(args: argparse.Namespace) -> str:
+    uploaded = receive_file_secret(
+        args.train_data_secret,
+        args.train_data_secret_name,
+        "uploaded_rlhf_train.json",
+    )
+    source = uploaded or args.train_data
+    if not source:
+        raise ValueError("train_data or train_data_secret is required for OpenRLHF online RL")
+    source_path = Path(source)
+    if not source_path.exists():
+        raise FileNotFoundError(f"Training data does not exist: {source}")
+    out = Path("/tmp/openrlhf_prompt_data.jsonl")
+    count = convert_prompt_data(source_path, out, args.max_samples)
+    log(f"Prepared OpenRLHF prompt data: {count} rows -> {out}")
+    return str(out)
+
+
+def build_openrlhf_command(args: argparse.Namespace, model_path: str, train_data: str) -> list[str]:
+    gpu_count = verified_gpu_count()
+    if gpu_count <= 0:
+        raise RuntimeError("OpenRLHF/vLLM training requires CUDA GPUs")
+    vllm_gpu_slots = args.vllm_num_engines * args.vllm_tensor_parallel_size
+    if vllm_gpu_slots > gpu_count:
+        raise ValueError(
+            "vllm_num_engines * vllm_tensor_parallel_size must be <= visible GPU count "
+            f"({args.vllm_num_engines} * {args.vllm_tensor_parallel_size} > {gpu_count})"
+        )
+    if args.colocate_all and vllm_gpu_slots != gpu_count:
+        raise ValueError(
+            "OpenRLHF v5 requires vllm_num_engines * vllm_tensor_parallel_size == gpu_count "
+            f"when colocate_all is enabled ({vllm_gpu_slots} != {gpu_count})"
+        )
+
+    output = Path(args.output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    ckpt_path = output / "ckpt"
+    reward_url = args.reward_api_url or str(runtime_dir() / "reward_func.py")
+    effective_train_batch = args.train_batch_size or max(1, args.batch_size * gpu_count * max(1, args.group_size))
+    rollout_batch = args.rollout_batch_size or effective_train_batch
+    rollout_micro_batch = args.rollout_micro_batch_size or max(1, args.batch_size * gpu_count)
+    samples_per_prompt = 1 if args.algorithm == "ppo" else max(2, args.group_size)
+    estimator = ESTIMATOR_BY_ALGORITHM[args.algorithm]
+    max_total_len = int(args.max_prompt_length) + int(args.max_response_length)
+    vllm_generate_batch = args.vllm_generate_batch_size or rollout_batch
+
+    command = [sys.executable, "-m", "openrlhf.cli.train_ppo_ray"]
+    add_flag(command, "--ref.num_nodes", 1)
+    add_flag(command, "--ref.num_gpus_per_node", gpu_count)
+    add_flag(command, "--actor.num_nodes", 1)
+    add_flag(command, "--actor.num_gpus_per_node", gpu_count)
+    add_flag(command, "--vllm.num_engines", args.vllm_num_engines)
+    add_flag(command, "--vllm.tensor_parallel_size", args.vllm_tensor_parallel_size)
+    add_flag(command, "--vllm.sync_backend", args.vllm_sync_backend)
+    add_flag(command, "--vllm.gpu_memory_utilization", args.vllm_gpu_memory_utilization)
+    add_flag(command, "--actor.model_name_or_path", model_path)
+    add_flag(command, "--ckpt.output_dir", str(output))
+    add_flag(command, "--ckpt.path", str(ckpt_path))
+    add_flag(command, "--data.prompt_dataset", train_data)
+    add_flag(command, "--data.prompt_split", "train")
+    add_flag(command, "--data.input_key", "prompt")
+    add_flag(command, "--data.label_key", "answer")
+    add_flag(command, "--data.max_len", max_total_len)
+    add_flag(command, "--rollout.max_new_tokens", args.max_response_length)
+    add_flag(command, "--rollout.temperature", args.temperature)
+    add_flag(command, "--rollout.top_p", args.top_p)
+    add_flag(command, "--train.max_epochs", args.epochs)
+    add_flag(command, "--train.num_episodes", args.num_episodes)
+    add_flag(command, "--train.batch_size", effective_train_batch)
+    add_flag(command, "--train.micro_batch_size", max(1, args.batch_size))
+    add_flag(command, "--rollout.batch_size", rollout_batch)
+    add_flag(command, "--rollout.micro_batch_size", rollout_micro_batch)
+    add_flag(command, "--rollout.vllm_generate_batch_size", vllm_generate_batch)
+    add_flag(command, "--rollout.n_samples_per_prompt", samples_per_prompt)
+    add_flag(command, "--actor.adam.lr", args.learning_rate)
+    add_flag(command, "--critic.adam.lr", args.critic_learning_rate)
+    add_flag(command, "--algo.kl.init_coef", args.kl_coef)
+    add_flag(command, "--algo.kl.target", args.kl_target)
+    add_flag(command, "--actor.eps_clip", args.clip_range)
+    add_flag(command, "--critic.value_clip", args.value_clip)
+    add_flag(command, "--algo.advantage.lambd", args.gae_lambda)
+    add_flag(command, "--algo.advantage.gamma", args.gamma)
+    add_flag(command, "--reward.clip_range", args.reward_clip_min)
+    command.append(str(args.reward_clip_max))
+    add_flag(command, "--ds.zero_stage", args.zero_stage)
+    add_flag(command, "--ds.param_dtype", "bf16" if args.bf16 else "fp16")
+    add_flag(command, "--ckpt.save_steps", args.save_steps)
+    add_flag(command, "--logger.logging_steps", args.logging_steps)
+    add_flag(command, "--data.dataloader_num_workers", args.num_workers)
+    add_flag(command, "--data.max_samples", args.max_samples)
+    add_flag(command, "--reward.remote_url", reward_url)
+    add_flag(command, "--train.max_tokens_per_gpu", args.train_max_tokens_per_gpu)
+    add_flag(command, "--rollout.max_tokens_per_gpu", args.rollout_max_tokens_per_gpu)
+    if estimator:
+        add_flag(command, "--algo.advantage.estimator", estimator)
+    if args.algorithm == "ppo":
+        add_flag(command, "--critic.model_name_or_path", model_path)
+        add_flag(command, "--critic.num_nodes", 1)
+        add_flag(command, "--critic.num_gpus_per_node", gpu_count)
+    if args.reward_model_path:
+        reward_model = resolve_model_path(args.reward_model_path)
+        add_flag(command, "--reward.model_name_or_path", reward_model)
+        add_flag(command, "--reward.num_nodes", 1)
+        add_flag(command, "--reward.num_gpus_per_node", gpu_count)
+        try:
+            idx = command.index("--reward.remote_url")
+            del command[idx : idx + 2]
+        except ValueError:
+            pass
+
+    add_bool(command, "--data.apply_chat_template", True)
+    add_bool(command, "--reward.normalize_enable", args.normalize_reward)
+    add_bool(command, "--ds.packing_samples", args.packing_samples)
+    add_bool(command, "--actor.gradient_checkpointing_enable", args.gradient_checkpointing)
+    add_bool(command, "--ds.adam_offload", args.adam_offload)
+    add_bool(command, "--ref.offload", args.ref_offload)
+    add_bool(command, "--ckpt.save_hf", True)
+    add_bool(command, "--data.disable_fast_tokenizer", args.disable_fast_tokenizer)
+    add_bool(command, "--train.colocate_actor_ref", True)
+    add_bool(command, "--train.colocate_all", args.colocate_all)
+    add_bool(command, "--ds.enable_sleep", args.ds_enable_sleep)
+    add_bool(command, "--vllm.enable_sleep", args.vllm_enable_sleep)
+    add_bool(command, "--vllm.enforce_eager", args.vllm_enforce_eager)
+    if args.flash_attn:
+        add_flag(command, "--ds.attn_implementation", "flash_attention_2")
+    return command
+
+
+def maybe_start_ray(gpu_count: int) -> None:
+    log("Starting local Ray head")
+    subprocess.run(["ray", "stop", "--force"], check=False)
+    subprocess.run(
+        [
+            "ray",
+            "start",
+            "--head",
+            "--node-ip-address",
+            "127.0.0.1",
+            "--dashboard-host",
+            "127.0.0.1",
+            "--num-gpus",
+            str(gpu_count),
+            "--disable-usage-stats",
+        ],
+        check=True,
+    )
 
 
 def main() -> int:
     args = parse_args()
     setup_environment()
-    ensure_dependencies()
-    actual_model = resolve_model_path(args.model_path)
-    uploaded_train_data = receive_file_secret(
-        args.train_data_secret,
-        args.train_data_secret_name,
-        "uploaded_rlhf_train.json",
-    )
-    train_data = uploaded_train_data or args.train_data or str(make_fake_rlhf_data(Path("/tmp/fake_rlhf_train.json"), args.algorithm))
-    using_fake_data = uploaded_train_data is None and args.train_data is None
+    os.environ.setdefault("RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES", "1")
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+    os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    ensure_runtime_dependencies()
+
+    model_path = resolve_model_path(args.model_path)
+    train_data = prepare_train_data(args)
     resume_from = receive_resume_checkpoint(args.resume_from)
-    reward_model = resolve_model_path(args.reward_model_path) if args.reward_model_path else None
-    script = runtime_dir() / SCRIPT_BY_ALGO[args.algorithm]
+    if resume_from:
+        log(f"Resume checkpoint received/resolved: {resume_from}")
 
-    command = launcher(script)
-    add_flag(command, "--model_path", actual_model)
-    add_flag(command, "--train_data", train_data)
-    add_flag(command, "--output_dir", args.output_dir)
-    add_flag(command, "--epochs", args.epochs)
-    add_flag(command, "--batch_size", args.batch_size)
-    add_flag(command, "--gradient_accumulation_steps", args.grad_accum)
-    add_flag(command, "--learning_rate", args.learning_rate)
-    add_flag(command, "--max_prompt_length", args.max_prompt_length)
-    add_flag(command, "--max_response_length", args.max_response_length)
-    add_flag(command, "--logging_steps", 10)
-    add_flag(command, "--num_workers", 0 if using_fake_data else args.num_workers)
-    add_flag(command, "--resume_from_checkpoint", resume_from)
-    add_bool(command, "--cpu_offload", args.cpu_offload)
-    add_bool(command, "--use_8bit_adam", args.use_8bit_adam)
-
-    if args.algorithm == "grpo":
-        add_flag(command, "--group_size", args.group_size)
-        add_flag(command, "--kl_coef", args.grpo_kl_coef)
-        add_flag(command, "--clip_range", args.grpo_clip_range)
-        add_flag(command, "--temperature", args.temperature)
-        add_flag(command, "--top_p", args.top_p)
-        add_flag(command, "--reward_api_url", args.reward_api_url)
-    elif args.algorithm == "ppo":
-        add_flag(command, "--reward_model_path", reward_model)
-        add_flag(command, "--kl_coef", args.ppo_kl_coef)
-        add_flag(command, "--clip_range", args.ppo_clip_range)
-        add_flag(command, "--reward_ratio", args.reward_ratio)
-        add_flag(command, "--value_coef", args.value_coef)
-        add_flag(command, "--temperature", args.temperature)
-        add_flag(command, "--top_p", args.top_p)
-        add_flag(command, "--reward_api_url", args.reward_api_url)
-    elif args.algorithm == "dpo":
-        add_flag(command, "--dpo_beta", args.dpo_beta)
-        add_flag(command, "--dpo_loss", args.dpo_loss_type)
-    elif args.algorithm == "orpo":
-        add_flag(command, "--orpo_lambda", args.orpo_lambda)
+    command = build_openrlhf_command(args, model_path, train_data)
+    if args.ray_start:
+        maybe_start_ray(verified_gpu_count())
 
     try:
-        run_training(command)
-        write_result(args.output_dir)
+        log("Running OpenRLHF command:")
+        log(" ".join(command))
+        subprocess.run(command, check=True)
+        write_result(args.output_dir, status="success")
         return 0
     except Exception as exc:
-        log(f"Training failed: {exc}")
+        log(f"OpenRLHF training failed: {exc}")
         write_result(args.output_dir, status="failed", error=str(exc))
         raise
 
