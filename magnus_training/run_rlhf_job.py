@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import importlib.util
 import os
 import subprocess
 import sys
@@ -30,6 +31,78 @@ ESTIMATOR_BY_ALGORITHM = {
     "dr_grpo": "dr_grpo",
     "rloo": "rloo",
 }
+VLLM_TEXT_ONLY_PATCH = r'''
+"""Runtime patch for text-only Qwen checkpoints under OpenRLHF + vLLM.
+
+OpenRLHF creates vLLM AsyncEngineArgs internally and does not expose newer
+vLLM multimodal/text-only switches.  vLLM 0.22 may classify Qwen3.5/Qwen3.6
+text checkpoints through the Qwen3-VL renderer path and then fail when the
+HF config is Qwen3_5TextConfig.  The PPO payload is text-only, so force vLLM
+to skip multimodal processors for those rollout engines.
+"""
+
+from __future__ import annotations
+
+import os
+
+
+def _enabled() -> bool:
+    return os.environ.get("OPENRLHF_VLLM_TEXT_ONLY_PATCH", "1").lower() not in {
+        "0",
+        "false",
+        "no",
+    }
+
+
+if _enabled():
+    try:
+        import vllm
+        from vllm.engine import arg_utils as _arg_utils
+
+        _OriginalAsyncEngineArgs = _arg_utils.AsyncEngineArgs
+
+        class _TextOnlyAsyncEngineArgs(_OriginalAsyncEngineArgs):
+            def __init__(self, *args, **kwargs):
+                kwargs.setdefault("runner", "generate")
+                kwargs["language_model_only"] = True
+                kwargs["limit_mm_per_prompt"] = {"image": 0, "video": 0}
+                kwargs["mm_processor_cache_gb"] = 0
+                super().__init__(*args, **kwargs)
+
+        _arg_utils.AsyncEngineArgs = _TextOnlyAsyncEngineArgs
+        vllm.AsyncEngineArgs = _TextOnlyAsyncEngineArgs
+
+        try:
+            from vllm.multimodal.registry import MultiModalRegistry
+
+            _original_supports_multimodal_inputs = (
+                MultiModalRegistry.supports_multimodal_inputs
+            )
+
+            def _supports_multimodal_inputs_text_safe(self, model_config):
+                mm_config = getattr(model_config, "multimodal_config", None)
+                if getattr(mm_config, "language_model_only", False):
+                    return False
+                try:
+                    return _original_supports_multimodal_inputs(self, model_config)
+                except TypeError as exc:
+                    if "Invalid type of HuggingFace config" in str(exc):
+                        return False
+                    raise
+
+            MultiModalRegistry.supports_multimodal_inputs = (
+                _supports_multimodal_inputs_text_safe
+            )
+        except Exception as exc:
+            print(
+                f"[openrlhf-vllm-patch] multimodal registry patch skipped: {exc}",
+                flush=True,
+            )
+
+        print("[openrlhf-vllm-patch] text-only vLLM patch enabled", flush=True)
+    except Exception as exc:
+        print(f"[openrlhf-vllm-patch] failed to enable patch: {exc}", flush=True)
+'''
 
 
 def parse_args() -> argparse.Namespace:
@@ -90,6 +163,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--vllm_sync_backend", default="nccl")
     p.add_argument("--vllm_enable_sleep", action="store_true", default=True)
     p.add_argument("--vllm_enforce_eager", action="store_true")
+    p.add_argument("--vllm_text_only_patch", dest="vllm_text_only_patch", action="store_true", default=True)
+    p.add_argument("--no_vllm_text_only_patch", dest="vllm_text_only_patch", action="store_false")
 
     p.add_argument("--colocate_all", action="store_true")
     p.add_argument("--ds_enable_sleep", action="store_true")
@@ -142,6 +217,35 @@ def prepare_train_data(args: argparse.Namespace) -> str:
     count = convert_prompt_data(source_path, out, args.max_samples)
     log(f"Prepared OpenRLHF prompt data: {count} rows -> {out}")
     return str(out)
+
+
+def install_vllm_text_only_patch(enabled: bool) -> None:
+    if not enabled:
+        os.environ["OPENRLHF_VLLM_TEXT_ONLY_PATCH"] = "0"
+        log("vLLM text-only patch disabled")
+        return
+
+    patch_dir = Path("/tmp/openrlhf_vllm_text_only_patch")
+    patch_dir.mkdir(parents=True, exist_ok=True)
+    patch_file = patch_dir / "sitecustomize.py"
+    patch_file.write_text(VLLM_TEXT_ONLY_PATCH, encoding="utf-8")
+    current = os.environ.get("PYTHONPATH")
+    patch_dir_str = str(patch_dir)
+    parts = [patch_dir_str]
+    if current:
+        parts.append(current)
+    os.environ["PYTHONPATH"] = os.pathsep.join(parts)
+    os.environ["OPENRLHF_VLLM_TEXT_ONLY_PATCH"] = "1"
+    if patch_dir_str not in sys.path:
+        sys.path.insert(0, patch_dir_str)
+    spec = importlib.util.spec_from_file_location(
+        "_openrlhf_vllm_text_only_sitecustomize",
+        patch_file,
+    )
+    if spec is not None and spec.loader is not None:
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    log(f"Installed vLLM text-only patch via PYTHONPATH: {patch_dir}")
 
 
 def build_openrlhf_command(args: argparse.Namespace, model_path: str, train_data: str) -> list[str]:
@@ -280,6 +384,7 @@ def main() -> int:
     os.environ.setdefault("RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES", "1")
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    install_vllm_text_only_patch(args.vllm_text_only_patch)
     ensure_runtime_dependencies()
 
     model_path = resolve_model_path(args.model_path)
