@@ -207,6 +207,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--ds_enable_sleep", action="store_true")
     p.add_argument("--openrlhf_cli_style", choices=["v5"], default="v5")
     p.add_argument("--ray_start", action="store_true")
+    p.add_argument("--required_gpu_count", type=int, default=0)
     return p.parse_args()
 
 
@@ -301,13 +302,29 @@ def configure_ray_environment(enable_dashboard: bool) -> None:
 
 def build_openrlhf_command(args: argparse.Namespace, model_path: str, train_data: str) -> list[str]:
     gpu_count = verified_gpu_count()
+    visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "<unset>")
+    log(
+        "CUDA visibility: "
+        f"verified={gpu_count}, required={args.required_gpu_count or 'not set'}, "
+        f"CUDA_VISIBLE_DEVICES={visible_devices}"
+    )
     if gpu_count <= 0:
         raise RuntimeError("OpenRLHF/vLLM training requires CUDA GPUs")
+    if args.required_gpu_count and gpu_count < args.required_gpu_count:
+        raise RuntimeError(
+            f"Magnus exposed only {gpu_count} usable CUDA GPU(s), but this PPO 27B preset "
+            f"requires {args.required_gpu_count} GPU(s). Re-submit the blueprint with "
+            f"GPU 数量={args.required_gpu_count} and GPU 类型=A100. Do not lower "
+            "vLLM TP to 3 for Qwen 27B; tensor parallel size must match a valid model "
+            "head split and the 27B PPO preset is configured for TP4."
+        )
     vllm_gpu_slots = args.vllm_num_engines * args.vllm_tensor_parallel_size
     if vllm_gpu_slots > gpu_count:
         raise ValueError(
             "vllm_num_engines * vllm_tensor_parallel_size must be <= visible GPU count "
-            f"({args.vllm_num_engines} * {args.vllm_tensor_parallel_size} > {gpu_count})"
+            f"({args.vllm_num_engines} * {args.vllm_tensor_parallel_size} > {gpu_count}). "
+            "For the default Qwen 27B PPO preset, re-submit with GPU 数量=4 and "
+            "vLLM TP size=4."
         )
     if args.colocate_all and vllm_gpu_slots != gpu_count:
         raise ValueError(
