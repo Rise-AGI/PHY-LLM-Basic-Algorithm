@@ -51,6 +51,32 @@ from __future__ import annotations
 import os
 
 
+def _patch_ray_node_start_timeout_source() -> None:
+    timeout = os.environ.get("RAY_raylet_start_wait_time_s", "300")
+    try:
+        from pathlib import Path
+        import importlib.util
+
+        spec = importlib.util.find_spec("ray")
+        if spec is None or not spec.submodule_search_locations:
+            return
+        node_path = Path(list(spec.submodule_search_locations)[0]) / "_private" / "node.py"
+        source = node_path.read_text(encoding="utf-8")
+        old = "raylet_start_wait_time_s = 30"
+        new = (
+            "raylet_start_wait_time_s = int(__import__(\"os\").environ.get("
+            "\"RAY_raylet_start_wait_time_s\", \"300\"))"
+        )
+        if old in source:
+            node_path.write_text(source.replace(old, new), encoding="utf-8")
+            print(
+                f"[openrlhf-ray-patch] raylet startup timeout patched to {timeout}s",
+                flush=True,
+            )
+    except Exception as exc:
+        print(f"[openrlhf-ray-patch] failed to patch ray node timeout: {exc}", flush=True)
+
+
 def _enabled() -> bool:
     return os.environ.get("OPENRLHF_VLLM_TEXT_ONLY_PATCH", "1").lower() not in {
         "0",
@@ -63,6 +89,7 @@ def _patch_ray_init() -> None:
     if os.environ.get("OPENRLHF_RAY_PATCH", "1").lower() in {"0", "false", "no"}:
         return
     try:
+        _patch_ray_node_start_timeout_source()
         import ray
 
         if getattr(ray.init, "_openrlhf_magnus_patched", False):
@@ -202,6 +229,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--ray_dashboard", dest="ray_dashboard", action="store_true")
     p.add_argument("--no_ray_dashboard", dest="ray_dashboard", action="store_false")
     p.set_defaults(ray_dashboard=False)
+    p.add_argument("--raylet_start_wait_time_s", type=int, default=300)
 
     p.add_argument("--colocate_all", action="store_true")
     p.add_argument("--ds_enable_sleep", action="store_true")
@@ -286,12 +314,13 @@ def install_vllm_text_only_patch(enabled: bool) -> None:
     log(f"Installed vLLM text-only patch via PYTHONPATH: {patch_dir}")
 
 
-def configure_ray_environment(enable_dashboard: bool) -> None:
+def configure_ray_environment(enable_dashboard: bool, raylet_start_wait_time_s: int) -> None:
     job_id = os.environ.get("MAGNUS_JOB_ID") or "local"
     ray_tmp = Path("/tmp") / f"ray-openrlhf-{job_id}"
     ray_tmp.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("RAY_USAGE_STATS_ENABLED", "0")
     os.environ.setdefault("RAY_DEDUP_LOGS", "0")
+    os.environ["RAY_raylet_start_wait_time_s"] = str(max(30, raylet_start_wait_time_s))
     os.environ["OPENRLHF_RAY_PATCH"] = "0" if enable_dashboard else "1"
     os.environ["OPENRLHF_RAY_TEMP_DIR"] = str(ray_tmp)
     if enable_dashboard:
@@ -454,7 +483,7 @@ def main() -> int:
     os.environ.setdefault("RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES", "1")
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
-    configure_ray_environment(args.ray_dashboard)
+    configure_ray_environment(args.ray_dashboard, args.raylet_start_wait_time_s)
     install_vllm_text_only_patch(args.vllm_text_only_patch)
     ensure_runtime_dependencies()
 
