@@ -177,6 +177,30 @@ def _patch_vllm_text_only() -> None:
         vllm.AsyncEngineArgs = _TextOnlyAsyncEngineArgs
 
         try:
+            import torch.distributed as dist
+            from vllm.distributed.device_communicators.cuda_communicator import (
+                CudaCommunicator,
+            )
+
+            if not getattr(CudaCommunicator.broadcast, "_openrlhf_fallback_patched", False):
+                _original_cuda_broadcast = CudaCommunicator.broadcast
+
+                def _broadcast_with_torch_fallback(self, tensor, src=0):
+                    pynccl_comm = getattr(self, "pynccl_comm", None)
+                    if pynccl_comm is not None and not getattr(pynccl_comm, "disabled", False):
+                        return _original_cuda_broadcast(self, tensor, src)
+                    dist.broadcast(tensor, self.ranks[src], self.device_group)
+                    return tensor
+
+                _broadcast_with_torch_fallback._openrlhf_fallback_patched = True
+                CudaCommunicator.broadcast = _broadcast_with_torch_fallback
+        except Exception as exc:
+            print(
+                f"[openrlhf-vllm-patch] cuda communicator fallback skipped: {exc}",
+                flush=True,
+            )
+
+        try:
             from vllm.multimodal.registry import MultiModalRegistry
 
             _original_supports_multimodal_inputs = (
