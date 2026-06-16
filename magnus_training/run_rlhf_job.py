@@ -177,6 +177,30 @@ def _patch_vllm_text_only() -> None:
         vllm.AsyncEngineArgs = _TextOnlyAsyncEngineArgs
 
         try:
+            from vllm.model_executor.models import ModelRegistry
+
+            qwen35_text_models = {
+                "Qwen3_5ForConditionalGeneration": (
+                    "vllm.model_executor.models.qwen3_5:Qwen3_5ForCausalLM"
+                ),
+                "Qwen3_5MoeForConditionalGeneration": (
+                    "vllm.model_executor.models.qwen3_5:Qwen3_5MoeForCausalLM"
+                ),
+            }
+            for arch, model_cls in qwen35_text_models.items():
+                ModelRegistry.register_model(arch, model_cls)
+            print(
+                "[openrlhf-vllm-patch] Qwen3.5/Qwen3.6 conditional architectures "
+                "redirected to text-only CausalLM classes",
+                flush=True,
+            )
+        except Exception as exc:
+            print(
+                f"[openrlhf-vllm-patch] Qwen3.5 text registry patch skipped: {exc}",
+                flush=True,
+            )
+
+        try:
             import torch.distributed as dist
             from vllm.distributed.device_communicators.cuda_communicator import (
                 CudaCommunicator,
