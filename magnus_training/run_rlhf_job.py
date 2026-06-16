@@ -165,6 +165,12 @@ def _patch_vllm_text_only() -> None:
                 kwargs["language_model_only"] = True
                 kwargs["limit_mm_per_prompt"] = {"image": 0, "video": 0}
                 kwargs["mm_processor_cache_gb"] = 0
+                disable_custom_ar = os.environ.get(
+                    "OPENRLHF_VLLM_DISABLE_CUSTOM_ALL_REDUCE",
+                    "1",
+                ).lower() not in {"0", "false", "no"}
+                if disable_custom_ar:
+                    kwargs["disable_custom_all_reduce"] = True
                 super().__init__(*args, **kwargs)
 
         _arg_utils.AsyncEngineArgs = _TextOnlyAsyncEngineArgs
@@ -750,6 +756,16 @@ def maybe_start_ray(args: argparse.Namespace, gpu_count: int) -> None:
 def main() -> int:
     args = parse_args()
     setup_environment()
+    env_keys = (
+        "NCCL_IB_DISABLE",
+        "NCCL_P2P_DISABLE",
+        "NCCL_NET",
+        "NCCL_SOCKET_IFNAME",
+        "VLLM_DISABLE_PYNCCL",
+        "VLLM_WORKER_MULTIPROC_METHOD",
+        "OPENRLHF_VLLM_DISABLE_CUSTOM_ALL_REDUCE",
+    )
+    log("Distributed env: " + ", ".join(f"{key}={os.environ.get(key)}" for key in env_keys))
     os.environ.setdefault("RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES", "1")
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")

@@ -27,6 +27,8 @@ def setup_environment() -> None:
         "TORCH_NCCL_AVOID_RECORD_STREAMS": "1",
         "NCCL_P2P_DISABLE": "1",
         "NCCL_IB_DISABLE": "1",
+        "NCCL_NET": "Socket",
+        "NCCL_NET_GDR_LEVEL": "0",
         "NCCL_SOCKET_IFNAME": "^docker,lo,virbr",
         "NCCL_ALGO": "Ring",
         "NCCL_PROTO": "Simple",
@@ -35,6 +37,9 @@ def setup_environment() -> None:
         "NCCL_NTHREADS": "512",
         "NCCL_BUFFSIZE": "4194304",
         "NCCL_NCHANNELS_PER_PEER": "8",
+        "VLLM_DISABLE_PYNCCL": "1",
+        "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
+        "OPENRLHF_VLLM_DISABLE_CUSTOM_ALL_REDUCE": "1",
     }
     for key, value in defaults.items():
         os.environ.setdefault(key, value)
