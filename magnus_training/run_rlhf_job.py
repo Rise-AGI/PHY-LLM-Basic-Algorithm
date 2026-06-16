@@ -57,6 +57,16 @@ import os
 import sys
 
 
+def _is_truthy(value: str | None) -> bool:
+    return str(value or "").lower() in {"1", "true", "yes", "on"}
+
+
+def _patch_log(message: str, *, worker: bool = False) -> None:
+    if worker and not _is_truthy(os.environ.get("OPENRLHF_PATCH_VERBOSE")):
+        return
+    print(message, flush=True)
+
+
 def _patch_ray_node_start_timeout_source() -> None:
     timeout = os.environ.get("RAY_raylet_start_wait_time_s", "300")
     try:
@@ -75,12 +85,11 @@ def _patch_ray_node_start_timeout_source() -> None:
         )
         if old in source:
             node_path.write_text(source.replace(old, new), encoding="utf-8")
-            print(
+            _patch_log(
                 f"[openrlhf-ray-patch] raylet startup timeout patched to {timeout}s",
-                flush=True,
             )
     except Exception as exc:
-        print(f"[openrlhf-ray-patch] failed to patch ray node timeout: {exc}", flush=True)
+        _patch_log(f"[openrlhf-ray-patch] failed to patch ray node timeout: {exc}")
 
 
 def _enabled() -> bool:
@@ -145,9 +154,9 @@ def _patch_ray_init() -> None:
         _init_without_dashboard._openrlhf_magnus_patched = True
         _init_without_dashboard._openrlhf_original = _original_ray_init
         ray.init = _init_without_dashboard
-        print("[openrlhf-ray-patch] ray.init dashboard disabled", flush=True)
+        _patch_log("[openrlhf-ray-patch] ray.init dashboard disabled", worker=_ray_worker_process())
     except Exception as exc:
-        print(f"[openrlhf-ray-patch] failed to patch ray.init: {exc}", flush=True)
+        _patch_log(f"[openrlhf-ray-patch] failed to patch ray.init: {exc}")
 
 
 def _patch_vllm_text_only() -> None:
@@ -174,6 +183,13 @@ def _patch_vllm_text_only() -> None:
                 ).lower() not in {"0", "false", "no"}
                 if disable_custom_ar:
                     kwargs["disable_custom_all_reduce"] = True
+                if kwargs.get("mamba_block_size") is None:
+                    kwargs["mamba_block_size"] = int(kwargs.get("block_size") or 16)
+                if kwargs.get("mamba_cache_mode") in {None, "none"}:
+                    kwargs["mamba_cache_mode"] = os.environ.get(
+                        "OPENRLHF_VLLM_MAMBA_CACHE_MODE",
+                        "align",
+                    )
                 super().__init__(*args, **kwargs)
 
         _arg_utils.AsyncEngineArgs = _TextOnlyAsyncEngineArgs
@@ -218,15 +234,14 @@ def _patch_vllm_text_only() -> None:
                 _load_weights_with_prefix_fix._openrlhf_prefix_patched = True
                 _load_weights_with_prefix_fix._openrlhf_original = original_load_weights
                 model_cls.load_weights = _load_weights_with_prefix_fix
-                print(
+                _patch_log(
                     "[openrlhf-vllm-patch] Qwen3.5/Qwen3.6 text checkpoint "
                     "prefix normalizer enabled",
-                    flush=True,
+                    worker=_ray_worker_process(),
                 )
             except Exception as exc:
-                print(
+                _patch_log(
                     f"[openrlhf-vllm-patch] Qwen text weight prefix patch skipped: {exc}",
-                    flush=True,
                 )
 
         try:
@@ -243,15 +258,14 @@ def _patch_vllm_text_only() -> None:
             for arch, model_cls in qwen35_text_models.items():
                 ModelRegistry.register_model(arch, model_cls)
             _patch_qwen35_text_weight_loader()
-            print(
+            _patch_log(
                 "[openrlhf-vllm-patch] Qwen3.5/Qwen3.6 conditional architectures "
                 "redirected to text-only CausalLM classes",
-                flush=True,
+                worker=_ray_worker_process(),
             )
         except Exception as exc:
-            print(
+            _patch_log(
                 f"[openrlhf-vllm-patch] Qwen3.5 text registry patch skipped: {exc}",
-                flush=True,
             )
 
         try:
@@ -273,9 +287,8 @@ def _patch_vllm_text_only() -> None:
                 _broadcast_with_torch_fallback._openrlhf_fallback_patched = True
                 CudaCommunicator.broadcast = _broadcast_with_torch_fallback
         except Exception as exc:
-            print(
+            _patch_log(
                 f"[openrlhf-vllm-patch] cuda communicator fallback skipped: {exc}",
-                flush=True,
             )
 
         try:
@@ -300,15 +313,17 @@ def _patch_vllm_text_only() -> None:
                 _supports_multimodal_inputs_text_safe
             )
         except Exception as exc:
-            print(
+            _patch_log(
                 f"[openrlhf-vllm-patch] multimodal registry patch skipped: {exc}",
-                flush=True,
             )
 
-        print("[openrlhf-vllm-patch] text-only vLLM patch enabled", flush=True)
+        _patch_log(
+            "[openrlhf-vllm-patch] text-only vLLM patch enabled",
+            worker=_ray_worker_process(),
+        )
         _patch_vllm_text_only._done = True
     except Exception as exc:
-        print(f"[openrlhf-vllm-patch] failed to enable patch: {exc}", flush=True)
+        _patch_log(f"[openrlhf-vllm-patch] failed to enable patch: {exc}")
     finally:
         _patch_vllm_text_only._patching = False
 
@@ -343,7 +358,10 @@ def _install_lazy_vllm_patch() -> None:
     _import_with_vllm_patch._openrlhf_original = original_import
     builtins.__import__ = _import_with_vllm_patch
     _install_lazy_vllm_patch._installed = True
-    print("[openrlhf-vllm-patch] lazy text-only vLLM patch installed", flush=True)
+    _patch_log(
+        "[openrlhf-vllm-patch] lazy text-only vLLM patch installed",
+        worker=_ray_worker_process(),
+    )
 
 
 if not _ray_control_process():
