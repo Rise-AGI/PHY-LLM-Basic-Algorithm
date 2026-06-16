@@ -4,6 +4,8 @@ import argparse
 import importlib
 import importlib.util
 import os
+import re
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -97,6 +99,9 @@ def _patch_ray_init() -> None:
         _original_ray_init = ray.init
 
         def _init_without_dashboard(*args, **kwargs):
+            ray_address = os.environ.get("OPENRLHF_RAY_ADDRESS") or os.environ.get("RAY_ADDRESS")
+            if ray_address and not args and "address" not in kwargs:
+                kwargs["address"] = ray_address
             kwargs.setdefault("include_dashboard", False)
             kwargs.setdefault("dashboard_host", "127.0.0.1")
             kwargs.setdefault("ignore_reinit_error", True)
@@ -235,6 +240,13 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--ds_enable_sleep", action="store_true")
     p.add_argument("--openrlhf_cli_style", choices=["v5"], default="v5")
     p.add_argument("--ray_start", action="store_true")
+    p.add_argument("--no_ray_start", dest="ray_start", action="store_false")
+    p.set_defaults(ray_start=False)
+    p.add_argument("--ray_node_ip", default="auto")
+    p.add_argument("--ray_head_port", type=int)
+    p.add_argument("--ray_worker_port_count", type=int, default=100)
+    p.add_argument("--ray_object_store_memory_gb", type=int, default=16)
+    p.add_argument("--ray_plasma_directory", default="/tmp")
     p.add_argument("--required_gpu_count", type=int, default=0)
     return p.parse_args()
 
@@ -455,26 +467,217 @@ def build_openrlhf_command(args: argparse.Namespace, model_path: str, train_data
     return command
 
 
-def maybe_start_ray(gpu_count: int) -> None:
+def dump_ray_logs(ray_tmp: str | None) -> None:
+    if not ray_tmp:
+        return
+    logs_dir = Path(ray_tmp) / "session_latest" / "logs"
+    if not logs_dir.exists():
+        log(f"Ray logs not found: {logs_dir}")
+        return
+    for name in (
+        "gcs_server.err",
+        "gcs_server.out",
+        "raylet.err",
+        "raylet.out",
+        "monitor.err",
+        "monitor.out",
+    ):
+        path = logs_dir / name
+        if not path.exists():
+            continue
+        try:
+            lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+            tail = "\n".join(lines[-40:])
+            log(f"===== Ray log tail: {path} =====\n{tail}")
+        except Exception as exc:
+            log(f"Failed to read Ray log {path}: {exc}")
+
+
+def normalize_ray_node_ip(value: str | None) -> str | None:
+    if value is None:
+        return None
+    node_ip = str(value).strip()
+    if not node_ip or node_ip.lower() in {"auto", "default", "none", "null"}:
+        return None
+    return node_ip
+
+
+def unique_preserve_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if value and value not in seen:
+            seen.add(value)
+            result.append(value)
+    return result
+
+
+def extract_ray_addresses(output: str, fallback_port: int) -> list[str]:
+    candidates: list[str] = []
+    patterns = [
+        r"--address[= ]'([^']+)'",
+        r'--address[= ]"([^"]+)"',
+        r"ray\.init\(address=['\"]([^'\"]+)['\"]",
+        r"([0-9]{1,3}(?:\.[0-9]{1,3}){3}:\d+)",
+    ]
+    for pattern in patterns:
+        candidates.extend(re.findall(pattern, output))
+
+    for line in output.splitlines():
+        if "Local node IP:" not in line:
+            continue
+        host = line.rsplit(":", 1)[-1].strip()
+        if host:
+            candidates.append(f"{host}:{fallback_port}")
+    return unique_preserve_order(candidates)
+
+
+def local_ray_address_candidates(base_port: int, explicit_node_ip: str | None) -> list[str]:
+    candidates: list[str] = []
+    if explicit_node_ip:
+        candidates.append(f"{explicit_node_ip}:{base_port}")
+    candidates.extend([f"127.0.0.1:{base_port}", f"localhost:{base_port}"])
+
+    try:
+        hostname = socket.gethostname()
+        for host in socket.gethostbyname_ex(hostname)[2]:
+            if host and not host.startswith("127."):
+                candidates.append(f"{host}:{base_port}")
+    except Exception:
+        pass
+
+    try:
+        proc = subprocess.run(
+            ["hostname", "-I"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if proc.returncode == 0:
+            for host in proc.stdout.split():
+                if host and not host.startswith("127."):
+                    candidates.append(f"{host}:{base_port}")
+    except Exception:
+        pass
+
+    candidates.append("auto")
+    return unique_preserve_order(candidates)
+
+
+def wait_for_ray(address: str, timeout_s: int) -> tuple[bool, str]:
+    env = os.environ.copy()
+    env["RAY_ADDRESS"] = address
+    probe = (
+        "import ray; "
+        f"ray.init(address={address!r}, ignore_reinit_error=True, include_dashboard=False); "
+        "print(ray.cluster_resources()); "
+        "ray.shutdown()"
+    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-c", probe],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=max(8, min(20, timeout_s)),
+        )
+    except subprocess.TimeoutExpired as exc:
+        return False, f"probe timeout after {exc.timeout}s"
+    if proc.returncode == 0:
+        log(f"Ray head ready at {address}: {proc.stdout.strip()}")
+        return True, proc.stdout.strip()
+    return False, (proc.stderr or proc.stdout or "").strip()
+
+
+def wait_for_any_ray(candidates: list[str], timeout_s: int) -> str:
+    import time
+
+    deadline_s = max(30, timeout_s)
+    started = time.monotonic()
+    last_errors: dict[str, str] = {}
+    candidates = unique_preserve_order(candidates)
+    log("Ray address candidates: " + ", ".join(candidates))
+    while time.monotonic() - started < deadline_s:
+        for address in candidates:
+            ok, detail = wait_for_ray(address, timeout_s=10)
+            if ok:
+                return address
+            last_errors[address] = detail[-800:]
+        time.sleep(3)
+    details = "\n".join(f"{addr}: {err}" for addr, err in last_errors.items())
+    raise RuntimeError(f"Timed out waiting for Ray head. Candidate failures:\n{details}")
+
+
+def maybe_start_ray(args: argparse.Namespace, gpu_count: int) -> None:
     log("Starting local Ray head")
     subprocess.run(["ray", "stop", "--force"], check=False)
     ray_tmp = os.environ.get("OPENRLHF_RAY_TEMP_DIR", "/tmp/ray-openrlhf-local")
-    subprocess.run(
-        [
-            "ray",
-            "start",
-            "--head",
-            "--node-ip-address",
-            "127.0.0.1",
-            "--include-dashboard=false",
-            "--temp-dir",
-            ray_tmp,
-            "--num-gpus",
-            str(gpu_count),
-            "--disable-usage-stats",
-        ],
+    ray_tmp_path = Path(ray_tmp)
+    ray_tmp_path.mkdir(parents=True, exist_ok=True)
+    spill_dir = ray_tmp_path / "spill"
+    spill_dir.mkdir(parents=True, exist_ok=True)
+    base_port = args.ray_head_port or (20000 + (os.getpid() % 20000))
+    worker_ports = max(32, args.ray_worker_port_count)
+    node_ip = normalize_ray_node_ip(args.ray_node_ip)
+    object_store_memory = max(1, args.ray_object_store_memory_gb) * 1024**3
+    plasma_dir = args.ray_plasma_directory or "/tmp"
+    command = [
+        "ray",
+        "start",
+        "--head",
+        "--port",
+        str(base_port),
+        "--object-manager-port",
+        str(base_port + 1),
+        "--node-manager-port",
+        str(base_port + 2),
+        "--ray-client-server-port",
+        str(base_port + 3),
+        "--dashboard-agent-listen-port",
+        str(base_port + 4),
+        "--dashboard-agent-grpc-port",
+        str(base_port + 5),
+        "--runtime-env-agent-port",
+        str(base_port + 6),
+        "--metrics-export-port",
+        str(base_port + 7),
+        "--min-worker-port",
+        str(base_port + 100),
+        "--max-worker-port",
+        str(base_port + 100 + worker_ports - 1),
+        "--include-dashboard=false",
+        "--temp-dir",
+        ray_tmp,
+        "--plasma-directory",
+        plasma_dir,
+        "--object-spilling-directory",
+        str(spill_dir),
+        "--object-store-memory",
+        str(object_store_memory),
+        "--num-gpus",
+        str(gpu_count),
+        "--disable-usage-stats",
+    ]
+    if node_ip:
+        command[3:3] = ["--node-ip-address", node_ip]
+    log("Running Ray start command: " + " ".join(command))
+    proc = subprocess.run(
+        command,
         check=True,
+        capture_output=True,
+        text=True,
     )
+    start_output = "\n".join(part for part in (proc.stdout, proc.stderr) if part)
+    if start_output.strip():
+        log("Ray start output:\n" + start_output.strip())
+    candidates = (
+        extract_ray_addresses(start_output, base_port)
+        + local_ray_address_candidates(base_port, node_ip)
+    )
+    address = wait_for_any_ray(candidates, args.raylet_start_wait_time_s)
+    os.environ["RAY_ADDRESS"] = address
+    os.environ["OPENRLHF_RAY_ADDRESS"] = address
+    log(f"Using Ray address for OpenRLHF: {address}")
 
 
 def main() -> int:
@@ -494,10 +697,11 @@ def main() -> int:
         log(f"Resume checkpoint received/resolved: {resume_from}")
 
     command = build_openrlhf_command(args, model_path, train_data)
-    if args.ray_start:
-        maybe_start_ray(verified_gpu_count())
-
     try:
+        if args.ray_start:
+            maybe_start_ray(args, verified_gpu_count())
+        else:
+            os.environ.pop("OPENRLHF_RAY_ADDRESS", None)
         log("Running OpenRLHF command:")
         log(" ".join(command))
         subprocess.run(command, check=True)
@@ -505,6 +709,7 @@ def main() -> int:
         return 0
     except Exception as exc:
         log(f"OpenRLHF training failed: {exc}")
+        dump_ray_logs(os.environ.get("OPENRLHF_RAY_TEMP_DIR"))
         write_result(args.output_dir, status="failed", error=str(exc))
         raise
 
