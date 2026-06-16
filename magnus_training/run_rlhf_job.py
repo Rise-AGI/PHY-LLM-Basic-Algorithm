@@ -216,7 +216,19 @@ def _install_lazy_vllm_patch() -> None:
 
     def _import_with_vllm_patch(name, globals=None, locals=None, fromlist=(), level=0):
         module = original_import(name, globals, locals, fromlist, level)
-        if name == "vllm" or name.startswith("vllm."):
+        caller_name = ""
+        if globals:
+            caller_name = str(globals.get("__name__", ""))
+        top_name = name.split(".", 1)[0]
+        vllm_module = sys.modules.get("vllm")
+        vllm_spec = getattr(vllm_module, "__spec__", None)
+        vllm_initializing = bool(getattr(vllm_spec, "_initializing", False))
+        if (
+            top_name == "vllm"
+            and not caller_name.startswith("vllm")
+            and vllm_module is not None
+            and not vllm_initializing
+        ):
             _patch_vllm_text_only()
         return module
 
@@ -306,7 +318,7 @@ def parse_args() -> argparse.Namespace:
     p.set_defaults(ray_start=False)
     p.add_argument("--ray_node_ip", default="auto")
     p.add_argument("--ray_head_port", type=int)
-    p.add_argument("--ray_worker_port_count", type=int, default=100)
+    p.add_argument("--ray_worker_port_count", type=int, default=1000)
     p.add_argument("--ray_object_store_memory_gb", type=int, default=16)
     p.add_argument("--ray_plasma_directory", default="/tmp")
     p.add_argument("--required_gpu_count", type=int, default=0)
@@ -603,7 +615,7 @@ def local_ray_address_candidates(base_port: int, explicit_node_ip: str | None) -
     try:
         hostname = socket.gethostname()
         for host in socket.gethostbyname_ex(hostname)[2]:
-            if host and not host.startswith("127."):
+            if host and not host.startswith("127.") and ":" not in host:
                 candidates.append(f"{host}:{base_port}")
     except Exception:
         pass
@@ -617,7 +629,7 @@ def local_ray_address_candidates(base_port: int, explicit_node_ip: str | None) -
         )
         if proc.returncode == 0:
             for host in proc.stdout.split():
-                if host and not host.startswith("127."):
+                if host and not host.startswith("127.") and ":" not in host:
                     candidates.append(f"{host}:{base_port}")
     except Exception:
         pass
@@ -665,6 +677,11 @@ def wait_for_any_ray(candidates: list[str], timeout_s: int) -> str:
             if ok:
                 return address
             last_errors[address] = detail[-800:]
+            if "No available ports" in detail:
+                raise RuntimeError(
+                    "Ray head is reachable, but worker port range is exhausted. "
+                    "Increase --ray_worker_port_count; PPO 27B now defaults to 1000."
+                )
         time.sleep(3)
     details = "\n".join(f"{addr}: {err}" for addr, err in last_errors.items())
     raise RuntimeError(f"Timed out waiting for Ray head. Candidate failures:\n{details}")
