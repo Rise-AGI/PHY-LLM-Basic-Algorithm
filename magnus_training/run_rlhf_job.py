@@ -51,6 +51,7 @@ jobs; OpenRLHF does not need it.
 from __future__ import annotations
 
 import os
+import sys
 
 
 def _patch_ray_node_start_timeout_source() -> None:
@@ -87,6 +88,34 @@ def _enabled() -> bool:
     }
 
 
+def _ray_control_process() -> bool:
+    argv = " ".join(sys.argv)
+    control_markers = (
+        "/bin/ray",
+        "\\bin\\ray",
+        "ray/dashboard/",
+        "ray\\dashboard\\",
+        "ray/autoscaler/",
+        "ray\\autoscaler\\",
+        "ray/_private/log_monitor.py",
+        "ray\\_private\\log_monitor.py",
+        "ray/_private/runtime_env/agent/",
+        "ray\\_private\\runtime_env\\agent\\",
+    )
+    return any(marker in argv for marker in control_markers)
+
+
+def _ray_worker_process() -> bool:
+    argv = " ".join(sys.argv)
+    worker_markers = (
+        "ray/_private/workers/setup_worker.py",
+        "ray\\_private\\workers\\setup_worker.py",
+        "ray/_private/workers/default_worker.py",
+        "ray\\_private\\workers\\default_worker.py",
+    )
+    return any(marker in argv for marker in worker_markers)
+
+
 def _patch_ray_init() -> None:
     if os.environ.get("OPENRLHF_RAY_PATCH", "1").lower() in {"0", "false", "no"}:
         return
@@ -118,7 +147,12 @@ def _patch_ray_init() -> None:
         print(f"[openrlhf-ray-patch] failed to patch ray.init: {exc}", flush=True)
 
 
-if _enabled():
+def _patch_vllm_text_only() -> None:
+    if getattr(_patch_vllm_text_only, "_done", False) or getattr(
+        _patch_vllm_text_only, "_patching", False
+    ):
+        return
+    _patch_vllm_text_only._patching = True
     try:
         import vllm
         from vllm.engine import arg_utils as _arg_utils
@@ -164,10 +198,38 @@ if _enabled():
             )
 
         print("[openrlhf-vllm-patch] text-only vLLM patch enabled", flush=True)
+        _patch_vllm_text_only._done = True
     except Exception as exc:
         print(f"[openrlhf-vllm-patch] failed to enable patch: {exc}", flush=True)
+    finally:
+        _patch_vllm_text_only._patching = False
 
-_patch_ray_init()
+
+def _install_lazy_vllm_patch() -> None:
+    if not _enabled():
+        return
+    if getattr(_install_lazy_vllm_patch, "_installed", False):
+        return
+    import builtins
+
+    original_import = builtins.__import__
+
+    def _import_with_vllm_patch(name, globals=None, locals=None, fromlist=(), level=0):
+        module = original_import(name, globals, locals, fromlist, level)
+        if name == "vllm" or name.startswith("vllm."):
+            _patch_vllm_text_only()
+        return module
+
+    _import_with_vllm_patch._openrlhf_original = original_import
+    builtins.__import__ = _import_with_vllm_patch
+    _install_lazy_vllm_patch._installed = True
+    print("[openrlhf-vllm-patch] lazy text-only vLLM patch installed", flush=True)
+
+
+if not _ray_control_process():
+    _install_lazy_vllm_patch()
+    if not _ray_worker_process():
+        _patch_ray_init()
 '''
 
 
@@ -627,20 +689,6 @@ def maybe_start_ray(args: argparse.Namespace, gpu_count: int) -> None:
         "--head",
         "--port",
         str(base_port),
-        "--object-manager-port",
-        str(base_port + 1),
-        "--node-manager-port",
-        str(base_port + 2),
-        "--ray-client-server-port",
-        str(base_port + 3),
-        "--dashboard-agent-listen-port",
-        str(base_port + 4),
-        "--dashboard-agent-grpc-port",
-        str(base_port + 5),
-        "--runtime-env-agent-port",
-        str(base_port + 6),
-        "--metrics-export-port",
-        str(base_port + 7),
         "--min-worker-port",
         str(base_port + 100),
         "--max-worker-port",
@@ -663,13 +711,15 @@ def maybe_start_ray(args: argparse.Namespace, gpu_count: int) -> None:
     log("Running Ray start command: " + " ".join(command))
     proc = subprocess.run(
         command,
-        check=True,
         capture_output=True,
         text=True,
     )
     start_output = "\n".join(part for part in (proc.stdout, proc.stderr) if part)
     if start_output.strip():
         log("Ray start output:\n" + start_output.strip())
+    if proc.returncode != 0:
+        dump_ray_logs(ray_tmp)
+        raise RuntimeError(f"ray start failed with exit code {proc.returncode}")
     candidates = (
         extract_ray_addresses(start_output, base_port)
         + local_ray_address_candidates(base_port, node_ip)
