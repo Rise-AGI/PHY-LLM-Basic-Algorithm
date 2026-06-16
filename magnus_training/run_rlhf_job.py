@@ -3,11 +3,14 @@ from __future__ import annotations
 import argparse
 import importlib
 import importlib.util
+import json
 import os
 import re
+import shlex
 import socket
 import subprocess
 import sys
+from collections import deque
 from pathlib import Path
 
 from common_runtime import (
@@ -176,6 +179,56 @@ def _patch_vllm_text_only() -> None:
         _arg_utils.AsyncEngineArgs = _TextOnlyAsyncEngineArgs
         vllm.AsyncEngineArgs = _TextOnlyAsyncEngineArgs
 
+        def _patch_qwen35_text_weight_loader() -> None:
+            try:
+                from vllm.model_executor.models import qwen3_5
+
+                model_cls = qwen3_5.Qwen3_5ForCausalLM
+                if getattr(model_cls.load_weights, "_openrlhf_prefix_patched", False):
+                    return
+
+                original_load_weights = model_cls.load_weights
+
+                def _normalize_text_checkpoint_names(weights):
+                    for name, tensor in weights:
+                        new_name = name
+                        if name.startswith("language_model.lm_head."):
+                            new_name = "lm_head." + name[len("language_model.lm_head.") :]
+                        elif name.startswith("language_model.model."):
+                            new_name = "model." + name[len("language_model.model.") :]
+                        elif name.startswith("language_model."):
+                            new_name = "model." + name[len("language_model.") :]
+                        elif name.startswith("model.language_model.lm_head."):
+                            new_name = "lm_head." + name[
+                                len("model.language_model.lm_head.") :
+                            ]
+                        elif name.startswith("model.language_model.model."):
+                            new_name = "model." + name[
+                                len("model.language_model.model.") :
+                            ]
+                        elif name.startswith("model.language_model."):
+                            new_name = "model." + name[len("model.language_model.") :]
+                        yield new_name, tensor
+
+                def _load_weights_with_prefix_fix(self, weights):
+                    return original_load_weights(
+                        self, _normalize_text_checkpoint_names(weights)
+                    )
+
+                _load_weights_with_prefix_fix._openrlhf_prefix_patched = True
+                _load_weights_with_prefix_fix._openrlhf_original = original_load_weights
+                model_cls.load_weights = _load_weights_with_prefix_fix
+                print(
+                    "[openrlhf-vllm-patch] Qwen3.5/Qwen3.6 text checkpoint "
+                    "prefix normalizer enabled",
+                    flush=True,
+                )
+            except Exception as exc:
+                print(
+                    f"[openrlhf-vllm-patch] Qwen text weight prefix patch skipped: {exc}",
+                    flush=True,
+                )
+
         try:
             from vllm.model_executor.models import ModelRegistry
 
@@ -189,6 +242,7 @@ def _patch_vllm_text_only() -> None:
             }
             for arch, model_cls in qwen35_text_models.items():
                 ModelRegistry.register_model(arch, model_cls)
+            _patch_qwen35_text_weight_loader()
             print(
                 "[openrlhf-vllm-patch] Qwen3.5/Qwen3.6 conditional architectures "
                 "redirected to text-only CausalLM classes",
@@ -396,6 +450,169 @@ def ensure_runtime_dependencies() -> None:
     log("OpenRLHF/vLLM dependencies ready")
 
 
+ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+NOISY_RUNTIME_PATTERNS = (
+    re.compile(r"Parameter .* not found in params_dict, skip loading"),
+    re.compile(r"Loading safetensors checkpoint shards:"),
+    re.compile(r"FutureWarning|SyntaxWarning|DeprecationWarning"),
+    re.compile(r"torch\.cuda\.memory\._set_allocator_settings"),
+    re.compile(r"WARNING: Overriding HOME environment variable"),
+    re.compile(r"^\s*$"),
+)
+IMPORTANT_RUNTIME_PATTERNS = re.compile(
+    r"("
+    r"Traceback|ERROR|RuntimeError|ValueError|AttributeError|Exception|"
+    r"EngineCore|RayTaskError|OOM|out of memory|NCCL|CUDA|"
+    r"reward|kl|loss|episode|global_step|saving|checkpoint|"
+    r"Qwen3|vLLM|OpenRLHF|Ray head|Loading weights took"
+    r")",
+    re.IGNORECASE,
+)
+
+
+def compact_runtime_line(line: str) -> str:
+    line = ANSI_RE.sub("", line).strip()
+    if "Following weights were not initialized from checkpoint" in line:
+        names = re.findall(r"'([^']+)'", line)
+        if names:
+            examples = ", ".join(names[:10])
+            prefixes = sorted({".".join(name.split(".")[:2]) for name in names})
+            return (
+                f"ValueError: {len(names)} weights were not initialized from checkpoint; "
+                f"examples: {examples}; prefixes: {', '.join(prefixes[:8])}"
+            )
+    if len(line) > 2200:
+        return line[:2200] + " ... [truncated]"
+    return line
+
+
+def useful_runtime_line(raw_line: str) -> str | None:
+    line = compact_runtime_line(raw_line)
+    if not line:
+        return None
+    if any(pattern.search(line) for pattern in NOISY_RUNTIME_PATTERNS):
+        return None
+    if IMPORTANT_RUNTIME_PATTERNS.search(line):
+        return line
+    if line.startswith("[openrlhf-") or line.startswith("[20"):
+        return line
+    return None
+
+
+def log_model_metadata(model_path: str) -> None:
+    model_dir = Path(model_path)
+    config_path = model_dir / "config.json"
+    if not config_path.exists():
+        log(f"Model config not found: {config_path}")
+        return
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        log(f"Failed to read model config {config_path}: {exc}")
+        return
+
+    text_config = config.get("text_config") if isinstance(config.get("text_config"), dict) else {}
+    source = text_config or config
+    summary_keys = (
+        "model_type",
+        "architectures",
+        "torch_dtype",
+        "num_hidden_layers",
+        "hidden_size",
+        "num_attention_heads",
+        "num_key_value_heads",
+        "tie_word_embeddings",
+    )
+    summary = {key: source.get(key, config.get(key)) for key in summary_keys}
+    log(
+        "Model config summary: "
+        + ", ".join(f"{key}={value}" for key, value in summary.items() if value is not None)
+    )
+
+    index_candidates = (
+        model_dir / "model.safetensors.index.json",
+        model_dir / "pytorch_model.bin.index.json",
+    )
+    for index_path in index_candidates:
+        if not index_path.exists():
+            continue
+        try:
+            index_data = json.loads(index_path.read_text(encoding="utf-8"))
+            weight_map = index_data.get("weight_map", {})
+            keys = sorted(weight_map)[:16]
+            prefixes = sorted({".".join(key.split(".")[:2]) for key in keys})
+            log(
+                "Checkpoint index summary: "
+                f"file={index_path.name}, weights={len(weight_map)}, "
+                f"sample_prefixes={prefixes}, sample_keys={keys[:6]}"
+            )
+            return
+        except Exception as exc:
+            log(f"Failed to read checkpoint index {index_path}: {exc}")
+            return
+    shards = sorted(path.name for path in model_dir.glob("*.safetensors"))[:6]
+    if shards:
+        log(f"Checkpoint shards found without index: {shards}")
+
+
+def log_openrlhf_summary(args: argparse.Namespace, model_path: str, train_data: str, command: list[str]) -> None:
+    gpu_count = verified_gpu_count()
+    max_total_len = int(args.max_prompt_length) + int(args.max_response_length)
+    effective_train_batch = args.train_batch_size or max(
+        1, args.batch_size * gpu_count * max(1, args.group_size)
+    )
+    rollout_batch = args.rollout_batch_size or effective_train_batch
+    rollout_micro_batch = args.rollout_micro_batch_size or max(1, args.batch_size * gpu_count)
+    vllm_generate_batch = args.vllm_generate_batch_size or rollout_batch
+    log(
+        "OpenRLHF launch summary: "
+        f"algorithm={args.algorithm}, estimator={ESTIMATOR_BY_ALGORITHM[args.algorithm]}, "
+        f"model={model_path}, data={train_data}, output={args.output_dir}"
+    )
+    log(
+        "Batch/token summary: "
+        f"train_batch={effective_train_batch}, train_micro={args.batch_size}, "
+        f"rollout_batch={rollout_batch}, rollout_micro={rollout_micro_batch}, "
+        f"vllm_generate_batch={vllm_generate_batch}, max_len={max_total_len}"
+    )
+    log(
+        "Parallel summary: "
+        f"visible_gpus={gpu_count}, vllm_engines={args.vllm_num_engines}, "
+        f"vllm_tp={args.vllm_tensor_parallel_size}, colocate_all={args.colocate_all}, "
+        f"ray_start={args.ray_start}, ray_worker_ports={args.ray_worker_port_count}"
+    )
+    if os.environ.get("OPENRLHF_VERBOSE_COMMAND", "0").lower() in {"1", "true", "yes"}:
+        log("OpenRLHF command: " + shlex.join(command))
+    else:
+        log("OpenRLHF command hidden; set OPENRLHF_VERBOSE_COMMAND=1 to print it.")
+
+
+def run_openrlhf_command(command: list[str]) -> None:
+    recent: deque[str] = deque(maxlen=80)
+    proc = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        bufsize=1,
+    )
+    if proc.stdout is not None:
+        for raw in proc.stdout:
+            for part in raw.replace("\r", "\n").splitlines():
+                useful = useful_runtime_line(part)
+                if useful is None:
+                    continue
+                recent.append(useful)
+                print(f"[openrlhf] {useful}", flush=True)
+    return_code = proc.wait()
+    if return_code != 0:
+        if recent:
+            log("Recent useful OpenRLHF output:\n" + "\n".join(list(recent)[-30:]))
+        raise RuntimeError(f"OpenRLHF exited with code {return_code}")
+
+
 def add_flag(command: list[str], name: str, value) -> None:
     if value is None:
         return
@@ -459,7 +676,7 @@ def configure_ray_environment(enable_dashboard: bool, raylet_start_wait_time_s: 
     ray_tmp = Path("/tmp") / f"ray-openrlhf-{job_id}"
     ray_tmp.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("RAY_USAGE_STATS_ENABLED", "0")
-    os.environ.setdefault("RAY_DEDUP_LOGS", "0")
+    os.environ.setdefault("RAY_DEDUP_LOGS", "1")
     os.environ["RAY_raylet_start_wait_time_s"] = str(max(30, raylet_start_wait_time_s))
     os.environ["OPENRLHF_RAY_PATCH"] = "0" if enable_dashboard else "1"
     os.environ["OPENRLHF_RAY_TEMP_DIR"] = str(ray_tmp)
@@ -602,6 +819,7 @@ def dump_ray_logs(ray_tmp: str | None) -> None:
     if not logs_dir.exists():
         log(f"Ray logs not found: {logs_dir}")
         return
+    emitted = False
     for name in (
         "gcs_server.err",
         "gcs_server.out",
@@ -614,11 +832,19 @@ def dump_ray_logs(ray_tmp: str | None) -> None:
         if not path.exists():
             continue
         try:
-            lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-            tail = "\n".join(lines[-40:])
-            log(f"===== Ray log tail: {path} =====\n{tail}")
+            raw_lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+            useful = []
+            for raw_line in raw_lines[-1200:]:
+                line = useful_runtime_line(raw_line)
+                if line is not None:
+                    useful.append(line)
+            if useful:
+                emitted = True
+                log(f"Ray useful log tail: {name}\n" + "\n".join(useful[-35:]))
         except Exception as exc:
             log(f"Failed to read Ray log {path}: {exc}")
+    if not emitted:
+        log(f"No useful Ray failure lines found under {logs_dir}")
 
 
 def normalize_ray_node_ip(value: str | None) -> str | None:
@@ -822,6 +1048,7 @@ def main() -> int:
     ensure_runtime_dependencies()
 
     model_path = resolve_model_path(args.model_path)
+    log_model_metadata(model_path)
     train_data = prepare_train_data(args)
     resume_from = receive_resume_checkpoint(args.resume_from)
     if resume_from:
@@ -833,13 +1060,12 @@ def main() -> int:
             maybe_start_ray(args, verified_gpu_count())
         else:
             os.environ.pop("OPENRLHF_RAY_ADDRESS", None)
-        log("Running OpenRLHF command:")
-        log(" ".join(command))
-        subprocess.run(command, check=True)
+        log_openrlhf_summary(args, model_path, train_data, command)
+        run_openrlhf_command(command)
         write_result(args.output_dir, status="success")
         return 0
     except Exception as exc:
-        log(f"OpenRLHF training failed: {exc}")
+        log(f"OpenRLHF training failed: {type(exc).__name__}: {exc}")
         dump_ray_logs(os.environ.get("OPENRLHF_RAY_TEMP_DIR"))
         write_result(args.output_dir, status="failed", error=str(exc))
         raise

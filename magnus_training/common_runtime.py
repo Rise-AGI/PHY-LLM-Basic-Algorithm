@@ -21,6 +21,8 @@ def setup_environment() -> None:
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHONUNBUFFERED": "1",
         "PYTHONPYCACHEPREFIX": "/tmp/.pycache",
+        "PYTHONWARNINGS": "ignore::FutureWarning,ignore::SyntaxWarning,ignore::DeprecationWarning",
+        "TRANSFORMERS_VERBOSITY": "error",
         "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
         "TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC": "600",
         "NCCL_DEBUG": "WARN",
@@ -40,6 +42,7 @@ def setup_environment() -> None:
         "VLLM_DISABLE_PYNCCL": "1",
         "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
         "OPENRLHF_VLLM_DISABLE_CUSTOM_ALL_REDUCE": "1",
+        "RAY_DEDUP_LOGS": "1",
     }
     for key, value in defaults.items():
         os.environ.setdefault(key, value)
