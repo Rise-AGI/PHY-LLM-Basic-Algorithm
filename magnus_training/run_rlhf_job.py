@@ -185,6 +185,8 @@ def _patch_vllm_text_only() -> None:
                     kwargs["disable_custom_all_reduce"] = True
                 if kwargs.get("mamba_block_size") is None:
                     kwargs["mamba_block_size"] = int(kwargs.get("block_size") or 16)
+                if kwargs.get("mamba_block_size") is not None:
+                    kwargs["enable_prefix_caching"] = True
                 if kwargs.get("mamba_cache_mode") in {None, "none"}:
                     kwargs["mamba_cache_mode"] = os.environ.get(
                         "OPENRLHF_VLLM_MAMBA_CACHE_MODE",
@@ -475,6 +477,8 @@ NOISY_RUNTIME_PATTERNS = (
     re.compile(r"FutureWarning|SyntaxWarning|DeprecationWarning"),
     re.compile(r"torch\.cuda\.memory\._set_allocator_settings"),
     re.compile(r"WARNING: Overriding HOME environment variable"),
+    re.compile(r"Model architecture Qwen3_5.*already registered"),
+    re.compile(r"Unknown vLLM environment variable detected"),
     re.compile(r"^\s*$"),
 )
 IMPORTANT_RUNTIME_PATTERNS = re.compile(
@@ -508,6 +512,8 @@ def useful_runtime_line(raw_line: str) -> str | None:
     line = compact_runtime_line(raw_line)
     if not line:
         return None
+    if line.startswith("namespace("):
+        return None
     if any(pattern.search(line) for pattern in NOISY_RUNTIME_PATTERNS):
         return None
     if IMPORTANT_RUNTIME_PATTERNS.search(line):
@@ -515,6 +521,26 @@ def useful_runtime_line(raw_line: str) -> str | None:
     if line.startswith("[openrlhf-") or line.startswith("[20"):
         return line
     return None
+
+
+def compact_ray_start_output(output: str) -> str:
+    useful: list[str] = []
+    keep_markers = (
+        "Local node IP:",
+        "Ray runtime started",
+        "object_store_memory",
+        "Traceback",
+        "ERROR",
+        "Exception",
+        "Failed",
+    )
+    for raw_line in output.splitlines():
+        line = ANSI_RE.sub("", raw_line).strip()
+        if not line:
+            continue
+        if any(marker in line for marker in keep_markers):
+            useful.append(line)
+    return "\n".join(useful[-20:])
 
 
 def log_model_metadata(model_path: str) -> None:
@@ -597,7 +623,8 @@ def log_openrlhf_summary(args: argparse.Namespace, model_path: str, train_data: 
         "Parallel summary: "
         f"visible_gpus={gpu_count}, vllm_engines={args.vllm_num_engines}, "
         f"vllm_tp={args.vllm_tensor_parallel_size}, colocate_all={args.colocate_all}, "
-        f"ray_start={args.ray_start}, ray_worker_ports={args.ray_worker_port_count}"
+        f"vllm_prefix_cache=True, ray_start={args.ray_start}, "
+        f"ray_worker_ports={args.ray_worker_port_count}"
     )
     if os.environ.get("OPENRLHF_VERBOSE_COMMAND", "0").lower() in {"1", "true", "yes"}:
         log("OpenRLHF command: " + shlex.join(command))
@@ -823,6 +850,7 @@ def build_openrlhf_command(args: argparse.Namespace, model_path: str, train_data
     add_bool(command, "--train.colocate_actor_ref", True)
     add_bool(command, "--train.colocate_all", args.colocate_all)
     add_bool(command, "--ds.enable_sleep", args.ds_enable_sleep)
+    add_bool(command, "--vllm.enable_prefix_caching", True)
     add_bool(command, "--vllm.enable_sleep", args.vllm_enable_sleep)
     add_bool(command, "--vllm.enforce_eager", args.vllm_enforce_eager)
     if args.flash_attn:
@@ -1030,8 +1058,9 @@ def maybe_start_ray(args: argparse.Namespace, gpu_count: int) -> None:
         text=True,
     )
     start_output = "\n".join(part for part in (proc.stdout, proc.stderr) if part)
-    if start_output.strip():
-        log("Ray start output:\n" + start_output.strip())
+    compact_start_output = compact_ray_start_output(start_output)
+    if compact_start_output:
+        log("Ray start output:\n" + compact_start_output)
     if proc.returncode != 0:
         dump_ray_logs(ray_tmp)
         raise RuntimeError(f"ray start failed with exit code {proc.returncode}")
