@@ -40,6 +40,8 @@ def setup_environment() -> None:
         "NCCL_BUFFSIZE": "4194304",
         "NCCL_NCHANNELS_PER_PEER": "8",
         "VLLM_DISABLE_PYNCCL": "1",
+        "VLLM_NO_USAGE_STATS": "1",
+        "VLLM_DO_NOT_TRACK": "1",
         "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
         "OPENRLHF_VLLM_DISABLE_CUSTOM_ALL_REDUCE": "1",
         "RAY_DEDUP_LOGS": "1",
@@ -78,12 +80,12 @@ def ensure_dependencies() -> None:
 
 def resolve_model_path(model_path: str) -> str:
     if (Path(model_path) / "config.json").exists():
-        log(f"Using local model path: {model_path}")
+        log(f"模型路径: {model_path}")
         return model_path
     if model_path.startswith("/"):
         raise FileNotFoundError(f"Local model path does not exist: {model_path}")
 
-    log(f"Local model not found, trying ModelScope: {model_path}")
+    log(f"本地模型不存在，尝试从 ModelScope 获取: {model_path}")
     try:
         from modelscope import snapshot_download
     except Exception:
@@ -103,7 +105,7 @@ def resolve_model_path(model_path: str) -> str:
         from modelscope import snapshot_download
 
     actual = snapshot_download(model_path, cache_dir="/tmp/models")
-    log(f"ModelScope download complete: {actual}")
+    log(f"ModelScope 下载完成: {actual}")
     return actual
 
 
@@ -115,7 +117,7 @@ def receive_resume_checkpoint(resume_from: str | None) -> str | None:
         return None
     if token.startswith("magnus-secret:"):
         out = "/tmp/resume_ckpt"
-        log("Receiving checkpoint from Magnus secret")
+        log("接收恢复 checkpoint")
         subprocess.run(["magnus", "receive", token, "-o", out], check=True)
         return out
     return token
@@ -132,7 +134,7 @@ def receive_file_secret(secret: str | None, output_name: str | None, default_nam
         name = default_name
     out = Path("/tmp/magnus_uploads") / name
     out.parent.mkdir(parents=True, exist_ok=True)
-    log(f"Receiving uploaded file secret to {out}")
+    log(f"接收上传文件: {out}")
     subprocess.run(["magnus", "receive", token, "-o", str(out)], check=True)
     return str(out)
 

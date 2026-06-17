@@ -26,7 +26,7 @@ from common_runtime import (
 from prepare_openrlhf_data import convert as convert_prompt_data
 
 
-DEFAULT_IMAGE_NOTE = "OpenRLHF/vLLM runtime expects docker tag sft-base:v5 or newer."
+DEFAULT_IMAGE_NOTE = "需要 sft-base:v5 或更新镜像。"
 ONLINE_ALGORITHMS = {"ppo", "reinforce", "reinforce_baseline", "grpo", "dr_grpo", "rloo"}
 ESTIMATOR_BY_ALGORITHM = {
     "ppo": "gae",
@@ -62,7 +62,9 @@ def _is_truthy(value: str | None) -> bool:
 
 
 def _patch_log(message: str, *, worker: bool = False) -> None:
-    if worker and not _is_truthy(os.environ.get("OPENRLHF_PATCH_VERBOSE")):
+    verbose = _is_truthy(os.environ.get("OPENRLHF_PATCH_VERBOSE"))
+    lower = message.lower()
+    if not verbose and not any(key in lower for key in ("failed", "skipped", "失败", "跳过")):
         return
     print(message, flush=True)
 
@@ -86,10 +88,10 @@ def _patch_ray_node_start_timeout_source() -> None:
         if old in source:
             node_path.write_text(source.replace(old, new), encoding="utf-8")
             _patch_log(
-                f"[openrlhf-ray-patch] raylet startup timeout patched to {timeout}s",
+                f"[补丁] Raylet 启动等待={timeout}s",
             )
     except Exception as exc:
-        _patch_log(f"[openrlhf-ray-patch] failed to patch ray node timeout: {exc}")
+        _patch_log(f"[补丁失败] Raylet 启动等待: {exc}")
 
 
 def _enabled() -> bool:
@@ -154,9 +156,9 @@ def _patch_ray_init() -> None:
         _init_without_dashboard._openrlhf_magnus_patched = True
         _init_without_dashboard._openrlhf_original = _original_ray_init
         ray.init = _init_without_dashboard
-        _patch_log("[openrlhf-ray-patch] ray.init dashboard disabled", worker=_ray_worker_process())
+        _patch_log("[补丁] Ray dashboard 已关闭", worker=_ray_worker_process())
     except Exception as exc:
-        _patch_log(f"[openrlhf-ray-patch] failed to patch ray.init: {exc}")
+        _patch_log(f"[补丁失败] Ray dashboard: {exc}")
 
 
 def _patch_vllm_text_only() -> None:
@@ -237,13 +239,12 @@ def _patch_vllm_text_only() -> None:
                 _load_weights_with_prefix_fix._openrlhf_original = original_load_weights
                 model_cls.load_weights = _load_weights_with_prefix_fix
                 _patch_log(
-                    "[openrlhf-vllm-patch] Qwen3.5/Qwen3.6 text checkpoint "
-                    "prefix normalizer enabled",
+                    "[补丁] Qwen checkpoint 前缀修复已启用",
                     worker=_ray_worker_process(),
                 )
             except Exception as exc:
                 _patch_log(
-                    f"[openrlhf-vllm-patch] Qwen text weight prefix patch skipped: {exc}",
+                    f"[补丁跳过] Qwen checkpoint 前缀修复: {exc}",
                 )
 
         try:
@@ -261,13 +262,12 @@ def _patch_vllm_text_only() -> None:
                 ModelRegistry.register_model(arch, model_cls)
             _patch_qwen35_text_weight_loader()
             _patch_log(
-                "[openrlhf-vllm-patch] Qwen3.5/Qwen3.6 conditional architectures "
-                "redirected to text-only CausalLM classes",
+                "[补丁] Qwen 文本模型注册已修复",
                 worker=_ray_worker_process(),
             )
         except Exception as exc:
             _patch_log(
-                f"[openrlhf-vllm-patch] Qwen3.5 text registry patch skipped: {exc}",
+                f"[补丁跳过] Qwen 文本模型注册: {exc}",
             )
 
         try:
@@ -290,7 +290,7 @@ def _patch_vllm_text_only() -> None:
                 CudaCommunicator.broadcast = _broadcast_with_torch_fallback
         except Exception as exc:
             _patch_log(
-                f"[openrlhf-vllm-patch] cuda communicator fallback skipped: {exc}",
+                f"[补丁跳过] CUDA communicator fallback: {exc}",
             )
 
         try:
@@ -316,16 +316,16 @@ def _patch_vllm_text_only() -> None:
             )
         except Exception as exc:
             _patch_log(
-                f"[openrlhf-vllm-patch] multimodal registry patch skipped: {exc}",
+                f"[补丁跳过] 多模态注册清理: {exc}",
             )
 
         _patch_log(
-            "[openrlhf-vllm-patch] text-only vLLM patch enabled",
+            "[补丁] vLLM 文本模式已启用",
             worker=_ray_worker_process(),
         )
         _patch_vllm_text_only._done = True
     except Exception as exc:
-        _patch_log(f"[openrlhf-vllm-patch] failed to enable patch: {exc}")
+        _patch_log(f"[补丁失败] vLLM 文本模式: {exc}")
     finally:
         _patch_vllm_text_only._patching = False
 
@@ -361,7 +361,7 @@ def _install_lazy_vllm_patch() -> None:
     builtins.__import__ = _import_with_vllm_patch
     _install_lazy_vllm_patch._installed = True
     _patch_log(
-        "[openrlhf-vllm-patch] lazy text-only vLLM patch installed",
+        "[补丁] vLLM 文本模式延迟安装完成",
         worker=_ray_worker_process(),
     )
 
@@ -374,7 +374,7 @@ if not _ray_control_process():
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Magnus OpenRLHF/vLLM runtime wrapper")
+    p = argparse.ArgumentParser(description="Magnus RLHF 运行入口")
     p.add_argument("--algorithm", choices=sorted(ONLINE_ALGORITHMS), required=True)
     p.add_argument("--model_path", required=True)
     p.add_argument("--train_data")
@@ -462,12 +462,12 @@ def ensure_runtime_dependencies() -> None:
             missing.append(f"{module} ({exc})")
     if missing:
         raise RuntimeError(
-            "Missing RLHF runtime dependencies: "
+            "缺少 RLHF 运行依赖: "
             + "; ".join(missing)
             + ". "
             + DEFAULT_IMAGE_NOTE
         )
-    log("OpenRLHF/vLLM dependencies ready")
+    log("依赖检查通过")
 
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
@@ -479,14 +479,35 @@ NOISY_RUNTIME_PATTERNS = (
     re.compile(r"WARNING: Overriding HOME environment variable"),
     re.compile(r"Model architecture Qwen3_5.*already registered"),
     re.compile(r"Unknown vLLM environment variable detected"),
+    re.compile(r"ray\.init dashboard disabled"),
+    re.compile(r"lazy text-only vLLM patch installed"),
+    re.compile(r"Injected <class .*WorkerWrap"),
+    re.compile(r"Missing `shared_worker_lock` argument"),
+    re.compile(r"TORCH_NCCL_AVOID_RECORD_STREAMS"),
+    re.compile(r"SymmMemCommunicator"),
+    re.compile(r"Using \[\] all-reduce backends"),
+    re.compile(r"rank \d+ in world size"),
+    re.compile(r"Using address .*RAY_ADDRESS"),
+    re.compile(r"Connecting to existing Ray cluster"),
+    re.compile(r"Connected to Ray cluster"),
+    re.compile(r"Using the existing placement group"),
+    re.compile(r"Auto-prefetch is disabled"),
+    re.compile(r"Exception in thread Thread-1 \(_report_usage_worker\)"),
+    re.compile(r"vllm/usage/usage_lib\.py"),
+    re.compile(r"cpuinfo\.py"),
+    re.compile(r"json\.decoder\.JSONDecodeError"),
     re.compile(r"^\s*$"),
 )
 IMPORTANT_RUNTIME_PATTERNS = re.compile(
     r"("
     r"Traceback|ERROR|RuntimeError|ValueError|AttributeError|Exception|"
-    r"EngineCore|RayTaskError|OOM|out of memory|NCCL|CUDA|"
+    r"RayTaskError|OOM|out of memory|"
     r"reward|kl|loss|episode|global_step|saving|checkpoint|"
-    r"Qwen3|vLLM|OpenRLHF|Ray head|Loading weights took"
+    r"Resolved architecture|Initializing a V1 LLM engine|"
+    r"Starting to load model|FLASH_ATTN|FlashAttention|"
+    r"Filesystem type for checkpoints|Loading weights took|Model loading took|"
+    r"Dynamo bytecode transform time|Cache the graph|"
+    r"No available shared memory broadcast block"
     r")",
     re.IGNORECASE,
 )
@@ -497,28 +518,82 @@ def compact_runtime_line(line: str) -> str:
     if "Following weights were not initialized from checkpoint" in line:
         names = re.findall(r"'([^']+)'", line)
         if names:
-            examples = ", ".join(names[:10])
+            samples = ", ".join(names[:10])
             prefixes = sorted({".".join(name.split(".")[:2]) for name in names})
             return (
-                f"ValueError: {len(names)} weights were not initialized from checkpoint; "
-                f"examples: {examples}; prefixes: {', '.join(prefixes[:8])}"
+                f"ValueError: checkpoint 有 {len(names)} 个权重未初始化；"
+                f"样例: {samples}; 前缀: {', '.join(prefixes[:8])}"
             )
+    if "Loading custom `reward_func" in line:
+        return "奖励函数: 内置规则奖励"
+    if "Resolved architecture:" in line:
+        match = re.search(r"Resolved architecture:\s*([^ ]+)", line)
+        return f"vLLM模型架构: {match.group(1) if match else line.rsplit(':', 1)[-1].strip()}"
+    if "Initializing a V1 LLM engine" in line:
+        tp = re.search(r"tensor_parallel_size=(\d+)", line)
+        max_len = re.search(r"max_seq_len=(\d+)", line)
+        prefix = re.search(r"enable_prefix_caching=(True|False)", line)
+        return (
+            "vLLM引擎初始化: "
+            f"TP={tp.group(1) if tp else '?'}, "
+            f"max_len={max_len.group(1) if max_len else '?'}, "
+            f"prefix_cache={prefix.group(1) if prefix else '?'}"
+        )
+    if "Starting to load model" in line:
+        return "vLLM开始加载模型"
+    if "Using FLASH_ATTN attention backend" in line or "Using FlashAttention version" in line:
+        return "注意力后端: FlashAttention"
+    if "Using Triton/FLA GDN prefill kernel" in line:
+        return "GDN prefill: Triton/FLA"
+    if "Filesystem type for checkpoints:" in line:
+        fs = re.search(r"Filesystem type for checkpoints:\s*([^\.]+)", line)
+        size = re.search(r"Checkpoint size:\s*([^\.]+\.[0-9]+ GiB|[^\.]+GiB)", line)
+        ram = re.search(r"Available RAM:\s*([^\.]+\.[0-9]+ GiB|[^\.]+GiB)", line)
+        parts = []
+        if fs:
+            parts.append(f"文件系统={fs.group(1).strip()}")
+        if size:
+            parts.append(f"checkpoint={size.group(1).strip()}")
+        if ram:
+            parts.append(f"可用RAM={ram.group(1).strip()}")
+        return "checkpoint读取: " + ", ".join(parts)
+    if "Loading weights took" in line:
+        match = re.search(r"Loading weights took\s*([0-9.]+)\s*seconds", line)
+        return f"权重加载完成: {match.group(1) if match else '?'}s"
+    if "Model loading took" in line:
+        match = re.search(r"Model loading took\s*([0-9.]+ GiB).*?([0-9.]+)\s*seconds", line)
+        if match:
+            return f"模型加载完成: 显存={match.group(1)}, 用时={match.group(2)}s"
+        return "模型加载完成"
+    if "Using cache directory:" in line and "torch.compile" in line:
+        return "vLLM编译缓存已就绪"
+    if "Dynamo bytecode transform time:" in line:
+        match = re.search(r"Dynamo bytecode transform time:\s*([0-9.]+\s*s)", line)
+        return f"torch.compile字节码转换: {match.group(1) if match else '?'}"
+    if "Cache the graph of compile range" in line:
+        match = re.search(r"compile range\s*\(([^)]+)\)", line)
+        return f"torch.compile图缓存: {match.group(1) if match else '完成'}"
+    if "No available shared memory broadcast block found in 60 seconds" in line:
+        return "vLLM等待共享内存广播: 60s"
     if len(line) > 2200:
-        return line[:2200] + " ... [truncated]"
+        return line[:2200] + " ... [截断]"
     return line
 
 
 def useful_runtime_line(raw_line: str) -> str | None:
-    line = compact_runtime_line(raw_line)
-    if not line:
+    raw = ANSI_RE.sub("", raw_line).strip()
+    if not raw:
         return None
-    if line.startswith("namespace("):
+    if raw.startswith("namespace("):
         return None
-    if any(pattern.search(line) for pattern in NOISY_RUNTIME_PATTERNS):
+    if any(pattern.search(raw) for pattern in NOISY_RUNTIME_PATTERNS):
         return None
+    line = compact_runtime_line(raw)
+    if line != raw:
+        return line
     if IMPORTANT_RUNTIME_PATTERNS.search(line):
         return line
-    if line.startswith("[openrlhf-") or line.startswith("[20"):
+    if line.startswith("[补丁"):
         return line
     return None
 
@@ -538,7 +613,13 @@ def compact_ray_start_output(output: str) -> str:
         line = ANSI_RE.sub("", raw_line).strip()
         if not line:
             continue
-        if any(marker in line for marker in keep_markers):
+        if "Local node IP:" in line:
+            useful.append("Ray节点IP: " + line.rsplit(":", 1)[-1].strip())
+        elif "Ray runtime started" in line:
+            useful.append("Ray启动完成")
+        elif "object_store_memory" in line:
+            useful.append(line)
+        elif any(marker in line for marker in keep_markers):
             useful.append(line)
     return "\n".join(useful[-20:])
 
@@ -547,12 +628,12 @@ def log_model_metadata(model_path: str) -> None:
     model_dir = Path(model_path)
     config_path = model_dir / "config.json"
     if not config_path.exists():
-        log(f"Model config not found: {config_path}")
+        log(f"模型配置不存在: {config_path}")
         return
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
     except Exception as exc:
-        log(f"Failed to read model config {config_path}: {exc}")
+        log(f"读取模型配置失败: {config_path}: {exc}")
         return
 
     text_config = config.get("text_config") if isinstance(config.get("text_config"), dict) else {}
@@ -569,7 +650,7 @@ def log_model_metadata(model_path: str) -> None:
     )
     summary = {key: source.get(key, config.get(key)) for key in summary_keys}
     log(
-        "Model config summary: "
+        "模型配置: "
         + ", ".join(f"{key}={value}" for key, value in summary.items() if value is not None)
     )
 
@@ -586,17 +667,17 @@ def log_model_metadata(model_path: str) -> None:
             keys = sorted(weight_map)[:16]
             prefixes = sorted({".".join(key.split(".")[:2]) for key in keys})
             log(
-                "Checkpoint index summary: "
+                "checkpoint索引: "
                 f"file={index_path.name}, weights={len(weight_map)}, "
                 f"sample_prefixes={prefixes}, sample_keys={keys[:6]}"
             )
             return
         except Exception as exc:
-            log(f"Failed to read checkpoint index {index_path}: {exc}")
+            log(f"读取checkpoint索引失败: {index_path}: {exc}")
             return
     shards = sorted(path.name for path in model_dir.glob("*.safetensors"))[:6]
     if shards:
-        log(f"Checkpoint shards found without index: {shards}")
+        log(f"checkpoint分片: {shards}")
 
 
 def log_openrlhf_summary(args: argparse.Namespace, model_path: str, train_data: str, command: list[str]) -> None:
@@ -609,31 +690,33 @@ def log_openrlhf_summary(args: argparse.Namespace, model_path: str, train_data: 
     rollout_micro_batch = args.rollout_micro_batch_size or max(1, args.batch_size * gpu_count)
     vllm_generate_batch = args.vllm_generate_batch_size or rollout_batch
     log(
-        "OpenRLHF launch summary: "
-        f"algorithm={args.algorithm}, estimator={ESTIMATOR_BY_ALGORITHM[args.algorithm]}, "
-        f"model={model_path}, data={train_data}, output={args.output_dir}"
+        "训练启动: "
+        f"算法={args.algorithm}, 优势估计={ESTIMATOR_BY_ALGORITHM[args.algorithm]}, "
+        f"模型={model_path}, 数据={train_data}, 输出={args.output_dir}"
     )
     log(
-        "Batch/token summary: "
-        f"train_batch={effective_train_batch}, train_micro={args.batch_size}, "
-        f"rollout_batch={rollout_batch}, rollout_micro={rollout_micro_batch}, "
-        f"vllm_generate_batch={vllm_generate_batch}, max_len={max_total_len}"
+        "批次与长度: "
+        f"训练批={effective_train_batch}, 训练微批={args.batch_size}, "
+        f"采样批={rollout_batch}, 采样微批={rollout_micro_batch}, "
+        f"vLLM生成批={vllm_generate_batch}, 最大长度={max_total_len}"
     )
     log(
-        "Parallel summary: "
-        f"visible_gpus={gpu_count}, vllm_engines={args.vllm_num_engines}, "
-        f"vllm_tp={args.vllm_tensor_parallel_size}, colocate_all={args.colocate_all}, "
-        f"vllm_prefix_cache=True, ray_start={args.ray_start}, "
-        f"ray_worker_ports={args.ray_worker_port_count}"
+        "并行配置: "
+        f"可见GPU={gpu_count}, vLLM引擎={args.vllm_num_engines}, "
+        f"vLLM TP={args.vllm_tensor_parallel_size}, 同卡放置={args.colocate_all}, "
+        f"prefix_cache=True, Ray预启动={args.ray_start}, "
+        f"Ray worker端口={args.ray_worker_port_count}, vLLM eager={args.vllm_enforce_eager}"
     )
     if os.environ.get("OPENRLHF_VERBOSE_COMMAND", "0").lower() in {"1", "true", "yes"}:
-        log("OpenRLHF command: " + shlex.join(command))
+        log("OpenRLHF命令: " + shlex.join(command))
     else:
-        log("OpenRLHF command hidden; set OPENRLHF_VERBOSE_COMMAND=1 to print it.")
+        log("OpenRLHF命令已隐藏；设置 OPENRLHF_VERBOSE_COMMAND=1 可打印")
 
 
 def run_openrlhf_command(command: list[str]) -> None:
     recent: deque[str] = deque(maxlen=80)
+    repeat_counts: dict[str, int] = {}
+    suppress_usage_trace = 0
     proc = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
@@ -646,16 +729,31 @@ def run_openrlhf_command(command: list[str]) -> None:
     if proc.stdout is not None:
         for raw in proc.stdout:
             for part in raw.replace("\r", "\n").splitlines():
+                if "Exception in thread Thread-1 (_report_usage_worker)" in part:
+                    repeat_counts["vLLM用量统计线程异常已忽略"] = repeat_counts.get(
+                        "vLLM用量统计线程异常已忽略", 0
+                    ) + 1
+                    suppress_usage_trace = 40
+                    continue
+                if suppress_usage_trace > 0:
+                    suppress_usage_trace -= 1
+                    continue
                 useful = useful_runtime_line(part)
                 if useful is None:
                     continue
+                count = repeat_counts.get(useful, 0) + 1
+                repeat_counts[useful] = count
+                if count > 1 and count % 10 != 0:
+                    continue
+                if count >= 10:
+                    useful = f"{useful}（重复{count}次）"
                 recent.append(useful)
-                print(f"[openrlhf] {useful}", flush=True)
+                print(f"[训练] {useful}", flush=True)
     return_code = proc.wait()
     if return_code != 0:
         if recent:
-            log("Recent useful OpenRLHF output:\n" + "\n".join(list(recent)[-30:]))
-        raise RuntimeError(f"OpenRLHF exited with code {return_code}")
+            log("最近关键训练日志:\n" + "\n".join(list(recent)[-30:]))
+        raise RuntimeError(f"OpenRLHF退出码={return_code}")
 
 
 def add_flag(command: list[str], name: str, value) -> None:
@@ -677,20 +775,20 @@ def prepare_train_data(args: argparse.Namespace) -> str:
     )
     source = uploaded or args.train_data
     if not source:
-        raise ValueError("train_data or train_data_secret is required for OpenRLHF online RL")
+        raise ValueError("必须提供 train_data 或 train_data_secret")
     source_path = Path(source)
     if not source_path.exists():
         raise FileNotFoundError(f"Training data does not exist: {source}")
     out = Path("/tmp/openrlhf_prompt_data.jsonl")
     count = convert_prompt_data(source_path, out, args.max_samples)
-    log(f"Prepared OpenRLHF prompt data: {count} rows -> {out}")
+    log(f"训练数据: {count} 条 -> {out}")
     return str(out)
 
 
 def install_vllm_text_only_patch(enabled: bool) -> None:
     if not enabled:
         os.environ["OPENRLHF_VLLM_TEXT_ONLY_PATCH"] = "0"
-        log("vLLM text-only patch disabled")
+        log("vLLM文本修复: 关闭")
         return
 
     patch_dir = Path("/tmp/openrlhf_vllm_text_only_patch")
@@ -713,7 +811,7 @@ def install_vllm_text_only_patch(enabled: bool) -> None:
     if spec is not None and spec.loader is not None:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-    log(f"Installed vLLM text-only patch via PYTHONPATH: {patch_dir}")
+    log(f"vLLM文本修复: 已安装 {patch_dir}")
 
 
 def configure_ray_environment(enable_dashboard: bool, raylet_start_wait_time_s: int) -> None:
@@ -726,41 +824,36 @@ def configure_ray_environment(enable_dashboard: bool, raylet_start_wait_time_s: 
     os.environ["OPENRLHF_RAY_PATCH"] = "0" if enable_dashboard else "1"
     os.environ["OPENRLHF_RAY_TEMP_DIR"] = str(ray_tmp)
     if enable_dashboard:
-        log("Ray dashboard left enabled")
+        log("Ray dashboard: 开启")
     else:
-        log(f"Ray dashboard disabled; temp dir: {ray_tmp}")
+        log(f"Ray dashboard: 关闭，临时目录={ray_tmp}")
 
 
 def build_openrlhf_command(args: argparse.Namespace, model_path: str, train_data: str) -> list[str]:
     gpu_count = verified_gpu_count()
     visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "<unset>")
     log(
-        "CUDA visibility: "
-        f"verified={gpu_count}, required={args.required_gpu_count or 'not set'}, "
+        "CUDA可见性: "
+        f"实际={gpu_count}, 要求={args.required_gpu_count or '未设置'}, "
         f"CUDA_VISIBLE_DEVICES={visible_devices}"
     )
     if gpu_count <= 0:
-        raise RuntimeError("OpenRLHF/vLLM training requires CUDA GPUs")
+        raise RuntimeError("OpenRLHF/vLLM 需要 CUDA GPU")
     if args.required_gpu_count and gpu_count < args.required_gpu_count:
         raise RuntimeError(
-            f"Magnus exposed only {gpu_count} usable CUDA GPU(s), but this PPO 27B preset "
-            f"requires {args.required_gpu_count} GPU(s). Re-submit the blueprint with "
-            f"GPU 数量={args.required_gpu_count} and GPU 类型=A100. Do not lower "
-            "vLLM TP to 3 for Qwen 27B; tensor parallel size must match a valid model "
-            "head split and the 27B PPO preset is configured for TP4."
+            f"当前可用 GPU={gpu_count}，PPO 27B 要求 {args.required_gpu_count} 张 A100。"
+            "不要把 vLLM TP 改成 3。"
         )
     vllm_gpu_slots = args.vllm_num_engines * args.vllm_tensor_parallel_size
     if vllm_gpu_slots > gpu_count:
         raise ValueError(
-            "vllm_num_engines * vllm_tensor_parallel_size must be <= visible GPU count "
-            f"({args.vllm_num_engines} * {args.vllm_tensor_parallel_size} > {gpu_count}). "
-            "For the default Qwen 27B PPO preset, re-submit with GPU 数量=4 and "
-            "vLLM TP size=4."
+            "vLLM engine*TP 不能超过可见 GPU 数: "
+            f"{args.vllm_num_engines} * {args.vllm_tensor_parallel_size} > {gpu_count}。"
         )
     if args.colocate_all and vllm_gpu_slots != gpu_count:
         raise ValueError(
-            "OpenRLHF v5 requires vllm_num_engines * vllm_tensor_parallel_size == gpu_count "
-            f"when colocate_all is enabled ({vllm_gpu_slots} != {gpu_count})"
+            "colocate_all=True 时，vLLM engine*TP 必须等于 GPU 数: "
+            f"{vllm_gpu_slots} != {gpu_count}"
         )
 
     output = Path(args.output_dir)
@@ -863,7 +956,7 @@ def dump_ray_logs(ray_tmp: str | None) -> None:
         return
     logs_dir = Path(ray_tmp) / "session_latest" / "logs"
     if not logs_dir.exists():
-        log(f"Ray logs not found: {logs_dir}")
+        log(f"Ray日志不存在: {logs_dir}")
         return
     emitted = False
     for name in (
@@ -886,11 +979,11 @@ def dump_ray_logs(ray_tmp: str | None) -> None:
                     useful.append(line)
             if useful:
                 emitted = True
-                log(f"Ray useful log tail: {name}\n" + "\n".join(useful[-35:]))
+                log(f"Ray关键日志: {name}\n" + "\n".join(useful[-35:]))
         except Exception as exc:
-            log(f"Failed to read Ray log {path}: {exc}")
+            log(f"读取Ray日志失败: {path}: {exc}")
     if not emitted:
-        log(f"No useful Ray failure lines found under {logs_dir}")
+        log(f"Ray日志无关键错误: {logs_dir}")
 
 
 def normalize_ray_node_ip(value: str | None) -> str | None:
@@ -984,7 +1077,7 @@ def wait_for_ray(address: str, timeout_s: int) -> tuple[bool, str]:
     except subprocess.TimeoutExpired as exc:
         return False, f"probe timeout after {exc.timeout}s"
     if proc.returncode == 0:
-        log(f"Ray head ready at {address}: {proc.stdout.strip()}")
+        log(f"Ray已连接: {address}")
         return True, proc.stdout.strip()
     return False, (proc.stderr or proc.stdout or "").strip()
 
@@ -996,7 +1089,7 @@ def wait_for_any_ray(candidates: list[str], timeout_s: int) -> str:
     started = time.monotonic()
     last_errors: dict[str, str] = {}
     candidates = unique_preserve_order(candidates)
-    log("Ray address candidates: " + ", ".join(candidates))
+    log("Ray候选地址: " + ", ".join(candidates))
     while time.monotonic() - started < deadline_s:
         for address in candidates:
             ok, detail = wait_for_ray(address, timeout_s=10)
@@ -1005,16 +1098,15 @@ def wait_for_any_ray(candidates: list[str], timeout_s: int) -> str:
             last_errors[address] = detail[-800:]
             if "No available ports" in detail:
                 raise RuntimeError(
-                    "Ray head is reachable, but worker port range is exhausted. "
-                    "Increase --ray_worker_port_count; PPO 27B now defaults to 1000."
+                    "Ray可连接，但 worker 端口不足。增加 --ray_worker_port_count。"
                 )
         time.sleep(3)
     details = "\n".join(f"{addr}: {err}" for addr, err in last_errors.items())
-    raise RuntimeError(f"Timed out waiting for Ray head. Candidate failures:\n{details}")
+    raise RuntimeError(f"等待Ray超时。候选地址失败信息:\n{details}")
 
 
 def maybe_start_ray(args: argparse.Namespace, gpu_count: int) -> None:
-    log("Starting local Ray head")
+    log("启动本地Ray")
     subprocess.run(["ray", "stop", "--force"], check=False)
     ray_tmp = os.environ.get("OPENRLHF_RAY_TEMP_DIR", "/tmp/ray-openrlhf-local")
     ray_tmp_path = Path(ray_tmp)
@@ -1051,7 +1143,7 @@ def maybe_start_ray(args: argparse.Namespace, gpu_count: int) -> None:
     ]
     if node_ip:
         command[3:3] = ["--node-ip-address", node_ip]
-    log("Running Ray start command: " + " ".join(command))
+    log("Ray启动命令: " + " ".join(command))
     proc = subprocess.run(
         command,
         capture_output=True,
@@ -1060,10 +1152,10 @@ def maybe_start_ray(args: argparse.Namespace, gpu_count: int) -> None:
     start_output = "\n".join(part for part in (proc.stdout, proc.stderr) if part)
     compact_start_output = compact_ray_start_output(start_output)
     if compact_start_output:
-        log("Ray start output:\n" + compact_start_output)
+        log("Ray启动输出:\n" + compact_start_output)
     if proc.returncode != 0:
         dump_ray_logs(ray_tmp)
-        raise RuntimeError(f"ray start failed with exit code {proc.returncode}")
+        raise RuntimeError(f"ray start 退出码={proc.returncode}")
     candidates = (
         extract_ray_addresses(start_output, base_port)
         + local_ray_address_candidates(base_port, node_ip)
@@ -1071,7 +1163,7 @@ def maybe_start_ray(args: argparse.Namespace, gpu_count: int) -> None:
     address = wait_for_any_ray(candidates, args.raylet_start_wait_time_s)
     os.environ["RAY_ADDRESS"] = address
     os.environ["OPENRLHF_RAY_ADDRESS"] = address
-    log(f"Using Ray address for OpenRLHF: {address}")
+    log(f"OpenRLHF连接Ray: {address}")
 
 
 def main() -> int:
@@ -1086,7 +1178,7 @@ def main() -> int:
         "VLLM_WORKER_MULTIPROC_METHOD",
         "OPENRLHF_VLLM_DISABLE_CUSTOM_ALL_REDUCE",
     )
-    log("Distributed env: " + ", ".join(f"{key}={os.environ.get(key)}" for key in env_keys))
+    log("分布式环境: " + ", ".join(f"{key}={os.environ.get(key)}" for key in env_keys))
     os.environ.setdefault("RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES", "1")
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
@@ -1099,7 +1191,7 @@ def main() -> int:
     train_data = prepare_train_data(args)
     resume_from = receive_resume_checkpoint(args.resume_from)
     if resume_from:
-        log(f"Resume checkpoint received/resolved: {resume_from}")
+        log(f"恢复checkpoint: {resume_from}")
 
     command = build_openrlhf_command(args, model_path, train_data)
     try:
@@ -1112,7 +1204,7 @@ def main() -> int:
         write_result(args.output_dir, status="success")
         return 0
     except Exception as exc:
-        log(f"OpenRLHF training failed: {type(exc).__name__}: {exc}")
+        log(f"训练失败: {type(exc).__name__}: {exc}")
         dump_ray_logs(os.environ.get("OPENRLHF_RAY_TEMP_DIR"))
         write_result(args.output_dir, status="failed", error=str(exc))
         raise
