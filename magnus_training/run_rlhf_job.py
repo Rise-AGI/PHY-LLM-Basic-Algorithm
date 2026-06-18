@@ -319,6 +319,52 @@ def _patch_vllm_text_only() -> None:
                 f"[补丁跳过] 多模态注册清理: {exc}",
             )
 
+        try:
+            from vllm.v1.core import kv_cache_utils as _kv_utils
+            from dataclasses import replace as _dc_replace
+            import math as _math
+
+            if not getattr(
+                _kv_utils.unify_kv_cache_spec_page_size, "_openrlhf_lcm_patched", False
+            ):
+                _original_unify = _kv_utils.unify_kv_cache_spec_page_size
+
+                def _unify_with_lcm(kv_cache_spec):
+                    page_sizes = {
+                        layer.page_size_bytes for layer in kv_cache_spec.values()
+                    }
+                    if len(page_sizes) <= 1:
+                        return kv_cache_spec
+                    lcm_page = 0
+                    for _ps in page_sizes:
+                        lcm_page = _ps if lcm_page == 0 else (
+                            lcm_page * _ps // _math.gcd(lcm_page, _ps)
+                        )
+                    max_page = max(page_sizes)
+                    if lcm_page > max_page:
+                        _patch_log(
+                            "[补丁] 混合架构 KV page_size 无法用 max 整除，改用 LCM 统一: "
+                            f"page_sizes={sorted(page_sizes)}, LCM={lcm_page}",
+                        )
+                    new_spec_map = {}
+                    for _name, _spec in kv_cache_spec.items():
+                        _lp = _spec.page_size_bytes
+                        if _lp == lcm_page:
+                            new_spec_map[_name] = _spec
+                        else:
+                            _ratio = lcm_page // _lp
+                            new_spec_map[_name] = _dc_replace(
+                                _spec, block_size=_spec.block_size * _ratio
+                            )
+                    return new_spec_map
+
+                _unify_with_lcm._openrlhf_lcm_patched = True
+                _unify_with_lcm._openrlhf_original = _original_unify
+                _kv_utils.unify_kv_cache_spec_page_size = _unify_with_lcm
+                _patch_log("[补丁] KV page_size LCM 统一策略已启用")
+        except Exception as exc:
+            _patch_log(f"[补丁跳过] KV page_size LCM 统一: {exc}")
+
         _patch_log(
             "[补丁] vLLM 文本模式已启用",
             worker=_ray_worker_process(),
@@ -471,6 +517,13 @@ def ensure_runtime_dependencies() -> None:
 
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+RAY_PID_PREFIX_RE = re.compile(
+    r"^(?:\([\w.]+ pid=\d+\)\s*)+(?:ERROR|WARNING|INFO)\s+(?:\d{4}-)?\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\[[\w./]+:\d+\]\s*"
+)
+RAY_ACTOR_PREFIX_RE = re.compile(r"^(?:\([\w.]+ pid=\d+\)\s*)+")
+VLLM_LOG_PREFIX_RE = re.compile(r"^(?:ERROR|WARNING|INFO)\s+(?:\d{4}-)?\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\[[\w./]+:\d+\]\s*")
+PY_ERROR_ROOT_RE = re.compile(r"^([A-Za-z_]\w*(?:Error|Exception|Warning)):\s*(.+)")
+PY_RAISE_RE = re.compile(r"^\s*raise\s+([A-Za-z_]\w*(?:Error|Exception))\(([^)]*)\)")
 NOISY_RUNTIME_PATTERNS = (
     re.compile(r"Parameter .* not found in params_dict, skip loading"),
     re.compile(r"Loading safetensors checkpoint shards:"),
@@ -497,10 +550,34 @@ NOISY_RUNTIME_PATTERNS = (
     re.compile(r"cpuinfo\.py"),
     re.compile(r"json\.decoder\.JSONDecodeError"),
     re.compile(r"^\s*$"),
+    re.compile(r"\[state-dump\]"),
+    re.compile(r"Node with actor is already dead"),
+    re.compile(r"KillActor RPC failed"),
+    re.compile(r"Disconnecting worker, graceful=true"),
+    re.compile(r"Disconnecting client due to connection error"),
+    re.compile(r"Reporting worker exit"),
+    re.compile(r"Worker exits because there was an exception"),
+    re.compile(r"Formatted creation task exception"),
+    re.compile(r"Exception raised in creation task"),
+    re.compile(r"The actor died because of an error raised"),
+    re.compile(r"CreationTaskError"),
+    re.compile(r"Unintentional worker failures have been reported"),
+    re.compile(r"gcs_actor_manager\.cc"),
+    re.compile(r"node_manager\.cc:\d+: Disconnecting"),
+    re.compile(r"store\.cc:\d+: Disconnecting client"),
+    re.compile(r"raylet.*node_manager\.cc:\d+:.*has_creation_task_exception"),
+    re.compile(r"^raise self\._exception"),
+    re.compile(r"^\s*raise\s+\w*(?:Error|Exception)\($"),
+    re.compile(r"^ray\.exceptions\.ActorDiedError"),
+    re.compile(r"During handling of the above exception"),
+    re.compile(r"Engine core initialization failed"),
+    re.compile(r"Failed core proc\(s\)"),
+    re.compile(r"^values, debugger_breakpoint = worker\.get_objects"),
+    re.compile(r"Actor .* died because of an error raised"),
 )
 IMPORTANT_RUNTIME_PATTERNS = re.compile(
     r"("
-    r"Traceback|ERROR|RuntimeError|ValueError|AttributeError|Exception|"
+    r"Traceback|RuntimeError|ValueError|AttributeError|NotImplementedError|"
     r"RayTaskError|OOM|out of memory|"
     r"reward|kl|loss|episode|global_step|saving|checkpoint|"
     r"Resolved architecture|Initializing a V1 LLM engine|"
@@ -515,6 +592,16 @@ IMPORTANT_RUNTIME_PATTERNS = re.compile(
 
 def compact_runtime_line(line: str) -> str:
     line = ANSI_RE.sub("", line).strip()
+    line = RAY_PID_PREFIX_RE.sub("", line)
+    line = RAY_ACTOR_PREFIX_RE.sub("", line)
+    line = VLLM_LOG_PREFIX_RE.sub("", line)
+    line = line.strip()
+    root_match = PY_ERROR_ROOT_RE.match(line)
+    if root_match:
+        return f"错误根因: {root_match.group(1)}: {root_match.group(2)}"
+    raise_match = PY_RAISE_RE.match(line)
+    if raise_match:
+        return f"错误根因: {raise_match.group(1)}: {raise_match.group(2)}"
     if "Following weights were not initialized from checkpoint" in line:
         names = re.findall(r"'([^']+)'", line)
         if names:
@@ -586,9 +673,9 @@ def useful_runtime_line(raw_line: str) -> str | None:
         return None
     if raw.startswith("namespace("):
         return None
-    if any(pattern.search(raw) for pattern in NOISY_RUNTIME_PATTERNS):
-        return None
     line = compact_runtime_line(raw)
+    if any(pattern.search(line) for pattern in NOISY_RUNTIME_PATTERNS):
+        return None
     if line != raw:
         return line
     if IMPORTANT_RUNTIME_PATTERNS.search(line):
@@ -714,8 +801,9 @@ def log_openrlhf_summary(args: argparse.Namespace, model_path: str, train_data: 
 
 
 def run_openrlhf_command(command: list[str]) -> None:
-    recent: deque[str] = deque(maxlen=80)
+    recent: deque[str] = deque(maxlen=120)
     repeat_counts: dict[str, int] = {}
+    root_cause: str | None = None
     suppress_usage_trace = 0
     proc = subprocess.Popen(
         command,
@@ -730,9 +818,6 @@ def run_openrlhf_command(command: list[str]) -> None:
         for raw in proc.stdout:
             for part in raw.replace("\r", "\n").splitlines():
                 if "Exception in thread Thread-1 (_report_usage_worker)" in part:
-                    repeat_counts["vLLM用量统计线程异常已忽略"] = repeat_counts.get(
-                        "vLLM用量统计线程异常已忽略", 0
-                    ) + 1
                     suppress_usage_trace = 40
                     continue
                 if suppress_usage_trace > 0:
@@ -741,8 +826,20 @@ def run_openrlhf_command(command: list[str]) -> None:
                 useful = useful_runtime_line(part)
                 if useful is None:
                     continue
+                if useful.startswith("错误根因: "):
+                    if root_cause is None:
+                        root_cause = useful[len("错误根因: "):]
+                        print(f"[训练] ★ {useful}", flush=True)
+                        recent.append(f"★ {useful}")
+                    continue
                 count = repeat_counts.get(useful, 0) + 1
                 repeat_counts[useful] = count
+                if useful.startswith("vLLM等待共享内存广播"):
+                    if count == 1 or count % 50 == 0:
+                        useful = f"{useful}（已累计{count}次，约{count}分钟）" if count > 1 else useful
+                        recent.append(useful)
+                        print(f"[训练] {useful}", flush=True)
+                    continue
                 if count > 1 and count % 10 != 0:
                     continue
                 if count >= 10:
@@ -751,9 +848,11 @@ def run_openrlhf_command(command: list[str]) -> None:
                 print(f"[训练] {useful}", flush=True)
     return_code = proc.wait()
     if return_code != 0:
+        if root_cause:
+            log(f"★ 训练失败根因: {root_cause}")
         if recent:
             log("最近关键训练日志:\n" + "\n".join(list(recent)[-30:]))
-        raise RuntimeError(f"OpenRLHF退出码={return_code}")
+        raise RuntimeError(f"OpenRLHF退出码={return_code}" + (f"，根因: {root_cause}" if root_cause else ""))
 
 
 def add_flag(command: list[str], name: str, value) -> None:
